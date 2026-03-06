@@ -61,16 +61,12 @@ const currentPath = Astro.url.pathname;
 		width: 2.8rem;
 		height: 2.8rem;
 		border-radius: var(--radius-inner);
-		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.04)),
-			linear-gradient(135deg, rgba(74, 168, 255, 0.92), rgba(10, 132, 255, 0.74));
+		background: #0a84ff;
 		color: #ffffff;
 		font-size: 1rem;
 		font-weight: 700;
 		letter-spacing: 0.08em;
-		box-shadow:
-			0 18px 36px -24px rgba(10, 132, 255, 0.72),
-			inset 0 1px 0 rgba(255, 255, 255, 0.32);
+		box-shadow: 0 12px 30px -24px rgba(10, 132, 255, 0.4);
 	}
 
 	.site-brand-copy {
@@ -117,20 +113,12 @@ const currentPath = Astro.url.pathname;
 	.nav-link:hover,
 	.nav-link.active {
 		color: var(--color-accent);
-		background: rgba(255, 255, 255, 0.18);
-		border-color: rgba(255, 255, 255, 0.24);
-		backdrop-filter: blur(18px) saturate(150%);
-		-webkit-backdrop-filter: blur(18px) saturate(150%);
-	}
-
-	.nav-link-ghost {
-		border-color: rgba(255, 255, 255, 0.22);
-		background: rgba(255, 255, 255, 0.16);
+		background: rgba(10, 132, 255, 0.08);
+		border-color: rgba(10, 132, 255, 0.12);
 	}
 
 	.nav-link:hover,
-	.nav-link.active,
-	.nav-link-ghost:hover {
+	.nav-link.active {
 		transform: translateY(-1px);
 	}
 
