@@ -6,25 +6,13 @@
 		root.setAttribute("data-theme", theme);
 	}
 
-	let navTicking = false;
-
 	const syncNavState = () => {
-		navTicking = false;
 		root.toggleAttribute("data-nav-condensed", window.scrollY > 28);
 	};
 
-	const requestNavSync = () => {
-		if (navTicking) {
-			return;
-		}
-
-		navTicking = true;
-		window.requestAnimationFrame(syncNavState);
-	};
-
 	syncNavState();
-	window.addEventListener("scroll", requestNavSync, { passive: true });
-	window.addEventListener("resize", requestNavSync, { passive: true });
+	window.addEventListener("scroll", syncNavState, { passive: true });
+	window.addEventListener("resize", syncNavState, { passive: true });
 	document.addEventListener("astro:page-load", syncNavState);
 
 	document.addEventListener("click", (event) => {
