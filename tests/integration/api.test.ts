@@ -52,6 +52,14 @@ describe("后台接口喵", () => {
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
+	test("未登录访问 /admin/appearance 会跳转到登录页喵", async () => {
+		const res = await app.request("/admin/appearance", {
+			redirect: "manual",
+		});
+		assert.equal(res.status, 302);
+		assert.equal(res.headers.get("location"), "/api/auth/login");
+	});
+
 	test("未登录访问 /admin/analytics 会跳转到登录页喵", async () => {
 		const res = await app.request("/admin/analytics", {
 			redirect: "manual",

@@ -77,6 +77,18 @@ export const blogPostTags = sqliteTable(
 	(table) => [primaryKey({ columns: [table.postId, table.tagId] })],
 );
 
+// ─── 站点外观设置喵 ────────────────────────────────────────────────────────────
+
+export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
+	id: integer("id").primaryKey(),
+	backgroundImageKey: text("background_image_key"),
+	backgroundBlur: integer("background_blur").notNull().default(24),
+	backgroundScale: integer("background_scale").notNull().default(112),
+	backgroundPositionX: integer("background_position_x").notNull().default(50),
+	backgroundPositionY: integer("background_position_y").notNull().default(50),
+	updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 // ─── 统计会话喵 ────────────────────────────────────────────────────────────────
 
 export const analyticsSessions = sqliteTable("analytics_sessions", {
@@ -133,6 +145,10 @@ export type NewBlogTag = typeof blogTags.$inferInsert;
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type NewBlogPost = typeof blogPosts.$inferInsert;
+
+export type SiteAppearanceSetting = typeof siteAppearanceSettings.$inferSelect;
+export type NewSiteAppearanceSetting =
+	typeof siteAppearanceSettings.$inferInsert;
 
 export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
 export type NewAnalyticsSession = typeof analyticsSessions.$inferInsert;

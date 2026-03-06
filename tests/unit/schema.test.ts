@@ -8,6 +8,7 @@ import {
 	blogPostTags,
 	blogTags,
 	loginAttempts,
+	siteAppearanceSettings,
 } from "../../src/db/schema";
 
 describe("数据库结构喵", () => {
@@ -77,5 +78,14 @@ describe("数据库结构喵", () => {
 		assert.ok(columns.includes("ipAddress"));
 		assert.ok(columns.includes("attempts"));
 		assert.ok(columns.includes("lockedUntil"));
+	});
+
+	test("siteAppearanceSettings 表包含必要字段喵", () => {
+		const columns = Object.keys(siteAppearanceSettings);
+		assert.ok(columns.includes("backgroundImageKey"));
+		assert.ok(columns.includes("backgroundBlur"));
+		assert.ok(columns.includes("backgroundScale"));
+		assert.ok(columns.includes("backgroundPositionX"));
+		assert.ok(columns.includes("backgroundPositionY"));
 	});
 });

@@ -2,6 +2,12 @@
 import BaseHead from "@/components/BaseHead.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
+import { getDb } from "@/lib/db";
+import {
+	buildBackgroundImageUrl,
+	DEFAULT_SITE_APPEARANCE,
+	getSiteAppearance,
+} from "@/lib/site-appearance";
 import { siteConfig } from "@/lib/types";
 import "@/styles/global.css";
 
@@ -13,6 +19,21 @@ interface Props {
 }
 
 const { title, description, image, canonicalUrl } = Astro.props;
+let siteAppearance = DEFAULT_SITE_APPEARANCE;
+
+try {
+	const { env } = Astro.locals.runtime;
+	siteAppearance = await getSiteAppearance(getDb(env.DB));
+} catch {
+	// D1 未绑定时使用默认外观喵
+}
+
+const backgroundImageUrl = buildBackgroundImageUrl(
+	siteAppearance.backgroundImageKey,
+);
+const backgroundImageStyle = backgroundImageUrl
+	? `object-position: ${siteAppearance.backgroundPositionX}% ${siteAppearance.backgroundPositionY}%; filter: blur(${siteAppearance.backgroundBlur}px) saturate(1.08); transform: scale(${siteAppearance.backgroundScale / 100});`
+	: "";
 ---
 
 <!doctype html>
@@ -27,6 +48,18 @@ const { title, description, image, canonicalUrl } = Astro.props;
 		<script is:inline src="/theme.js"></script>
 	</head>
 	<body class="site-shell">
+		<div class="site-background" aria-hidden="true" transition:persist>
+			{backgroundImageUrl && (
+				<img
+					src={backgroundImageUrl}
+					alt=""
+					class="site-background-image"
+					style={backgroundImageStyle}
+					loading="eager"
+					decoding="async"
+				/>
+			)}
+		</div>
 		<Header />
 		<main class="container site-main">
 			<slot />

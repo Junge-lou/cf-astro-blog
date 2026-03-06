@@ -215,6 +215,55 @@ pre code {
 	isolation: isolate;
 }
 
+.site-background {
+	position: fixed;
+	inset: 0;
+	z-index: -2;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.site-background::before,
+.site-background::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+.site-background::before {
+	background:
+		linear-gradient(180deg, rgba(237, 243, 248, 0.1), rgba(4, 13, 23, 0.3)),
+		radial-gradient(circle at top, rgba(255, 255, 255, 0.16), transparent 30%);
+	z-index: 1;
+}
+
+.site-background::after {
+	background:
+		radial-gradient(
+			circle at top left,
+			rgba(10, 132, 255, 0.18),
+			transparent 26%
+		),
+		radial-gradient(
+			circle at 80% 18%,
+			rgba(115, 120, 255, 0.16),
+			transparent 22%
+		),
+		linear-gradient(180deg, rgba(7, 17, 31, 0.28), rgba(7, 17, 31, 0.78));
+	z-index: 2;
+}
+
+.site-background-image {
+	position: absolute;
+	inset: -8%;
+	width: 116%;
+	height: 116%;
+	object-fit: cover;
+	opacity: 0.46;
+	transform-origin: center center;
+	will-change: transform, filter, object-position;
+}
+
 .site-main {
 	flex: 1;
 	display: grid;

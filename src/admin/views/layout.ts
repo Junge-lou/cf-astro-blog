@@ -265,6 +265,7 @@ export function adminLayout(
 		}
 
 		.alert-error { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+		.alert-success { background: rgba(34,197,94,0.12); color: var(--success); border: 1px solid rgba(34,197,94,0.2); }
 
 		@media (max-width: 768px) {
 			.sidebar { display: none; }
@@ -277,6 +278,7 @@ export function adminLayout(
 		<div class="sidebar-brand">管理后台</div>
 		<nav class="sidebar-nav">
 			<a href="/api/admin">控制台</a>
+			<a href="/api/admin/appearance">外观</a>
 			<a href="/api/admin/posts">文章</a>
 			<a href="/api/admin/media">媒体</a>
 			<a href="/api/admin/analytics">统计</a>

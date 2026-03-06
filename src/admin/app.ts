@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AdminAppEnv } from "./middleware/auth";
 import { analyticsRoutes } from "./routes/analytics";
+import { appearanceRoutes } from "./routes/appearance";
 import { authRoutes } from "./routes/auth";
 import { dashboardRoutes } from "./routes/dashboard";
 import { mediaRoutes } from "./routes/media";
@@ -71,6 +72,7 @@ app.use("*", async (c, next) => {
 
 app.route("/auth", authRoutes);
 app.route("/admin", dashboardRoutes);
+app.route("/admin/appearance", appearanceRoutes);
 app.route("/admin/posts", postsRoutes);
 app.route("/admin/media", mediaRoutes);
 app.route("/admin/analytics", analyticsRoutes);
