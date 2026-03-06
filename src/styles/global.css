@@ -290,6 +290,17 @@ pre code {
 	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+::view-transition-group(search-entry) {
+	animation-duration: 520ms;
+	animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(search-entry),
+::view-transition-new(search-entry) {
+	animation-duration: 520ms;
+	animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .container {
 	width: min(calc(100% - 2rem), var(--max-width));
 	margin-inline: auto;
