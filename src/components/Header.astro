@@ -6,73 +6,181 @@ const currentPath = Astro.url.pathname;
 ---
 
 <header class="site-header">
-	<nav class="container site-nav">
-		<a href="/" class="site-logo">{siteConfig.name}</a>
+	<nav class="container site-nav glass-panel" transition:persist>
+		<a href="/" class="site-brand" aria-label={siteConfig.name}>
+			<span class="site-brand-mark">E</span>
+			<span class="site-brand-copy">
+				<strong>{siteConfig.name}</strong>
+				<small>流畅、克制、持续更新的技术写作</small>
+			</span>
+		</a>
 		<ul class="nav-links">
 			<li>
-				<a href="/" class:list={[{ active: currentPath === "/" }]}>Home</a>
+				<a href="/" class:list={["nav-link", { active: currentPath === "/" }]}>首页</a>
 			</li>
 			<li>
-				<a href="/blog" class:list={[{ active: currentPath.startsWith("/blog") }]}>Blog</a>
+				<a href="/blog" class:list={["nav-link", { active: currentPath.startsWith("/blog") }]}>归档</a>
 			</li>
 			<li>
-				<a href="/search" class:list={[{ active: currentPath === "/search" }]}>Search</a>
+				<a href="/search" class:list={["nav-link", { active: currentPath === "/search" }]}>搜索</a>
 			</li>
 		</ul>
-		<ThemeToggle />
+		<div class="nav-actions">
+			<a href="/rss.xml" class="nav-link nav-link-ghost">RSS</a>
+			<ThemeToggle />
+		</div>
 	</nav>
 </header>
 
 <style>
 	.site-header {
-		border-bottom: 1px solid var(--color-border);
-		background-color: var(--color-bg);
 		position: sticky;
-		top: 0;
-		z-index: 100;
+		top: 1rem;
+		z-index: 30;
+		padding-inline: 0.5rem;
 	}
 
 	.site-nav {
 		display: flex;
 		align-items: center;
-		gap: var(--space-lg);
-		padding-block: var(--space-md);
+		justify-content: space-between;
+		gap: var(--space-md);
+		padding: 0.8rem 1rem;
 	}
 
-	.site-logo {
-		font-weight: 700;
-		font-size: var(--font-size-lg);
-		color: var(--color-text);
-		text-decoration: none;
+	.site-brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.85rem;
+		min-width: 0;
 	}
 
-	.site-logo:hover {
-		color: var(--color-accent);
-		text-decoration: none;
-	}
-
-	.nav-links {
+	.site-brand-mark {
 		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.8rem;
+		height: 2.8rem;
+		border-radius: 22px;
+		background:
+			linear-gradient(135deg, rgba(74, 168, 255, 0.92), rgba(10, 132, 255, 0.74));
+		color: #ffffff;
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		box-shadow: 0 18px 36px -24px rgba(10, 132, 255, 0.72);
+	}
+
+	.site-brand-copy {
+		display: grid;
+		gap: 0.18rem;
+		min-width: 0;
+	}
+
+	.site-brand-copy strong {
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--color-text);
+		letter-spacing: -0.02em;
+	}
+
+	.site-brand-copy small {
+		color: var(--color-text-muted);
+		font-size: 0.78rem;
+		white-space: nowrap;
+	}
+
+	.nav-links,
+	.nav-actions {
+		display: inline-flex;
+		align-items: center;
 		gap: var(--space-md);
 		list-style: none;
-		margin-left: auto;
 	}
 
-	.nav-links a {
+	.nav-link {
 		color: var(--color-text-secondary);
-		font-size: var(--font-size-sm);
-		padding: var(--space-xs) var(--space-sm);
-		border-radius: var(--radius-sm);
-		transition: color var(--transition), background-color var(--transition);
+		font-size: 0.92rem;
+		padding: 0.72rem 1rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid transparent;
+		background: transparent;
+		transition:
+			color var(--transition),
+			background-color var(--transition),
+			border-color var(--transition),
+			transform var(--transition);
 	}
 
-	.nav-links a:hover,
-	.nav-links a.active {
+	.nav-link:hover,
+	.nav-link.active {
 		color: var(--color-accent);
-		text-decoration: none;
+		background: var(--color-accent-soft);
+		border-color: rgba(10, 132, 255, 0.18);
 	}
 
-	.nav-links a.active {
-		background-color: var(--color-bg-secondary);
+	.nav-link-ghost {
+		border-color: var(--color-border);
+		background: var(--color-bg-tertiary);
+	}
+
+	.nav-link:hover,
+	.nav-link.active,
+	.nav-link-ghost:hover {
+		transform: translateY(-1px);
+	}
+
+	@media (max-width: 960px) {
+		.site-header {
+			top: 0.5rem;
+		}
+
+		.site-nav {
+			flex-wrap: wrap;
+			justify-content: center;
+			border-radius: 32px;
+		}
+
+		.site-brand {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.site-brand-copy {
+			justify-items: center;
+		}
+
+		.site-brand-copy small {
+			white-space: normal;
+			text-align: center;
+		}
+
+		.nav-links {
+			order: 2;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+
+		.nav-actions {
+			order: 3;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.site-nav {
+			padding: 0.8rem;
+		}
+
+		.nav-links,
+		.nav-actions {
+			width: 100%;
+			justify-content: center;
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		.nav-link {
+			padding-inline: 0.88rem;
+		}
 	}
 </style>

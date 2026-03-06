@@ -1,203 +1,232 @@
--- Seed data for CF Astro Blog Starter demo
--- Run with: wrangler d1 execute blog-db --remote --file=scripts/seed.sql
+-- 本地演示种子数据
+-- 使用方式：wrangler d1 execute DB --local --file=scripts/seed.sql
 
--- Categories
-INSERT INTO blog_categories (name, slug, description) VALUES
-  ('Tutorials', 'tutorials', 'Step-by-step guides and walkthroughs'),
-  ('Architecture', 'architecture', 'System design and architecture decisions'),
-  ('Cloudflare', 'cloudflare', 'Tips and tricks for building on Cloudflare');
+DELETE FROM blog_post_tags;
+DELETE FROM blog_posts;
+DELETE FROM blog_tags;
+DELETE FROM blog_categories;
+DELETE FROM sqlite_sequence WHERE name IN ('blog_posts', 'blog_categories', 'blog_tags');
 
--- Tags
-INSERT INTO blog_tags (name, slug) VALUES
-  ('Astro', 'astro'),
-  ('Hono', 'hono'),
-  ('Cloudflare Workers', 'cloudflare-workers'),
-  ('D1', 'd1'),
-  ('Drizzle ORM', 'drizzle-orm'),
-  ('TypeScript', 'typescript'),
-  ('SSR', 'ssr'),
-  ('HTMX', 'htmx');
+-- 分类
+INSERT INTO blog_categories (id, name, slug, description) VALUES
+  (1, '教程', 'tutorials', '一步一步讲清楚搭建过程与关键选择'),
+  (2, '架构', 'architecture', '围绕系统设计、边界拆分和运行方式的说明'),
+  (3, 'Cloudflare', 'cloudflare', '关于 Workers、D1、R2 和边缘部署的实践记录');
 
--- Post 1: Getting Started
-INSERT INTO blog_posts (title, slug, content, excerpt, status, published_at, meta_title, meta_description, category_id, author_name) VALUES (
-  'Getting Started with CF Astro Blog Starter',
+-- 标签
+INSERT INTO blog_tags (id, name, slug) VALUES
+  (1, 'Astro', 'astro'),
+  (2, 'Hono', 'hono'),
+  (3, 'Cloudflare Workers', 'cloudflare-workers'),
+  (4, 'D1', 'd1'),
+  (5, 'Drizzle ORM', 'drizzle-orm'),
+  (6, 'TypeScript', 'typescript'),
+  (7, '服务端渲染', 'ssr'),
+  (8, 'HTMX', 'htmx');
+
+-- 文章 1：快速开始
+INSERT INTO blog_posts (
+  id,
+  title,
+  slug,
+  content,
+  excerpt,
+  status,
+  published_at,
+  meta_title,
+  meta_description,
+  category_id,
+  author_name
+) VALUES (
+  1,
+  '用 Astro、Hono 和 Cloudflare 搭一个带后台的博客',
   'getting-started',
-  '## What is CF Astro Blog Starter?
+  '## 这套模板解决了什么问题
 
-CF Astro Blog Starter is an opinionated blog template that combines **Astro** for the public-facing site with **Hono** for the admin panel and API — all running on **Cloudflare Workers**.
+如果你想要一个真正能长期维护的个人博客，通常会同时在意三件事：
 
-### Why this stack?
+- 前台要足够轻，读文章时不能像在逛后台系统
+- 后台要能直接写内容，不想每次都手动发版
+- 部署要简单，最好能直接跑在边缘网络上
 
-- **Astro** gives you fast, SEO-friendly SSR pages with minimal JavaScript
-- **Hono** provides a lightweight, type-safe API framework designed for edge runtimes
-- **Cloudflare Workers** means global edge deployment with zero cold starts
-- **D1** (SQLite) keeps your data close to your users
-- **R2** handles media without egress fees
+这个模板把这三件事拼到了一起。前台交给 **Astro**，后台和接口交给 **Hono**，运行环境是 **Cloudflare Workers**。
 
-### Quick Setup
+## 为什么这样组合
+
+**Astro** 负责公开页面，页面结构轻、生成结果干净，适合博客这种以阅读为主的站点。
+
+**Hono** 负责后台与 API，路由简单、类型清楚，也很适合跑在 Workers 这种边缘运行时里。
+
+**Cloudflare** 提供了完整的底层能力：
+
+- **Workers** 负责执行服务端逻辑
+- **D1** 存文章和结构化数据
+- **R2** 存图片和媒体资源
+- **KV** 放会话和一些轻量缓存
+
+## 快速启动
 
 ```bash
-# Clone the repo
-git clone https://github.com/h1n054ur/cf-astro-blog-starter.git
-cd cf-astro-blog-starter
-
-# Install dependencies
-bun install
-
-# Start the dev server
-bun run dev
+npm install
+cp .dev.vars.example .dev.vars
+npm run db:migrate:local
+npm run db:seed:local
+npm run dev
 ```
 
-Or click the **Deploy to Cloudflare** button in the repo to get running in under a minute.
+如果你只想先看前台页面，上面这些就够了。等确认界面方向以后，再去调整域名、图片和后台权限。
 
-### What you get out of the box
+## 开箱即用的能力
 
-1. **Blog with SSR** — pages rendered at the edge, querying D1 directly
-2. **Admin panel** — create and manage posts at `/api/admin`
-3. **Markdown editor** — write posts in markdown with live preview
-4. **Media manager** — upload images to R2 from the admin
-5. **Analytics** — built-in session and pageview tracking
-6. **Dark mode** — automatic system preference detection with manual toggle
-7. **RSS + Sitemap** — dynamic feeds generated from your content
-8. **Search** — server-side full-text search across posts
+1. 公开博客首页、归档页、详情页和搜索页
+2. `/api/admin` 后台管理入口
+3. Markdown 写作与预览
+4. RSS 与站点地图
+5. 可继续扩展的媒体管理与统计能力
 
-### Next steps
+## 建议的使用方式
 
-Log into the admin panel at `/api/auth/login` and create your first post. The default credentials are in your environment secrets.',
-  'A complete guide to setting up and deploying your blog with Astro, Hono, and Cloudflare Workers.',
+先把内容模型和前台气质定下来，再去追求很重的后台能力。对个人博客来说，界面表达和写作节奏往往比功能数量更重要。',
+  '一套真正能跑在 Cloudflare 上、同时兼顾前台阅读体验和后台编辑体验的博客起步方案。',
   'published',
   '2026-02-09T10:00:00.000Z',
-  'Getting Started with CF Astro Blog Starter',
-  'Learn how to set up and deploy a full-featured blog using Astro, Hono, and Cloudflare Workers with D1, R2, and KV.',
+  '用 Astro、Hono 和 Cloudflare 搭一个带后台的博客',
+  '从本地开发到边缘部署，快速理解这套博客模板的组成方式与启动流程。',
   1,
-  'Admin'
+  'Eric'
 );
 
--- Post 2: Architecture Deep Dive
-INSERT INTO blog_posts (title, slug, content, excerpt, status, published_at, meta_title, meta_description, category_id, author_name) VALUES (
-  'Architecture: How Astro and Hono Work Together',
+-- 文章 2：架构拆解
+INSERT INTO blog_posts (
+  id,
+  title,
+  slug,
+  content,
+  excerpt,
+  status,
+  published_at,
+  meta_title,
+  meta_description,
+  category_id,
+  author_name
+) VALUES (
+  2,
+  'Astro 和 Hono 为什么适合放在同一个 Workers 项目里',
   'architecture-astro-hono',
-  '## The Dual-Framework Approach
+  '## 双框架并存并不冲突
 
-This starter uses a pattern where two frameworks share the same deployment:
+很多人看到一个项目里同时有 Astro 和 Hono，会第一反应觉得复杂。其实这里的关键不是技术越多越好，而是职责是否足够清楚。
 
-- **Astro** handles all public-facing pages (homepage, blog listing, individual posts, search, RSS, sitemap)
-- **Hono** handles the admin panel, authentication, and API endpoints
+- **Astro** 只负责公开访问的页面
+- **Hono** 只负责后台、认证和 API
 
-They connect through a single catch-all route at `src/pages/api/[...route].ts`.
+它们最后共享同一套 Cloudflare 绑定，但各自只处理自己擅长的那一部分。
 
-### How the routing works
+## 请求是怎么流转的
 
-```
-Request comes in
-├── /                  → Astro SSR (index.astro)
-├── /blog              → Astro SSR (blog/index.astro)
-├── /blog/:slug        → Astro SSR (blog/[slug].astro)
-├── /search            → Astro SSR (search.astro)
-├── /rss.xml           → Astro endpoint
-├── /sitemap.xml       → Astro endpoint
-└── /api/*             → Hono sub-app
-    ├── /api/auth/*    → Login, logout, verify
-    ├── /api/admin/*   → Dashboard, posts, media, analytics
-    └── /api/health    → Health check
+一次请求进来以后，大致会落到下面两类入口里：
+
+```text
+/                → 首页
+/blog            → 归档页
+/blog/:slug      → 文章详情
+/search          → 搜索页
+/rss.xml         → 订阅源
+/sitemap.xml     → 站点地图
+/api/*           → 后台与接口
 ```
 
-### Shared resources
+这意味着前台阅读链路和后台管理链路天然分开，页面不会为了后台能力背上过重的客户端负担。
 
-Both frameworks access the same Cloudflare bindings:
+## 共享资源层
 
-| Binding | Type | Used by |
-|---------|------|---------|
-| `DB` | D1 | Astro (read posts) + Hono (CRUD) |
-| `MEDIA_BUCKET` | R2 | Hono (upload/serve media) |
-| `SESSION` | KV | Astro sessions + Hono auth |
+无论是 Astro 还是 Hono，底层都读同一套资源：
 
-### Why not just use one framework?
+| 绑定 | 用途 |
+| --- | --- |
+| `DB` | 文章、分类、标签、统计数据 |
+| `MEDIA_BUCKET` | 图片与媒体资源 |
+| `SESSION` | 登录态与轻量缓存 |
 
-Astro excels at rendering content pages with minimal JS overhead. Hono excels at building APIs and server-rendered admin UIs with HTMX. Using both lets each framework do what it does best.
+这种结构的好处在于：前台和后台看起来像两个子系统，但数据源并没有分裂。
 
-The admin panel uses **HTMX** for interactivity — form submissions, partial page updates, inline editing — without shipping a frontend framework to the browser.
+## 为什么不只用一个框架
 
-### Database layer
+如果只用 Astro，你还是能做后台，但管理端交互和接口组织会越来越拧巴。
 
-**Drizzle ORM** provides type-safe queries against D1 (SQLite). The schema lives in `src/db/schema.ts` with 7 tables:
+如果只用 Hono，也不是不行，但公开页面排版与内容组织会少一点 Astro 这种内容站友好的表达能力。
 
-- `blog_posts` — the main content table
-- `blog_categories` — hierarchical categories
-- `blog_tags` + `blog_post_tags` — many-to-many tagging
-- `analytics_sessions` + `analytics_events` — privacy-friendly analytics
-- `login_attempts` — rate limiting for auth
-
-Migrations are managed with `drizzle-kit` and applied via `wrangler d1 migrations apply`.',
-  'A deep dive into how Astro and Hono coexist in a single Cloudflare Workers deployment, sharing D1, R2, and KV bindings.',
+所以这里真正的设计目标不是炫技，而是让公开内容和后台管理各自足够顺手。',
+  '把公开页面和后台接口拆到不同职责里，反而让整个 Workers 项目更清楚、更稳。',
   'published',
   '2026-02-09T14:00:00.000Z',
-  'Architecture: How Astro and Hono Work Together on Workers',
-  'Understand the dual-framework architecture of CF Astro Blog Starter — Astro for public pages, Hono for admin and API.',
+  'Astro 和 Hono 为什么适合放在同一个 Workers 项目里',
+  '从路由、绑定和职责边界三个角度，理解双框架在同一个边缘项目里的协作方式。',
   2,
-  'Admin'
+  'Eric'
 );
 
--- Post 3: Building on Cloudflare
-INSERT INTO blog_posts (title, slug, content, excerpt, status, published_at, meta_title, meta_description, category_id, author_name) VALUES (
-  'Why Cloudflare Workers for Your Blog',
+-- 文章 3：Cloudflare 价值
+INSERT INTO blog_posts (
+  id,
+  title,
+  slug,
+  content,
+  excerpt,
+  status,
+  published_at,
+  meta_title,
+  meta_description,
+  category_id,
+  author_name
+) VALUES (
+  3,
+  '为什么个人博客放在 Cloudflare Workers 上会很舒服',
   'why-cloudflare-workers',
-  '## The Case for Edge-First Blogging
+  '## 边缘优先的体验到底好在哪
 
-Traditional blog platforms run on a central server. Every request travels to that server, gets processed, and travels back. With Cloudflare Workers, your blog runs in **300+ data centers worldwide** — the code executes in the data center closest to your reader.
+个人博客最怕两种情况：
 
-### What Cloudflare gives you
+- 写作流程太重，更新一次像在维护系统
+- 访问链路太脆，随便加一点功能就要担心性能和账单
 
-**Workers** — Your application code runs at the edge. No cold starts, no container spin-up, no regional failover to worry about. Sub-millisecond startup times.
+Cloudflare Workers 的好处不是神秘，而是足够直接：部署简单、启动快、离读者近。
 
-**D1** — SQLite at the edge. Your blog posts, categories, and analytics data live in a globally distributed database. Reads are fast because the data is close to your users.
+## 这套组合分别解决什么
 
-**R2** — Object storage with zero egress fees. Upload images and files from the admin panel, serve them directly. No surprise bandwidth bills.
+**Workers** 负责执行逻辑，不需要自己管服务器和容器。
 
-**KV** — Key-value storage for sessions and caching. Fast reads from the nearest edge location.
+**D1** 让结构化内容可以直接查询，不需要回到传统的重型数据库配置。
 
-### Performance in practice
+**R2** 适合存图片与附件，尤其是博客这类读多写少的场景。
 
-A typical page load on this blog:
+**KV** 很适合做会话、限流计数和轻量缓存。
 
-1. Request hits the nearest Cloudflare data center (~1-10ms latency)
-2. Worker executes, queries D1 for the post content (~5-15ms)
-3. Astro renders the HTML (~2-5ms)
-4. Response is sent back (~1-10ms)
+## 对博客来说，真正有价值的是这些
 
-**Total: 10-40ms** for a fully server-rendered page. No static site generation needed, no build step for content changes, no cache invalidation complexity.
+1. 文章发布后不必重新做一整套重部署编排
+2. 搜索、后台、内容页能共享同一套边缘环境
+3. 流量不大的时候成本非常友好
+4. 想继续扩展 CMS 能力时，底层能力已经在场
 
-### Cost
+## 适合谁
 
-For most blogs, the free tier covers everything:
+这套方案尤其适合两类人：
 
-| Service | Free Tier |
-|---------|-----------|
-| Workers | 100,000 requests/day |
-| D1 | 5M rows read, 100K writes/day |
-| R2 | 10 GB storage, 10M reads/month |
-| KV | 100K reads/day |
+- 想自己掌控站点，又不想维护传统 VPS 的个人开发者
+- 希望博客可以慢慢长成完整内容系统的人
 
-You could run a blog with thousands of daily readers without paying a cent.
-
-### Getting started
-
-The Deploy to Cloudflare button in the [repository](https://github.com/h1n054ur/cf-astro-blog-starter) provisions all the resources automatically. One click and you have a fully functional blog with admin panel, analytics, and media management.',
-  'Why edge computing with Cloudflare Workers, D1, R2, and KV is an ideal foundation for a modern blog.',
+如果你后面要接自动化写作、MCP、图片管理或者更细的权限控制，Cloudflare 这套底座也比较容易继续往上长。',
+  '对个人博客来说，Cloudflare Workers 不是噱头，而是一种部署、性能和扩展性都比较平衡的底座。',
   'published',
   '2026-02-10T08:00:00.000Z',
-  'Why Cloudflare Workers for Your Blog',
-  'Explore the benefits of running your blog on Cloudflare Workers with D1, R2, and KV — global edge deployment, zero cold starts, and a generous free tier.',
+  '为什么个人博客放在 Cloudflare Workers 上会很舒服',
+  '从部署体验、运行成本和后续扩展三个角度，解释为什么个人博客很适合跑在 Cloudflare Workers 上。',
   3,
-  'Admin'
+  'Eric'
 );
 
--- Post-Tag associations
--- Post 1 (getting-started, id=1): Astro, Hono, Cloudflare Workers, D1, TypeScript
+-- 文章与标签关联
 INSERT INTO blog_post_tags (post_id, tag_id) VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 6);
-
--- Post 2 (architecture, id=2): Astro, Hono, SSR, HTMX, Drizzle ORM
 INSERT INTO blog_post_tags (post_id, tag_id) VALUES (2, 1), (2, 2), (2, 7), (2, 8), (2, 5);
-
--- Post 3 (why-cloudflare, id=3): Cloudflare Workers, D1, SSR
 INSERT INTO blog_post_tags (post_id, tag_id) VALUES (3, 3), (3, 4), (3, 7);

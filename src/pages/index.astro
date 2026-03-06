@@ -4,6 +4,7 @@ import PostCard from "@/components/PostCard.astro";
 import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
+import { formatDate } from "@/lib/format";
 import { siteConfig } from "@/lib/types";
 
 let recentPosts: Array<{
@@ -18,7 +19,7 @@ let recentPosts: Array<{
 try {
 	const { env } = Astro.locals.runtime;
 	const db = getDb(env.DB);
-	const rows = await db
+	recentPosts = await db
 		.select({
 			title: blogPosts.title,
 			slug: blogPosts.slug,
@@ -31,42 +32,166 @@ try {
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
 		.where(eq(blogPosts.status, "published"))
 		.orderBy(desc(blogPosts.publishedAt))
-		.limit(5);
-	recentPosts = rows;
+		.limit(6);
 } catch {
-	// D1 not bound yet — render without posts
+	// D1 未绑定时首页退化为空列表
 }
+
+const latestUpdate = recentPosts[0]?.publishedAt
+	? formatDate(recentPosts[0].publishedAt)
+	: "等待第一篇正式发布的文章";
 ---
 
 <Base title={siteConfig.name} description={siteConfig.description}>
-	<section style="margin-bottom: var(--space-3xl);">
-		<h1 style="font-size: var(--font-size-4xl); margin-bottom: var(--space-md);">
-			{siteConfig.name}
-		</h1>
-		<p style="font-size: var(--font-size-lg); color: var(--color-text-secondary); max-width: var(--max-width-prose);">
-			{siteConfig.description}
+	<section class="home-hero glass-panel">
+		<div class="home-hero-main">
+			<span class="section-kicker">云端记录</span>
+			<h1 class="page-title">把工程判断写清楚，把技术细节写漂亮。</h1>
+			<p class="page-intro">
+				这里记录 Cloudflare、前端工程、调试过程和系统设计里那些值得反复回看的瞬间。
+				界面会继续打磨，但内容先要足够清晰、足够耐读。
+			</p>
+			<div class="hero-actions">
+				<a href="/blog" class="button">进入归档</a>
+				<a href="/search" class="button button-secondary">站内搜索</a>
+			</div>
+		</div>
+		<div class="home-hero-side">
+			<div class="hero-metric">
+				<span>最近更新</span>
+				<strong>{latestUpdate}</strong>
+			</div>
+			<div class="hero-metric">
+				<span>关注主题</span>
+				<strong>Cloudflare · 前端工程 · 架构细节</strong>
+			</div>
+			<div class="hero-metric">
+				<span>写作方式</span>
+				<strong>慢一点，但尽量长期有效。</strong>
+			</div>
+		</div>
+	</section>
+
+	<section class="section-head">
+		<div>
+			<span class="section-kicker">最近更新</span>
+			<h2 class="section-heading">最近更新</h2>
+		</div>
+		<p class="section-subheading">
+			保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。
 		</p>
 	</section>
 
-	<section>
-		<h2 style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Recent Posts</h2>
-		{recentPosts.length > 0 ? (
-			<div style="display: grid; gap: var(--space-lg);">
-				{recentPosts.map((post) => (
-					<PostCard
-						title={post.title}
-						slug={post.slug}
-						excerpt={post.excerpt}
-						publishedAt={post.publishedAt}
-						authorName={post.authorName}
-						categoryName={post.categoryName}
-					/>
-				))}
-			</div>
-		) : (
-			<p style="color: var(--color-text-muted);">
-				No posts yet. Create your first post from the <a href="/api/admin">admin panel</a>.
-			</p>
-		)}
-	</section>
+	{recentPosts.length > 0 ? (
+		<div class="home-grid">
+			{recentPosts.map((post) => (
+				<PostCard
+					title={post.title}
+					slug={post.slug}
+					excerpt={post.excerpt}
+					publishedAt={post.publishedAt}
+					authorName={post.authorName}
+					categoryName={post.categoryName}
+				/>
+			))}
+		</div>
+	) : (
+		<div class="empty-state glass-panel">
+			<p>还没有公开文章，先去后台发布第一篇内容。</p>
+		</div>
+	)}
 </Base>
+
+<style>
+	.home-hero {
+		display: grid;
+		grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
+		gap: clamp(1.4rem, 2vw, 2.2rem);
+		padding: clamp(1.5rem, 1rem + 3vw, 3rem);
+	}
+
+	.home-hero-main,
+	.home-hero-side {
+		display: grid;
+		align-content: start;
+		gap: 1.1rem;
+	}
+
+	.home-hero-main .page-title {
+		max-width: 12ch;
+		font-size: clamp(2.8rem, 2.1rem + 2vw, 4.9rem);
+		line-height: 0.98;
+	}
+
+	.hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.8rem;
+		margin-top: 0.4rem;
+	}
+
+	.home-hero-side {
+		padding: 0.5rem;
+		border-radius: calc(var(--radius-xl) - 10px);
+		background: linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0.08),
+			rgba(255, 255, 255, 0.02)
+		);
+	}
+
+	.hero-metric {
+		display: grid;
+		gap: 0.35rem;
+		padding: 1.15rem 1.2rem;
+		border-radius: 26px;
+		background: var(--color-bg-tertiary);
+		border: 1px solid var(--color-border);
+	}
+
+	.hero-metric span {
+		font-size: 0.84rem;
+		color: var(--color-text-muted);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.hero-metric strong {
+		font-size: 1rem;
+		line-height: 1.55;
+		color: var(--color-text);
+		font-weight: 650;
+	}
+
+	.section-head {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.section-head .section-kicker {
+		margin-bottom: 0.8rem;
+	}
+
+	.home-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1.2rem;
+	}
+
+	@media (max-width: 960px) {
+		.home-hero {
+			grid-template-columns: 1fr;
+		}
+
+		.section-head {
+			flex-direction: column;
+			align-items: start;
+		}
+
+		.home-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

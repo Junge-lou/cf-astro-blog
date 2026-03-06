@@ -45,17 +45,35 @@ try {
 		.limit(limit)
 		.offset(offset);
 } catch {
-	// D1 not bound yet
+	// D1 未绑定时回退为空列表
 }
 
 const totalPages = Math.ceil(totalPosts / limit);
 ---
 
-<Base title="Blog" description="All blog posts">
-	<h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-lg);">Blog</h1>
+<Base title="归档" description="按时间顺序浏览全部已发布文章">
+	<section class="archive-hero glass-panel">
+		<div class="archive-hero-copy">
+			<span class="section-kicker">归档目录</span>
+			<h1 class="page-title">归档</h1>
+			<p class="page-intro">
+				所有已发布文章都按时间顺序排列在这里，适合顺着浏览，也适合翻到某篇旧文重新确认一个判断。
+			</p>
+		</div>
+		<div class="archive-hero-meta">
+			<div class="hero-summary">
+				<span>已发布文章</span>
+				<strong>{totalPosts}</strong>
+			</div>
+			<div class="hero-summary">
+				<span>当前页码</span>
+				<strong>{page} / {Math.max(totalPages, 1)}</strong>
+			</div>
+		</div>
+	</section>
 
 	{posts.length > 0 ? (
-		<div style="display: grid; gap: var(--space-lg);">
+		<div class="archive-grid">
 			{posts.map((post) => (
 				<PostCard
 					title={post.title}
@@ -68,20 +86,108 @@ const totalPages = Math.ceil(totalPosts / limit);
 			))}
 		</div>
 	) : (
-		<p style="color: var(--color-text-muted);">No posts published yet.</p>
+		<div class="empty-state glass-panel">
+			<p>还没有已发布文章。</p>
+		</div>
 	)}
 
 	{totalPages > 1 && (
-		<nav style="display: flex; gap: var(--space-md); justify-content: center; margin-top: var(--space-2xl);" aria-label="Pagination">
-			{page > 1 && (
-				<a href={`/blog?page=${page - 1}`}>Previous</a>
+		<nav class="pagination glass-panel" aria-label="分页">
+			{page > 1 ? (
+				<a href={`/blog?page=${page - 1}`} class="button button-secondary">上一页</a>
+			) : (
+				<span class="pagination-placeholder" />
 			)}
-			<span style="color: var(--color-text-muted);">
-				Page {page} of {totalPages}
-			</span>
-			{page < totalPages && (
-				<a href={`/blog?page=${page + 1}`}>Next</a>
+			<span class="pagination-status">第 {page} 页，共 {totalPages} 页</span>
+			{page < totalPages ? (
+				<a href={`/blog?page=${page + 1}`} class="button button-secondary">下一页</a>
+			) : (
+				<span class="pagination-placeholder" />
 			)}
 		</nav>
 	)}
 </Base>
+
+<style>
+	.archive-hero {
+		display: grid;
+		grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.7fr);
+		gap: 1.2rem;
+		padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+	}
+
+	.archive-hero-copy {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.archive-hero-meta {
+		display: grid;
+		gap: 0.9rem;
+	}
+
+	.hero-summary {
+		display: grid;
+		gap: 0.35rem;
+		padding: 1.15rem 1.2rem;
+		border-radius: 28px;
+		background: var(--color-bg-tertiary);
+		border: 1px solid var(--color-border);
+	}
+
+	.hero-summary span {
+		font-size: 0.84rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--color-text-muted);
+	}
+
+	.hero-summary strong {
+		font-size: clamp(1.5rem, 1.2rem + 1vw, 2.1rem);
+		color: var(--color-text);
+		letter-spacing: -0.04em;
+	}
+
+	.archive-grid {
+		display: grid;
+		gap: 1.2rem;
+	}
+
+	.pagination {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.2rem;
+	}
+
+	.pagination-status {
+		text-align: center;
+		color: var(--color-text-muted);
+		font-size: 0.92rem;
+	}
+
+	.pagination .button:last-child {
+		justify-self: end;
+	}
+
+	.pagination-placeholder {
+		display: block;
+		min-height: 1px;
+	}
+
+	@media (max-width: 840px) {
+		.archive-hero {
+			grid-template-columns: 1fr;
+		}
+
+		.pagination {
+			grid-template-columns: 1fr;
+		}
+
+		.pagination .button:last-child,
+		.pagination .button:first-child {
+			justify-self: stretch;
+		}
+	}
+</style>

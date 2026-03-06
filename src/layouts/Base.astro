@@ -2,6 +2,7 @@
 import BaseHead from "@/components/BaseHead.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
+import { siteConfig } from "@/lib/types";
 import "@/styles/global.css";
 
 interface Props {
@@ -15,7 +16,7 @@ const { title, description, image, canonicalUrl } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={siteConfig.language}>
 	<head>
 		<BaseHead
 			title={title}
@@ -25,9 +26,9 @@ const { title, description, image, canonicalUrl } = Astro.props;
 		/>
 		<script is:inline src="/theme.js"></script>
 	</head>
-	<body>
+	<body class="site-shell">
 		<Header />
-		<main class="container" style="flex: 1; padding-block: var(--space-2xl);">
+		<main class="container site-main">
 			<slot />
 		</main>
 		<Footer />

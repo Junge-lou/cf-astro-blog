@@ -1,7 +1,9 @@
 ---
+import { formatDate } from "@/lib/format";
 import Base from "./Base.astro";
 
 interface Props {
+	slug: string;
 	title: string;
 	description?: string;
 	image?: string;
@@ -12,6 +14,7 @@ interface Props {
 }
 
 const {
+	slug,
 	title,
 	description,
 	image,
@@ -21,25 +24,89 @@ const {
 	categoryName,
 } = Astro.props;
 
-const formattedDate = publishedAt
-	? new Date(publishedAt).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-		})
-	: null;
+const formattedDate = publishedAt ? formatDate(publishedAt) : null;
 ---
 
 <Base title={title} description={description} image={image} canonicalUrl={canonicalUrl}>
-	<article class="prose" style="margin-inline: auto;">
-		<header style="margin-bottom: var(--space-2xl);">
-			<h1 style="margin-top: 0;">{title}</h1>
-			<div style="display: flex; gap: var(--space-md); color: var(--color-text-muted); font-size: var(--font-size-sm);">
-				{formattedDate && <time datetime={publishedAt}>{formattedDate}</time>}
-				{authorName && <span>by {authorName}</span>}
-				{categoryName && <span>in {categoryName}</span>}
+	<article class="article-shell">
+		<header class="article-hero glass-panel" transition:name={`card-${slug}`}>
+			<a href="/blog" class="article-back">返回归档</a>
+			<div class="article-kicker">精选文章</div>
+			<h1 class="article-title" transition:name={`title-${slug}`}>{title}</h1>
+			{description && (
+				<p class="article-summary" transition:name={`summary-${slug}`}>
+					{description}
+				</p>
+			)}
+			<div class="pill-row">
+				{formattedDate && <time class="pill" datetime={publishedAt}>{formattedDate}</time>}
+				{authorName && <span class="pill">{authorName}</span>}
+				{categoryName && <span class="pill">{categoryName}</span>}
 			</div>
 		</header>
-		<slot />
+		<div class="article-body glass-panel">
+			<div class="prose article-prose">
+				<slot />
+			</div>
+		</div>
 	</article>
 </Base>
+
+<style>
+	.article-shell {
+		display: grid;
+		gap: var(--space-xl);
+	}
+
+	.article-hero,
+	.article-body {
+		padding: clamp(1.4rem, 1rem + 2vw, 2.5rem);
+	}
+
+	.article-hero {
+		display: grid;
+		gap: 1rem;
+	}
+
+	.article-back {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: fit-content;
+		padding: 0.58rem 0.92rem;
+		border-radius: var(--radius-pill);
+		background: var(--color-bg-tertiary);
+		border: 1px solid var(--color-border);
+		color: var(--color-text-secondary);
+		font-size: 0.88rem;
+	}
+
+	.article-kicker {
+		font-size: 0.82rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--color-accent);
+	}
+
+	.article-title {
+		font-size: clamp(2.4rem, 1.8rem + 2vw, 4.4rem);
+		line-height: 1.02;
+		letter-spacing: -0.05em;
+	}
+
+	.article-summary {
+		max-width: 42rem;
+		font-size: 1.04rem;
+		line-height: 1.9;
+		color: var(--color-text-secondary);
+	}
+
+	.article-body {
+		margin-inline: auto;
+		width: 100%;
+	}
+
+	.article-prose {
+		margin-inline: auto;
+	}
+</style>

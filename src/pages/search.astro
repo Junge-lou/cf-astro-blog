@@ -39,26 +39,37 @@ if (query) {
 			.orderBy(desc(blogPosts.publishedAt))
 			.limit(20);
 	} catch {
-		// D1 未绑定时回退为空结果喵
+		// D1 未绑定时回退为空结果
 	}
 }
 ---
 
-<Base title="Search" description="Search blog posts">
-	<h1 style="font-size: var(--font-size-3xl); margin-bottom: var(--space-lg);">Search</h1>
+<Base title="搜索" description="按标题、摘要或关键词检索文章">
+	<section class="search-hero glass-panel">
+		<span class="section-kicker">站内检索</span>
+		<h1 class="page-title">搜索</h1>
+		<p class="page-intro">
+			如果你已经记得一个关键词，直接从这里跳到对应文章会比翻归档更快。
+		</p>
+		<SearchBox />
+	</section>
 
-	<SearchBox />
+	{query ? (
+		<section class="search-results-block">
+			<div class="section-head">
+				<div>
+					<h2 class="section-heading">搜索结果</h2>
+					<p class="section-subheading">关键词：{query}</p>
+				</div>
+				<p class="results-summary">
+					{results.length > 0
+						? `共找到 ${results.length} 篇相关文章`
+						: `没有找到与“${query}”相关的内容`}
+				</p>
+			</div>
 
-	{query && (
-		<div style="margin-top: var(--space-xl);">
-			<p style="color: var(--color-text-muted); margin-bottom: var(--space-lg);">
-				{results.length > 0
-					? `Found ${results.length} result${results.length === 1 ? "" : "s"} for "${query}"`
-					: `No results found for "${query}"`}
-			</p>
-
-			{results.length > 0 && (
-				<div style="display: grid; gap: var(--space-lg);">
+			{results.length > 0 ? (
+				<div class="search-grid">
 					{results.map((post) => (
 						<PostCard
 							title={post.title}
@@ -70,7 +81,52 @@ if (query) {
 						/>
 					))}
 				</div>
+			) : (
+				<div class="empty-state glass-panel">
+					<p>换一个更具体的词，或者直接去归档页浏览最近更新。</p>
+				</div>
 			)}
+		</section>
+	) : (
+		<div class="empty-state glass-panel">
+			<p>输入关键词后，这里会显示相关文章结果。</p>
 		</div>
 	)}
 </Base>
+
+<style>
+	.search-hero {
+		display: grid;
+		gap: 1rem;
+		padding: clamp(1.5rem, 1rem + 2vw, 2.6rem);
+	}
+
+	.search-results-block {
+		display: grid;
+		gap: 1.2rem;
+	}
+
+	.section-head {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.results-summary {
+		color: var(--color-text-muted);
+		font-size: 0.92rem;
+	}
+
+	.search-grid {
+		display: grid;
+		gap: 1.2rem;
+	}
+
+	@media (max-width: 840px) {
+		.section-head {
+			flex-direction: column;
+			align-items: start;
+		}
+	}
+</style>

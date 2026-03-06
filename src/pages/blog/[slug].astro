@@ -71,6 +71,7 @@ const htmlContent = await renderSafeMarkdown(post.content);
 ---
 
 <Post
+	slug={slug}
 	title={post.metaTitle || post.title}
 	description={post.metaDescription || post.excerpt || undefined}
 	canonicalUrl={post.canonicalUrl || undefined}
