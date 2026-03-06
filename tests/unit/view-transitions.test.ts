@@ -32,4 +32,19 @@ describe("页面过渡与跨页状态保护喵", () => {
 		assert.match(themeScriptSource, /pathname === "\/search"/u);
 		assert.match(themeScriptSource, /pathname === "\/"/u);
 	});
+
+	test("首页、归档与搜索页会共享顶部 Hero 和搜索入口的过渡命名喵", async () => {
+		const [homePageSource, archivePageSource, searchPageSource] =
+			await Promise.all([
+				readFile("src/pages/index.astro", "utf8"),
+				readFile("src/pages/blog/index.astro", "utf8"),
+				readFile("src/pages/search.astro", "utf8"),
+			]);
+
+		assert.match(homePageSource, /transition:name="top-page-hero"/u);
+		assert.match(archivePageSource, /transition:name="top-page-hero"/u);
+		assert.match(searchPageSource, /transition:name="top-page-hero"/u);
+		assert.match(homePageSource, /transition:name="search-entry"/u);
+		assert.match(searchPageSource, /transition:name="search-entry"/u);
+	});
 });

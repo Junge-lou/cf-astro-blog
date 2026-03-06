@@ -52,11 +52,11 @@ const totalPages = Math.ceil(totalPosts / limit);
 ---
 
 <Base title="归档" description="按时间顺序浏览全部已发布文章">
-	<section class="archive-hero glass-panel">
+	<section class="archive-hero glass-panel" transition:name="top-page-hero">
 		<div class="archive-hero-copy">
-			<span class="section-kicker">归档目录</span>
-			<h1 class="page-title">归档</h1>
-			<p class="page-intro">
+			<span class="section-kicker" transition:name="top-page-kicker">归档目录</span>
+			<h1 class="page-title" transition:name="top-page-title">归档</h1>
+			<p class="page-intro" transition:name="top-page-intro">
 				所有已发布文章都按时间顺序排列在这里，适合顺着浏览，也适合翻到某篇旧文重新确认一个判断。
 			</p>
 		</div>
