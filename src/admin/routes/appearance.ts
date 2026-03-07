@@ -236,109 +236,6 @@ function renderAppearancePage(options: {
 				margin-top: 0.85rem;
 			}
 
-			.appearance-live-preview {
-				position: relative;
-				min-height: 240px;
-				border-radius: 1rem;
-				overflow: hidden;
-				background: #0f172a;
-				border: 1px solid var(--border);
-			}
-
-			.appearance-live-preview iframe {
-				position: absolute;
-				top: 0;
-				left: 0;
-				width: 1600px;
-				height: 900px;
-				border: 0;
-				display: block;
-				background: #0f172a;
-				pointer-events: none;
-				transform-origin: top left;
-			}
-
-			.appearance-preview-toolbar {
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				flex-wrap: wrap;
-				gap: 0.75rem;
-				margin-bottom: 0.75rem;
-			}
-
-			.appearance-preview-viewport {
-				display: inline-flex;
-				align-items: center;
-				gap: 0.5rem;
-				color: var(--text-secondary);
-				font-size: 0.84rem;
-			}
-
-			.appearance-preview-viewport select {
-				min-width: 9.6rem;
-			}
-
-			.appearance-preview-modal {
-				position: fixed;
-				inset: 0;
-				z-index: 1200;
-				display: grid;
-				place-items: center;
-				padding: 1rem;
-			}
-
-			.appearance-preview-modal[hidden] {
-				display: none;
-			}
-
-			.appearance-preview-modal-backdrop {
-				position: absolute;
-				inset: 0;
-				background: rgba(3, 8, 18, 0.62);
-				backdrop-filter: blur(6px);
-			}
-
-			.appearance-preview-modal-card {
-				position: relative;
-				z-index: 1;
-				width: min(96vw, 1980px);
-				border-radius: var(--radius);
-				padding: 1rem;
-				background: var(--bg-secondary);
-				border: 1px solid var(--border);
-				box-shadow: var(--shadow-strong);
-			}
-
-			.appearance-preview-modal-head {
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				gap: 0.7rem;
-				margin-bottom: 0.75rem;
-			}
-
-			.appearance-preview-modal-title {
-				font-size: 0.95rem;
-				color: var(--text-secondary);
-			}
-
-			.appearance-live-preview[data-appearance-live-preview-modal] {
-				height: calc(100vh - 9rem);
-				min-height: 420px;
-				max-height: 860px;
-			}
-
-			.appearance-hint {
-				margin-top: 0.75rem;
-				font-size: 0.85rem;
-				color: var(--text-muted);
-			}
-
-			body.appearance-preview-modal-open {
-				overflow: hidden;
-			}
-
 			.appearance-controls {
 				display: grid;
 				gap: 1rem;
@@ -461,20 +358,6 @@ function renderAppearancePage(options: {
 				}
 			}
 
-			@media (max-width: 720px) {
-				.appearance-preview-modal {
-					padding: 0.6rem;
-				}
-
-				.appearance-preview-modal-card {
-					padding: 0.65rem;
-				}
-
-				.appearance-live-preview[data-appearance-live-preview-modal] {
-					height: calc(100vh - 7.2rem);
-					min-height: 300px;
-				}
-			}
 		</style>
 		${alertHtml}
 		<h1>站点外观</h1>
@@ -640,52 +523,6 @@ function renderAppearancePage(options: {
 				</section>
 			</div>
 			<div class="appearance-stack">
-				<section class="appearance-panel">
-					<h2>实时联动预览</h2>
-					<div class="appearance-preview-toolbar">
-						<label class="appearance-preview-viewport">
-							<span>桌面视口</span>
-							<select class="form-select" data-appearance-preview-viewport>
-								<option value="1366x768">1366 × 768</option>
-								<option value="1600x900" selected>1600 × 900</option>
-								<option value="1920x1080">1920 × 1080</option>
-							</select>
-						</label>
-						<button type="button" class="btn btn-sm" data-appearance-preview-open>放大预览</button>
-					</div>
-					<div class="appearance-live-preview" data-appearance-live-preview>
-						<iframe
-							src="/?adminPreview=1"
-							title="首页实时联动预览"
-							loading="eager"
-							scrolling="no"
-							data-appearance-live-frame
-						></iframe>
-					</div>
-					<p class="appearance-hint">这里显示未保存改动的实时效果；只有点击“保存外观设置”才会写入数据库。</p>
-					<div class="appearance-preview-modal" data-appearance-preview-modal hidden>
-						<div class="appearance-preview-modal-backdrop" data-appearance-preview-close></div>
-						<div class="appearance-preview-modal-card" role="dialog" aria-modal="true" aria-label="放大预览窗口">
-							<div class="appearance-preview-modal-head">
-								<span class="appearance-preview-modal-title">放大预览（未保存改动）</span>
-								<button type="button" class="btn btn-sm" data-appearance-preview-close>关闭</button>
-							</div>
-							<div
-								class="appearance-live-preview"
-								data-appearance-live-preview
-								data-appearance-live-preview-modal
-							>
-								<iframe
-									src="/?adminPreview=1"
-									title="首页放大实时联动预览"
-									loading="eager"
-									scrolling="no"
-									data-appearance-live-frame
-								></iframe>
-							</div>
-						</div>
-					</div>
-				</section>
 				<section class="appearance-panel">
 					<h2>背景视觉参数</h2>
 					<div class="appearance-controls">
