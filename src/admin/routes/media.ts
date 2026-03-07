@@ -41,11 +41,11 @@ function parseUploadFile(body: Record<string, unknown>): File | null {
 
 function validateUploadFile(file: File): string | null {
 	if (!isAllowedImageMimeType(file.type)) {
-		return "仅允许上传 JPG、PNG、WEBP、AVIF 或 GIF 图片喵";
+		return "仅允许上传 JPG、PNG、WEBP、AVIF 或 GIF 图片";
 	}
 
 	if (file.size > MAX_UPLOAD_BYTES) {
-		return "单个文件不能超过 5 MB 喵";
+		return "单个文件不能超过 5 MB ";
 	}
 
 	return null;
@@ -69,7 +69,7 @@ media.get("/", async (c) => {
 		const listed = await c.env.MEDIA_BUCKET.list({ limit: 100 });
 		objects = listed.objects;
 	} catch {
-		// R2 未绑定时回退为空列表喵
+		// R2 未绑定时回退为空列表
 	}
 
 	const content = `
@@ -146,12 +146,12 @@ media.post("/upload", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = await c.req.parseBody({ all: true });
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 	const file = parseUploadFile(body);
 	if (!file) {
 		return c.html(
-			renderMediaErrorPage(session.csrfToken, "请选择要上传的文件喵"),
+			renderMediaErrorPage(session.csrfToken, "请选择要上传的文件"),
 			400,
 		);
 	}
@@ -173,12 +173,12 @@ media.post("/upload-async", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = await c.req.parseBody({ all: true });
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.json({ message: "CSRF 校验失败喵" }, 403);
+		return c.json({ message: "CSRF 校验失败" }, 403);
 	}
 
 	const file = parseUploadFile(body);
 	if (!file) {
-		return c.json({ message: "请选择要上传的文件喵" }, 400);
+		return c.json({ message: "请选择要上传的文件" }, 400);
 	}
 
 	const validationError = validateUploadFile(file);
@@ -191,10 +191,10 @@ media.post("/upload-async", async (c) => {
 		return c.json({
 			key,
 			url: `/media/${key}`,
-			message: "上传成功喵",
+			message: "上传成功",
 		});
 	} catch {
-		return c.json({ message: "上传失败，请稍后再试喵" }, 500);
+		return c.json({ message: "上传失败，请稍后再试" }, 500);
 	}
 });
 
@@ -227,7 +227,7 @@ media.post("/delete/*", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = await c.req.parseBody({ all: true });
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const decodedKey = decodeRouteParam(
@@ -235,7 +235,7 @@ media.post("/delete/*", async (c) => {
 	);
 	const key = sanitizeMediaKey(decodedKey);
 	if (!key) {
-		return c.text("媒体键名不合法喵", 400);
+		return c.text("媒体键名不合法", 400);
 	}
 
 	await c.env.MEDIA_BUCKET.delete(key);

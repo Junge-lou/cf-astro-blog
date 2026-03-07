@@ -27,7 +27,7 @@ try {
 	const { env } = Astro.locals.runtime;
 	siteAppearance = await getSiteAppearance(getDb(env.DB));
 } catch {
-	// D1 未绑定时使用默认外观喵
+	// D1 未绑定时使用默认外观
 }
 
 const backgroundImageUrl = buildBackgroundImageUrl(

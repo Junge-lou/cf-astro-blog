@@ -4,8 +4,8 @@ import { describe, test } from "node:test";
 import { adminLayout } from "../../src/admin/views/layout";
 import { loginPage } from "../../src/admin/views/login";
 
-describe("后台界面风格保护喵", () => {
-	test("后台布局会渲染主页同风格的浮层骨架和当前导航态喵", () => {
+describe("后台界面风格保护", () => {
+	test("后台布局会渲染主页同风格的浮层骨架和当前导航态", () => {
 		const html = adminLayout("文章", "<h1>文章</h1>", {
 			csrfToken: "csrf-token",
 		});
@@ -18,7 +18,7 @@ describe("后台界面风格保护喵", () => {
 		assert.match(html, /退出登录/u);
 	});
 
-	test("登录页会复用后台视觉语言并保留 GitHub OAuth 入口喵", () => {
+	test("登录页会复用后台视觉语言并保留 GitHub OAuth 入口", () => {
 		const html = loginPage({
 			githubLogin: "Eric-Terminal",
 			oauthEnabled: true,
@@ -31,7 +31,7 @@ describe("后台界面风格保护喵", () => {
 		assert.match(html, /\/api\/auth\/github/u);
 	});
 
-	test("外观页提供顶部状态栏与首页文案编辑入口喵", async () => {
+	test("外观页提供顶部状态栏与首页文案编辑入口", async () => {
 		const source = await readFile("src/admin/routes/appearance.ts", "utf8");
 
 		assert.match(source, /headerSubtitle/u);

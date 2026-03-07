@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
-describe("导航收缩动画保护喵", () => {
-	test("头部会把外壳动画与内容布局拆开，避免直接过渡导航宽度喵", async () => {
+describe("导航收缩动画保护", () => {
+	test("头部会把外壳动画与内容布局拆开，避免直接过渡导航宽度", async () => {
 		const [headerSource, globalStylesSource] = await Promise.all([
 			readFile("src/components/Header.astro", "utf8"),
 			readFile("src/styles/global.css", "utf8"),

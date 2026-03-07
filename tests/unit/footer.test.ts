@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
-describe("页脚精简保护喵", () => {
-	test("页脚不再渲染重复的小导航链接喵", async () => {
+describe("页脚精简保护", () => {
+	test("页脚不再渲染重复的小导航链接", async () => {
 		const footerSource = await readFile("src/components/Footer.astro", "utf8");
 
 		assert.ok(!footerSource.includes('class="footer-links"'));
@@ -13,7 +13,7 @@ describe("页脚精简保护喵", () => {
 		assert.match(footerSource, /footer-meta/u);
 	});
 
-	test("页脚会在接近页面底部时缓慢上浮出现喵", async () => {
+	test("页脚会在接近页面底部时缓慢上浮出现", async () => {
 		const [
 			footerSource,
 			baseLayoutSource,

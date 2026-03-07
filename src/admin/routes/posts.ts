@@ -59,13 +59,13 @@ function renderPostErrorPage(csrfToken: string, message: string) {
 function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 	const title = sanitizePlainText(body.title, 200);
 	if (!title) {
-		return { error: "标题不能为空喵" } as const;
+		return { error: "标题不能为空" } as const;
 	}
 
 	const rawSlugInput = sanitizePlainText(body.slug, 120).toLowerCase();
 	const manualSlug = rawSlugInput ? sanitizeSlug(rawSlugInput) : null;
 	if (rawSlugInput && !manualSlug) {
-		return { error: "网址别名格式不合法喵" } as const;
+		return { error: "网址别名格式不合法" } as const;
 	}
 
 	const slug =
@@ -77,12 +77,12 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 		trim: false,
 	});
 	if (!content.trim()) {
-		return { error: "正文不能为空喵" } as const;
+		return { error: "正文不能为空" } as const;
 	}
 
 	const status = sanitizePostStatus(body.status);
 	if (!status) {
-		return { error: "文章状态不合法喵" } as const;
+		return { error: "文章状态不合法" } as const;
 	}
 
 	const publishAtRaw = sanitizePlainText(body.publishAt, 32, { trim: true });
@@ -90,12 +90,12 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 	if (publishAtRaw) {
 		const parsed = new Date(publishAtRaw);
 		if (Number.isNaN(parsed.getTime())) {
-			return { error: "定时发布时间格式不合法喵" } as const;
+			return { error: "定时发布时间格式不合法" } as const;
 		}
 		publishAt = parsed.toISOString();
 	}
 	if (status === "scheduled" && !publishAt) {
-		return { error: "定时发布需要填写发布时间喵" } as const;
+		return { error: "定时发布需要填写发布时间" } as const;
 	}
 
 	const categoryIdRaw = String(body.categoryId ?? "").trim();
@@ -105,7 +105,7 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 			? parseOptionalPositiveInt(categoryIdRaw)
 			: null;
 	if (categoryIdRaw && !isNewCategorySelected && categoryId === null) {
-		return { error: "分类参数不合法喵" } as const;
+		return { error: "分类参数不合法" } as const;
 	}
 
 	const canonicalUrlRaw = String(body.canonicalUrl ?? "").trim();
@@ -113,7 +113,7 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 		? sanitizeCanonicalUrl(canonicalUrlRaw)
 		: null;
 	if (canonicalUrlRaw && !canonicalUrl) {
-		return { error: "规范链接地址不合法喵" } as const;
+		return { error: "规范链接地址不合法" } as const;
 	}
 
 	const featuredImageKeyRaw = String(body.featuredImageKey ?? "").trim();
@@ -121,7 +121,7 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 		? sanitizeMediaKey(featuredImageKeyRaw)
 		: null;
 	if (featuredImageKeyRaw && !featuredImageKey) {
-		return { error: "封面图片键名不合法喵" } as const;
+		return { error: "封面图片键名不合法" } as const;
 	}
 
 	const newTagNamesRaw = sanitizePlainText(body.newTagNames, 400, {
@@ -129,7 +129,7 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 	});
 	const newCategoryName = sanitizePlainText(body.newCategoryName, 60) || null;
 	if (isNewCategorySelected && !newCategoryName) {
-		return { error: "你选择了新建分类，请输入分类名称喵" } as const;
+		return { error: "你选择了新建分类，请输入分类名称" } as const;
 	}
 
 	return {
@@ -379,7 +379,7 @@ posts.post("/", async (c) => {
 	const db = getDb(c.env.DB);
 	const body = await c.req.parseBody();
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const parsed = parsePostInput(body);
@@ -488,7 +488,7 @@ posts.post("/:id", async (c) => {
 	const db = getDb(c.env.DB);
 	const body = await c.req.parseBody();
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const parsed = parsePostInput(body);
@@ -572,7 +572,7 @@ posts.post("/:id/delete", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = await c.req.parseBody();
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const id = parseOptionalPositiveInt(c.req.param("id"));

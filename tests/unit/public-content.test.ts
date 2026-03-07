@@ -12,8 +12,8 @@ import { buildProtectedAssetHeaders } from "../../src/lib/security";
 
 const dialect = new SQLiteSyncDialect();
 
-describe("公开内容保护喵", () => {
-	test("文章详情过滤条件会限制为已发布或已到时的定时文章喵", () => {
+describe("公开内容保护", () => {
+	test("文章详情过滤条件会限制为已发布或已到时的定时文章", () => {
 		const compiled = dialect.sqlToQuery(
 			sql`select * from ${blogPosts} where ${getPublicPostBySlugCondition("draft-post")}`,
 		);
@@ -25,7 +25,7 @@ describe("公开内容保护喵", () => {
 		assert.ok(compiled.params.includes("scheduled"));
 	});
 
-	test("搜索过滤条件会限制为已发布或已到时的定时文章喵", () => {
+	test("搜索过滤条件会限制为已发布或已到时的定时文章", () => {
 		const compiled = dialect.sqlToQuery(
 			sql`select * from ${blogPosts} where ${getPublicPostSearchCondition("%draft%")}`,
 		);
@@ -39,7 +39,7 @@ describe("公开内容保护喵", () => {
 		);
 	});
 
-	test("受保护资源响应头会禁用共享缓存喵", () => {
+	test("受保护资源响应头会禁用共享缓存", () => {
 		const headers = buildProtectedAssetHeaders("image/png");
 
 		assert.equal(headers["Content-Type"], "image/png");
@@ -50,8 +50,8 @@ describe("公开内容保护喵", () => {
 	});
 });
 
-describe("源码回归保护喵", () => {
-	test("公开文章详情与搜索页面都使用发布态过滤辅助函数喵", async () => {
+describe("源码回归保护", () => {
+	test("公开文章详情与搜索页面都使用发布态过滤辅助函数", async () => {
 		const [postPageSource, searchPageSource] = await Promise.all([
 			readFile("src/pages/blog/[slug].astro", "utf8"),
 			readFile("src/pages/search.astro", "utf8"),
@@ -61,7 +61,7 @@ describe("源码回归保护喵", () => {
 		assert.match(searchPageSource, /getPublicPostSearchCondition/u);
 	});
 
-	test("主题切换组件不再包含内联脚本，并改由外置脚本接管喵", async () => {
+	test("主题切换组件不再包含内联脚本，并改由外置脚本接管", async () => {
 		const [toggleSource, themeScriptSource, mediaRouteSource] =
 			await Promise.all([
 				readFile("src/components/ThemeToggle.astro", "utf8"),

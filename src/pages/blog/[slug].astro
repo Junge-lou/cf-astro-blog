@@ -52,7 +52,7 @@ try {
 	if (row) {
 		post = row;
 
-		// 浏览计数失败时不影响正文渲染喵
+		// 浏览计数失败时不影响正文渲染
 		db.update(blogPosts)
 			.set({ viewCount: blogPosts.viewCount })
 			.where(eq(blogPosts.slug, slug))
@@ -60,7 +60,7 @@ try {
 			.catch(() => {});
 	}
 } catch {
-	// D1 未绑定时回退到重定向喵
+	// D1 未绑定时回退到重定向
 }
 
 if (!post) {

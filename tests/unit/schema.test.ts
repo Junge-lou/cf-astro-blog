@@ -11,8 +11,8 @@ import {
 	siteAppearanceSettings,
 } from "../../src/db/schema";
 
-describe("数据库结构喵", () => {
-	test("blogPosts 表包含必要字段喵", () => {
+describe("数据库结构", () => {
+	test("blogPosts 表包含必要字段", () => {
 		const columns = Object.keys(blogPosts);
 		assert.ok(columns.includes("id"));
 		assert.ok(columns.includes("title"));
@@ -31,7 +31,7 @@ describe("数据库结构喵", () => {
 		assert.ok(columns.includes("updatedAt"));
 	});
 
-	test("blogCategories 表包含必要字段喵", () => {
+	test("blogCategories 表包含必要字段", () => {
 		const columns = Object.keys(blogCategories);
 		assert.ok(columns.includes("id"));
 		assert.ok(columns.includes("name"));
@@ -40,20 +40,20 @@ describe("数据库结构喵", () => {
 		assert.ok(columns.includes("parentId"));
 	});
 
-	test("blogTags 表包含必要字段喵", () => {
+	test("blogTags 表包含必要字段", () => {
 		const columns = Object.keys(blogTags);
 		assert.ok(columns.includes("id"));
 		assert.ok(columns.includes("name"));
 		assert.ok(columns.includes("slug"));
 	});
 
-	test("blogPostTags 关联表包含必要字段喵", () => {
+	test("blogPostTags 关联表包含必要字段", () => {
 		const columns = Object.keys(blogPostTags);
 		assert.ok(columns.includes("postId"));
 		assert.ok(columns.includes("tagId"));
 	});
 
-	test("analyticsSessions 表包含必要字段喵", () => {
+	test("analyticsSessions 表包含必要字段", () => {
 		const columns = Object.keys(analyticsSessions);
 		assert.ok(columns.includes("sessionId"));
 		assert.ok(columns.includes("ipHash"));
@@ -64,7 +64,7 @@ describe("数据库结构喵", () => {
 		assert.ok(columns.includes("utmSource"));
 	});
 
-	test("analyticsEvents 表包含必要字段喵", () => {
+	test("analyticsEvents 表包含必要字段", () => {
 		const columns = Object.keys(analyticsEvents);
 		assert.ok(columns.includes("sessionId"));
 		assert.ok(columns.includes("eventType"));
@@ -73,14 +73,14 @@ describe("数据库结构喵", () => {
 		assert.ok(columns.includes("scrollDepth"));
 	});
 
-	test("loginAttempts 表包含必要字段喵", () => {
+	test("loginAttempts 表包含必要字段", () => {
 		const columns = Object.keys(loginAttempts);
 		assert.ok(columns.includes("ipAddress"));
 		assert.ok(columns.includes("attempts"));
 		assert.ok(columns.includes("lockedUntil"));
 	});
 
-	test("siteAppearanceSettings 表包含必要字段喵", () => {
+	test("siteAppearanceSettings 表包含必要字段", () => {
 		const columns = Object.keys(siteAppearanceSettings);
 		assert.ok(columns.includes("backgroundImageKey"));
 		assert.ok(columns.includes("backgroundBlur"));

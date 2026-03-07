@@ -73,7 +73,7 @@ analytics.get("/", async (c) => {
 			.orderBy(desc(analyticsEvents.timestamp))
 			.limit(20);
 	} catch {
-		// D1 未绑定时回退为空统计喵
+		// D1 未绑定时回退为空统计
 	}
 
 	const content = `

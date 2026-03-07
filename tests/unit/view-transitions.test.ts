@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
-describe("页面过渡与跨页状态保护喵", () => {
-	test("基础布局会关闭根节点默认淡化并为页面主体启用滑动过渡喵", async () => {
+describe("页面过渡与跨页状态保护", () => {
+	test("基础布局会关闭根节点默认淡化并为页面主体启用滑动过渡", async () => {
 		const [baseLayoutSource, globalStylesSource] = await Promise.all([
 			readFile("src/layouts/Base.astro", "utf8"),
 			readFile("src/styles/global.css", "utf8"),
@@ -19,7 +19,7 @@ describe("页面过渡与跨页状态保护喵", () => {
 		);
 	});
 
-	test("主题脚本会在切页时保留根节点状态并重写顶层页面方向喵", async () => {
+	test("主题脚本会在切页时保留根节点状态并重写顶层页面方向", async () => {
 		const themeScriptSource = await readFile("public/theme.js", "utf8");
 
 		assert.match(themeScriptSource, /astro:before-preparation/u);
@@ -33,7 +33,7 @@ describe("页面过渡与跨页状态保护喵", () => {
 		assert.match(themeScriptSource, /pathname === "\/"/u);
 	});
 
-	test("首页与搜索页会共享搜索入口过渡，而归档页不会介入这条链路喵", async () => {
+	test("首页与搜索页会共享搜索入口过渡，而归档页不会介入这条链路", async () => {
 		const [homePageSource, archivePageSource, searchPageSource] =
 			await Promise.all([
 				readFile("src/pages/index.astro", "utf8"),

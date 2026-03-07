@@ -8,8 +8,8 @@ import {
 	normalizeSiteAppearanceInput,
 } from "../../src/lib/site-appearance";
 
-describe("站点外观设置喵", () => {
-	test("normalizeSiteAppearanceInput 会约束裁切和模糊范围喵", () => {
+describe("站点外观设置", () => {
+	test("normalizeSiteAppearanceInput 会约束裁切和模糊范围", () => {
 		const normalized = normalizeSiteAppearanceInput({
 			backgroundImageKey: "appearance/background/2026-03-07/example.webp",
 			backgroundBlur: 88,
@@ -28,7 +28,7 @@ describe("站点外观设置喵", () => {
 		assert.equal(normalized.backgroundPositionY, 100);
 	});
 
-	test("normalizeSiteAppearanceInput 会回退到默认值喵", () => {
+	test("normalizeSiteAppearanceInput 会回退到默认值", () => {
 		const normalized = normalizeSiteAppearanceInput({
 			backgroundImageKey: "%%%bad-key%%%",
 			navLink1Href: "javascript:alert(1)",
@@ -39,7 +39,7 @@ describe("站点外观设置喵", () => {
 		assert.deepEqual(normalized, DEFAULT_SITE_APPEARANCE);
 	});
 
-	test("normalizeSiteAppearanceInput 会保留合法的文案与链接喵", () => {
+	test("normalizeSiteAppearanceInput 会保留合法的文案与链接", () => {
 		const normalized = normalizeSiteAppearanceInput({
 			headerSubtitle: "我的状态栏",
 			navLink1Label: "文档",
@@ -57,7 +57,7 @@ describe("站点外观设置喵", () => {
 		assert.equal(normalized.heroSecondaryHref, "/search?tag=astro");
 	});
 
-	test("normalizeSiteAppearanceInput 支持首屏预留图路径喵", () => {
+	test("normalizeSiteAppearanceInput 支持首屏预留图路径", () => {
 		const normalized = normalizeSiteAppearanceInput({
 			heroMainImagePath: "appearance/home/main.webp",
 		});
@@ -68,7 +68,7 @@ describe("站点外观设置喵", () => {
 		);
 	});
 
-	test("buildSiteNavLinks 会按顺序生成顶部导航数据喵", () => {
+	test("buildSiteNavLinks 会按顺序生成顶部导航数据", () => {
 		const links = buildSiteNavLinks(DEFAULT_SITE_APPEARANCE);
 
 		assert.equal(links.length, 3);
@@ -77,7 +77,7 @@ describe("站点外观设置喵", () => {
 		assert.deepEqual(links[2], { label: "搜索", href: "/search" });
 	});
 
-	test("normalizeSiteAppearanceInput 支持动态导航与按钮喵", () => {
+	test("normalizeSiteAppearanceInput 支持动态导航与按钮", () => {
 		const normalized = normalizeSiteAppearanceInput({
 			navLinks: [
 				{ label: "项目", href: "/projects" },
@@ -104,7 +104,7 @@ describe("站点外观设置喵", () => {
 		assert.equal(normalized.heroSecondaryLabel, "看项目");
 	});
 
-	test("buildHeroActionLinks 会在动态按钮缺失时回退默认值喵", () => {
+	test("buildHeroActionLinks 会在动态按钮缺失时回退默认值", () => {
 		const links = buildHeroActionLinks({
 			...DEFAULT_SITE_APPEARANCE,
 			heroActions: [] as Array<{ label: string; href: string }>,
@@ -115,7 +115,7 @@ describe("站点外观设置喵", () => {
 		assert.deepEqual(links[1], { label: "站内搜索", href: "/search" });
 	});
 
-	test("buildBackgroundImageUrl 会生成公开媒体地址喵", () => {
+	test("buildBackgroundImageUrl 会生成公开媒体地址", () => {
 		assert.equal(
 			buildBackgroundImageUrl("appearance/background/2026-03-07/example.webp"),
 			"/media/appearance/background/2026-03-07/example.webp",

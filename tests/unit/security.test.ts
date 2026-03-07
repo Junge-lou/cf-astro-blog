@@ -8,8 +8,8 @@ import {
 } from "../../src/lib/password";
 import { buildUrlSlug, renderSafeMarkdown } from "../../src/lib/security";
 
-describe("安全工具喵", () => {
-	test("renderSafeMarkdown 会转义原始 HTML 喵", async () => {
+describe("安全工具", () => {
+	test("renderSafeMarkdown 会转义原始 HTML ", async () => {
 		const html = await renderSafeMarkdown(
 			'# 标题\n<script>alert("xss")</script>',
 		);
@@ -19,7 +19,7 @@ describe("安全工具喵", () => {
 		assert.ok(html.includes("&lt;script&gt;alert"));
 	});
 
-	test("renderSafeMarkdown 会拒绝 javascript 链接与协议相对链接喵", async () => {
+	test("renderSafeMarkdown 会拒绝 javascript 链接与协议相对链接", async () => {
 		const html = await renderSafeMarkdown(
 			"[危险链接](javascript:alert(1)) [外链](//evil.example.com)",
 		);
@@ -31,14 +31,14 @@ describe("安全工具喵", () => {
 		assert.ok(!html.includes("<a href="));
 	});
 
-	test("renderSafeMarkdown 不允许把 mailto 用作图片地址喵", async () => {
+	test("renderSafeMarkdown 不允许把 mailto 用作图片地址", async () => {
 		const html = await renderSafeMarkdown("![封面](mailto:test@example.com)");
 
 		assert.ok(!html.includes("<img"));
 		assert.match(html, /封面/u);
 	});
 
-	test("verifyPassword 支持新的 PBKDF2 哈希喵", async () => {
+	test("verifyPassword 支持新的 PBKDF2 哈希", async () => {
 		const password = "correct-horse-battery-staple";
 		const hash = await hashPassword(password);
 
@@ -48,7 +48,7 @@ describe("安全工具喵", () => {
 		assert.equal(await verifyPassword("wrong-password", hash), false);
 	});
 
-	test("verifyPassword 兼容旧版 SHA-256 哈希喵", async () => {
+	test("verifyPassword 兼容旧版 SHA-256 哈希", async () => {
 		const password = "legacy-password";
 		const legacyHash = createHash("sha256").update(password).digest("hex");
 
@@ -57,17 +57,17 @@ describe("安全工具喵", () => {
 		assert.equal(await verifyPassword("wrong-password", legacyHash), false);
 	});
 
-	test("buildUrlSlug 会把标题转成 URL 友好的路径喵", () => {
+	test("buildUrlSlug 会把标题转成 URL 友好的路径", () => {
 		assert.equal(buildUrlSlug("Hello Astro Blog"), "hello-astro-blog");
 		assert.equal(buildUrlSlug("Cloudflare + D1 + R2"), "cloudflare-d1-r2");
 	});
 
-	test("buildUrlSlug 遇到无法转写的字符时会回退到前缀随机路径喵", () => {
+	test("buildUrlSlug 遇到无法转写的字符时会回退到前缀随机路径", () => {
 		const slug = buildUrlSlug("中文标题", { fallbackPrefix: "post" });
 		assert.match(slug, /^post-[0-9a-f]{8}$/u);
 	});
 
-	test("buildUrlSlug 支持长度限制喵", () => {
+	test("buildUrlSlug 支持长度限制", () => {
 		const slug = buildUrlSlug("a".repeat(140), { maxLength: 24 });
 		assert.equal(slug.length, 24);
 	});

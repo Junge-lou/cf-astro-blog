@@ -175,7 +175,7 @@ auth.get("/login", (c) => {
 	);
 });
 
-auth.post("/login", (c) => c.text("当前后台仅支持 GitHub OAuth 登录喵", 405));
+auth.post("/login", (c) => c.text("当前后台仅支持 GitHub OAuth 登录", 405));
 
 auth.get("/github", async (c) => {
 	const config = getGitHubOAuthConfig(c.env);
@@ -183,7 +183,7 @@ auth.get("/github", async (c) => {
 	if (!config) {
 		return c.html(
 			loginPage({
-				error: "后台尚未完成 GitHub OAuth 配置喵",
+				error: "后台尚未完成 GitHub OAuth 配置",
 				githubLogin: getAdminGitHubLogin(c.env),
 				oauthEnabled: false,
 			}),
@@ -227,7 +227,7 @@ auth.get("/github/callback", async (c) => {
 	if (!config) {
 		return c.html(
 			loginPage({
-				error: "后台尚未完成 GitHub OAuth 配置喵",
+				error: "后台尚未完成 GitHub OAuth 配置",
 				githubLogin: getAdminGitHubLogin(c.env),
 				oauthEnabled: false,
 			}),
@@ -238,7 +238,7 @@ auth.get("/github/callback", async (c) => {
 	if (oauthError) {
 		return c.html(
 			loginPage({
-				error: "GitHub 授权被取消或未完成喵",
+				error: "GitHub 授权被取消或未完成",
 				githubLogin: config.adminLogin,
 				oauthEnabled: true,
 			}),
@@ -255,7 +255,7 @@ auth.get("/github/callback", async (c) => {
 	) {
 		return c.html(
 			loginPage({
-				error: "GitHub OAuth 状态校验失败喵",
+				error: "GitHub OAuth 状态校验失败",
 				githubLogin: config.adminLogin,
 				oauthEnabled: true,
 			}),
@@ -273,7 +273,7 @@ auth.get("/github/callback", async (c) => {
 	if (!accessToken) {
 		return c.html(
 			loginPage({
-				error: "GitHub 访问令牌交换失败喵",
+				error: "GitHub 访问令牌交换失败",
 				githubLogin: config.adminLogin,
 				oauthEnabled: true,
 			}),
@@ -286,7 +286,7 @@ auth.get("/github/callback", async (c) => {
 	if (!profile?.login) {
 		return c.html(
 			loginPage({
-				error: "无法获取 GitHub 账号信息喵",
+				error: "无法获取 GitHub 账号信息",
 				githubLogin: config.adminLogin,
 				oauthEnabled: true,
 			}),
@@ -297,7 +297,7 @@ auth.get("/github/callback", async (c) => {
 	if (!timingSafeEqualText(profile.login, config.adminLogin)) {
 		return c.html(
 			loginPage({
-				error: `当前 GitHub 账号 ${profile.login} 没有后台权限喵，这个是我的 CMS，请回吧～ 项目实现在 https://github.com/Eric-Terminal/cf-astro-blog-starter ，用 Cloudflare CI 构建，拿回去改改自己也能用。`,
+				error: `当前 GitHub 账号 ${profile.login} 没有后台权限，这个是我的 CMS，请回吧～ 项目实现在 https://github.com/Eric-Terminal/cf-astro-blog-starter ，用 Cloudflare CI 构建，拿回去改改自己也能用。`,
 				githubLogin: config.adminLogin,
 				oauthEnabled: true,
 			}),
@@ -315,7 +315,7 @@ auth.get("/github/callback", async (c) => {
 });
 
 auth.get("/logout", (c) => {
-	return c.text("不支持当前请求方法喵", 405);
+	return c.text("不支持当前请求方法", 405);
 });
 
 auth.post("/logout", requireAuth, async (c) => {
@@ -323,7 +323,7 @@ auth.post("/logout", requireAuth, async (c) => {
 	const session = getAuthenticatedSession(c);
 
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	await destroySession(c.env, session.id);

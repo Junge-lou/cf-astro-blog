@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
-describe("GitHub OAuth 后台认证保护喵", () => {
-	test("登录页只渲染 GitHub OAuth 登录入口喵", async () => {
+describe("GitHub OAuth 后台认证保护", () => {
+	test("登录页只渲染 GitHub OAuth 登录入口", async () => {
 		const loginViewSource = await readFile("src/admin/views/login.ts", "utf8");
 
 		assert.match(loginViewSource, /GitHub OAuth 登录/u);
@@ -12,7 +12,7 @@ describe("GitHub OAuth 后台认证保护喵", () => {
 		assert.ok(!loginViewSource.includes('name="username"'));
 	});
 
-	test("认证路由会处理 GitHub 授权跳转和回调喵", async () => {
+	test("认证路由会处理 GitHub 授权跳转和回调", async () => {
 		const authRouteSource = await readFile("src/admin/routes/auth.ts", "utf8");
 
 		assert.match(authRouteSource, /\/github/u);
@@ -22,7 +22,7 @@ describe("GitHub OAuth 后台认证保护喵", () => {
 		assert.match(authRouteSource, /仅支持 GitHub OAuth 登录/u);
 	});
 
-	test("会话中间件会以 GitHub 用户名作为后台身份喵", async () => {
+	test("会话中间件会以 GitHub 用户名作为后台身份", async () => {
 		const authMiddlewareSource = await readFile(
 			"src/admin/middleware/auth.ts",
 			"utf8",

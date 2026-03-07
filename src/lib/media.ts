@@ -19,7 +19,7 @@ export function isAllowedImageMimeType(value: string) {
 export function buildMediaObjectKey(file: File, prefix = "uploads") {
 	const extension = ALLOWED_MEDIA_TYPES.get(file.type);
 	if (!extension) {
-		throw new Error("仅允许上传 JPG、PNG、WEBP、AVIF 或 GIF 图片喵");
+		throw new Error("仅允许上传 JPG、PNG、WEBP、AVIF 或 GIF 图片");
 	}
 
 	return `${prefix}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;

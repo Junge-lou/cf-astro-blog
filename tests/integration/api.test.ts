@@ -15,8 +15,8 @@ const mockEnv = {
 	},
 } as unknown as Env;
 
-describe("后台接口喵", () => {
-	test("GET /health 会返回健康状态喵", async () => {
+describe("后台接口", () => {
+	test("GET /health 会返回健康状态", async () => {
 		const res = await app.request("/health");
 		assert.equal(res.status, 200);
 
@@ -28,7 +28,7 @@ describe("后台接口喵", () => {
 		assert.ok(body.timestamp);
 	});
 
-	test("GET /auth/login 会返回 GitHub OAuth 登录页面喵", async () => {
+	test("GET /auth/login 会返回 GitHub OAuth 登录页面", async () => {
 		const res = await app.request("/auth/login", undefined, mockEnv);
 		assert.equal(res.status, 200);
 
@@ -40,25 +40,25 @@ describe("后台接口喵", () => {
 		assert.ok(!html.includes('name="password"'));
 	});
 
-	test("未登录访问 /admin 会跳转到登录页喵", async () => {
+	test("未登录访问 /admin 会跳转到登录页", async () => {
 		const res = await app.request("/admin", { redirect: "manual" });
 		assert.equal(res.status, 302);
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
-	test("未登录访问 /admin/posts 会跳转到登录页喵", async () => {
+	test("未登录访问 /admin/posts 会跳转到登录页", async () => {
 		const res = await app.request("/admin/posts", { redirect: "manual" });
 		assert.equal(res.status, 302);
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
-	test("未登录访问 /admin/media 会跳转到登录页喵", async () => {
+	test("未登录访问 /admin/media 会跳转到登录页", async () => {
 		const res = await app.request("/admin/media", { redirect: "manual" });
 		assert.equal(res.status, 302);
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
-	test("未登录访问 /admin/appearance 会跳转到登录页喵", async () => {
+	test("未登录访问 /admin/appearance 会跳转到登录页", async () => {
 		const res = await app.request("/admin/appearance", {
 			redirect: "manual",
 		});
@@ -66,7 +66,7 @@ describe("后台接口喵", () => {
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
-	test("未登录访问 /admin/analytics 会跳转到登录页喵", async () => {
+	test("未登录访问 /admin/analytics 会跳转到登录页", async () => {
 		const res = await app.request("/admin/analytics", {
 			redirect: "manual",
 		});
@@ -74,7 +74,7 @@ describe("后台接口喵", () => {
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
-	test("POST /auth/login 会拒绝密码表单登录喵", async () => {
+	test("POST /auth/login 会拒绝密码表单登录", async () => {
 		const res = await app.request(
 			"/auth/login",
 			{
@@ -86,7 +86,7 @@ describe("后台接口喵", () => {
 		assert.match(await res.text(), /仅支持 GitHub OAuth 登录/u);
 	});
 
-	test("GET /auth/github 缺少配置时会返回 503 喵", async () => {
+	test("GET /auth/github 缺少配置时会返回 503 ", async () => {
 		const res = await app.request("/auth/github", undefined, {
 			...mockEnv,
 			GITHUB_OAUTH_CLIENT_ID: "",

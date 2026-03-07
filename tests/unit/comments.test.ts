@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
-describe("评论组件保护喵", () => {
-	test("文章布局会挂载默认折叠的评论面板喵", async () => {
+describe("评论组件保护", () => {
+	test("文章布局会挂载默认折叠的评论面板", async () => {
 		const [postLayoutSource, commentsComponentSource] = await Promise.all([
 			readFile("src/layouts/Post.astro", "utf8"),
 			readFile("src/components/CommentsPanel.astro", "utf8"),
@@ -15,7 +15,7 @@ describe("评论组件保护喵", () => {
 		assert.match(commentsComponentSource, /aria-expanded="false"/u);
 	});
 
-	test("评论脚本会按展开时机懒加载 giscus 并同步主题喵", async () => {
+	test("评论脚本会按展开时机懒加载 giscus 并同步主题", async () => {
 		const commentsScriptSource = await readFile("public/comments.js", "utf8");
 
 		assert.match(commentsScriptSource, /giscus\.app\/client\.js/u);
@@ -24,7 +24,7 @@ describe("评论组件保护喵", () => {
 		assert.match(commentsScriptSource, /astro:page-load/u);
 	});
 
-	test("站点配置会预留 giscus 仓库配置喵", async () => {
+	test("站点配置会预留 giscus 仓库配置", async () => {
 		const typesSource = await readFile("src/lib/types.ts", "utf8");
 
 		assert.match(typesSource, /comments:/u);

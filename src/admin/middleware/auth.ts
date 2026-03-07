@@ -253,7 +253,7 @@ export async function requireAuth(c: Context<AdminAppEnv>, next: Next) {
 	try {
 		session = await getSessionFromToken(c.env, token);
 	} catch {
-		return c.text("登录会话暂时不可用喵", 503);
+		return c.text("登录会话暂时不可用", 503);
 	}
 
 	if (!session) {

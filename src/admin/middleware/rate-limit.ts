@@ -46,7 +46,7 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 				);
 				return c.html(
 					loginPage({
-						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试喵`,
+						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,
 						githubLogin: getAdminGitHubLogin(c.env),
 						oauthEnabled: false,
 					}),
@@ -59,7 +59,7 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 	} catch {
 		return c.html(
 			loginPage({
-				error: "登录保护暂时不可用，请稍后再试喵",
+				error: "登录保护暂时不可用，请稍后再试",
 				githubLogin: getAdminGitHubLogin(c.env),
 				oauthEnabled: false,
 			}),

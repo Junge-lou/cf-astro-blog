@@ -651,14 +651,14 @@ function getAppearanceAlert(url: string) {
 	const status = new URL(url).searchParams.get("status");
 	switch (status) {
 		case "saved":
-			return { type: "success" as const, message: "外观设置已保存喵" };
+			return { type: "success" as const, message: "外观设置已保存" };
 		case "uploaded":
 			return {
 				type: "success" as const,
-				message: "背景图已上传并设为当前背景喵",
+				message: "背景图已上传并设为当前背景",
 			};
 		case "cleared":
-			return { type: "success" as const, message: "当前背景图引用已移除喵" };
+			return { type: "success" as const, message: "当前背景图引用已移除" };
 		default:
 			return undefined;
 	}
@@ -673,7 +673,7 @@ appearance.get("/", async (c) => {
 	try {
 		settings = await getSiteAppearance(getDb(c.env.DB));
 	} catch {
-		// D1 未绑定时回退默认外观喵
+		// D1 未绑定时回退默认外观
 	}
 
 	return c.html(
@@ -693,13 +693,13 @@ appearance.post("/", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = (await c.req.parseBody({ all: true })) as AppearanceFormBody;
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const backgroundImageKey = getBodyText(body, "backgroundImageKey").trim();
 	if (backgroundImageKey && !sanitizeMediaKey(backgroundImageKey)) {
 		return c.html(
-			renderAppearanceErrorPage(session.csrfToken, "背景图键名格式不合法喵"),
+			renderAppearanceErrorPage(session.csrfToken, "背景图键名格式不合法"),
 			400,
 		);
 	}
@@ -740,13 +740,13 @@ appearance.post("/background/upload", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = (await c.req.parseBody({ all: true })) as AppearanceFormBody;
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const file = getBodyFile(body, "file");
 	if (!(file instanceof File)) {
 		return c.html(
-			renderAppearanceErrorPage(session.csrfToken, "请选择要上传的背景图片喵"),
+			renderAppearanceErrorPage(session.csrfToken, "请选择要上传的背景图片"),
 			400,
 		);
 	}
@@ -755,7 +755,7 @@ appearance.post("/background/upload", async (c) => {
 		return c.html(
 			renderAppearanceErrorPage(
 				session.csrfToken,
-				"背景图仅允许 JPG、PNG、WEBP、AVIF 或 GIF 图片喵",
+				"背景图仅允许 JPG、PNG、WEBP、AVIF 或 GIF 图片",
 			),
 			400,
 		);
@@ -765,7 +765,7 @@ appearance.post("/background/upload", async (c) => {
 		return c.html(
 			renderAppearanceErrorPage(
 				session.csrfToken,
-				"背景图单个文件不能超过 5 MB 喵",
+				"背景图单个文件不能超过 5 MB ",
 			),
 			400,
 		);
@@ -791,7 +791,7 @@ appearance.post("/background/clear", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const body = (await c.req.parseBody({ all: true })) as AppearanceFormBody;
 	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
-		return c.text("CSRF 校验失败喵", 403);
+		return c.text("CSRF 校验失败", 403);
 	}
 
 	const currentSettings = await getSiteAppearance(getDb(c.env.DB)).catch(
