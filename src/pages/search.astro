@@ -49,7 +49,12 @@ if (query) {
 ---
 
 <Base title="搜索" description="按标题、摘要或关键词检索文章">
-	<section class="search-hero glass-panel">
+	<section
+		class="search-hero search-hero-depth glass-panel"
+		data-tilt-card
+		data-tilt-scale="0.42"
+		data-tilt-shift-scale="0.72"
+	>
 		<span class="section-kicker">站内检索</span>
 		<h1 class="page-title">搜索</h1>
 		<p class="page-intro">
@@ -110,6 +115,60 @@ if (query) {
 		padding: clamp(1.5rem, 1rem + 2vw, 2.6rem);
 	}
 
+	.search-hero-depth {
+		position: relative;
+		overflow: hidden;
+		transform:
+			perspective(1200px)
+			rotateX(var(--tilt-rotate-x, 0deg))
+			rotateY(var(--tilt-rotate-y, 0deg))
+			scale3d(1.002, 1.002, 1.002);
+		transform-style: preserve-3d;
+		transition:
+			transform var(--nav-motion-surface),
+			box-shadow var(--nav-motion-surface);
+	}
+
+	.search-hero-depth::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background:
+			radial-gradient(
+				circle at 18% 24%,
+				rgba(10, 132, 255, 0.22),
+				transparent 38%
+			),
+			linear-gradient(
+				135deg,
+				rgba(255, 255, 255, 0.16),
+				rgba(255, 255, 255, 0.02) 58%,
+				transparent
+			);
+		opacity: 0.72;
+		pointer-events: none;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * -8px),
+			calc(var(--tilt-shift-y, 0) * -8px),
+			0
+		);
+		transition: transform var(--nav-motion-surface);
+	}
+
+	.search-hero-depth .section-kicker,
+	.search-hero-depth .page-title,
+	.search-hero-depth .page-intro {
+		position: relative;
+		z-index: 1;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 2px),
+			calc(var(--tilt-shift-y, 0) * 2px),
+			14px
+		);
+		transition: transform var(--nav-motion-surface);
+	}
+
 	.search-results-block {
 		display: grid;
 		gap: 1.2rem;
@@ -117,6 +176,17 @@ if (query) {
 
 	.search-entry-stage {
 		width: 100%;
+	}
+
+	.search-hero-depth .search-entry-stage {
+		position: relative;
+		z-index: 1;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 4px),
+			calc(var(--tilt-shift-y, 0) * 4px),
+			24px
+		);
+		transition: transform var(--nav-motion-surface);
 	}
 
 	.section-head {
@@ -140,6 +210,17 @@ if (query) {
 		.section-head {
 			flex-direction: column;
 			align-items: start;
+		}
+	}
+
+	@media (hover: none), (pointer: coarse) {
+		.search-hero-depth,
+		.search-hero-depth::before,
+		.search-hero-depth .section-kicker,
+		.search-hero-depth .page-title,
+		.search-hero-depth .page-intro,
+		.search-hero-depth .search-entry-stage {
+			transform: none;
 		}
 	}
 </style>

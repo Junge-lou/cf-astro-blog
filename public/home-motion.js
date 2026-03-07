@@ -136,6 +136,17 @@
 
 	const attachTiltCard = (card, disposers) => {
 		let frame = 0;
+		const tiltScale = Math.min(
+			1,
+			Math.max(0.18, Number.parseFloat(card.dataset.tiltScale || "1") || 1),
+		);
+		const shiftScale = Math.min(
+			1.4,
+			Math.max(
+				0.2,
+				Number.parseFloat(card.dataset.tiltShiftScale || "1") || 1,
+			),
+		);
 		let currentRotateX = 0;
 		let currentRotateY = 0;
 		let currentShiftX = 0;
@@ -199,10 +210,10 @@
 			const normalizedX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
 			const normalizedY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
 
-			targetRotateY = normalizedX * 5.8;
-			targetRotateX = normalizedY * -5.8;
-			targetShiftX = normalizedX * 1.05;
-			targetShiftY = normalizedY * 0.92;
+			targetRotateY = normalizedX * 5.8 * tiltScale;
+			targetRotateX = normalizedY * -5.8 * tiltScale;
+			targetShiftX = normalizedX * 1.05 * shiftScale;
+			targetShiftY = normalizedY * 0.92 * shiftScale;
 			requestRender();
 		};
 

@@ -57,7 +57,12 @@ const totalPages = Math.ceil(totalPosts / limit);
 ---
 
 <Base title="归档" description="按时间顺序浏览全部已发布文章">
-	<section class="archive-hero glass-panel">
+	<section
+		class="archive-hero archive-hero-depth glass-panel"
+		data-tilt-card
+		data-tilt-scale="0.38"
+		data-tilt-shift-scale="0.68"
+	>
 		<div class="archive-hero-copy">
 			<span class="section-kicker">归档目录</span>
 			<h1 class="page-title">归档</h1>
@@ -124,14 +129,71 @@ const totalPages = Math.ceil(totalPosts / limit);
 		padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
 	}
 
+	.archive-hero-depth {
+		position: relative;
+		overflow: hidden;
+		transform:
+			perspective(1200px)
+			rotateX(var(--tilt-rotate-x, 0deg))
+			rotateY(var(--tilt-rotate-y, 0deg))
+			scale3d(1.002, 1.002, 1.002);
+		transform-style: preserve-3d;
+		transition:
+			transform var(--nav-motion-surface),
+			box-shadow var(--nav-motion-surface);
+	}
+
+	.archive-hero-depth::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background:
+			radial-gradient(
+				circle at 84% 18%,
+				rgba(10, 132, 255, 0.18),
+				transparent 42%
+			),
+			linear-gradient(
+				135deg,
+				rgba(255, 255, 255, 0.12),
+				rgba(255, 255, 255, 0.02) 54%,
+				transparent
+			);
+		opacity: 0.68;
+		pointer-events: none;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * -8px),
+			calc(var(--tilt-shift-y, 0) * -8px),
+			0
+		);
+		transition: transform var(--nav-motion-surface);
+	}
+
 	.archive-hero-copy {
 		display: grid;
 		gap: 1rem;
+		position: relative;
+		z-index: 1;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 2px),
+			calc(var(--tilt-shift-y, 0) * 2px),
+			14px
+		);
+		transition: transform var(--nav-motion-surface);
 	}
 
 	.archive-hero-meta {
 		display: grid;
 		gap: 0.9rem;
+		position: relative;
+		z-index: 1;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 4px),
+			calc(var(--tilt-shift-y, 0) * 4px),
+			24px
+		);
+		transition: transform var(--nav-motion-surface);
 	}
 
 	.hero-summary {
@@ -198,6 +260,15 @@ const totalPages = Math.ceil(totalPosts / limit);
 		.pagination .button:last-child,
 		.pagination .button:first-child {
 			justify-self: stretch;
+		}
+	}
+
+	@media (hover: none), (pointer: coarse) {
+		.archive-hero-depth,
+		.archive-hero-depth::before,
+		.archive-hero-copy,
+		.archive-hero-meta {
+			transform: none;
 		}
 	}
 </style>
