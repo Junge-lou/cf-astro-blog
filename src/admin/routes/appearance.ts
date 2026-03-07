@@ -184,16 +184,57 @@ function renderAppearancePage(options: {
 				gap: 1rem;
 			}
 
-			.appearance-upload-form {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 0.75rem;
-				align-items: center;
+			.appearance-upload-dropzone {
+				position: relative;
+				width: 100%;
+				aspect-ratio: 5 / 2;
+				border: 1px dashed rgba(10, 132, 255, 0.34);
+				border-radius: 0.95rem;
+				background:
+					linear-gradient(140deg, rgba(10, 132, 255, 0.08), rgba(10, 132, 255, 0.02)),
+					rgba(255, 255, 255, 0.02);
+				display: grid;
+				place-items: center;
+				padding: 1rem;
+				text-align: center;
+				cursor: pointer;
+				transition:
+					border-color var(--transition),
+					background-color var(--transition),
+					transform var(--transition);
 			}
 
-			.appearance-upload-form input[type="file"] {
-				flex: 1;
-				min-width: 220px;
+			.appearance-upload-dropzone:hover,
+			.appearance-upload-dropzone.is-dragover {
+				border-color: rgba(10, 132, 255, 0.65);
+				background:
+					linear-gradient(140deg, rgba(10, 132, 255, 0.16), rgba(10, 132, 255, 0.06)),
+					rgba(255, 255, 255, 0.03);
+				transform: translateY(-1px);
+			}
+
+			.appearance-upload-dropzone:focus-visible {
+				outline: 2px solid rgba(10, 132, 255, 0.6);
+				outline-offset: 2px;
+			}
+
+			.appearance-upload-copy {
+				display: grid;
+				gap: 0.4rem;
+				color: var(--text-secondary);
+			}
+
+			.appearance-upload-copy strong {
+				font-size: 1rem;
+				color: var(--text-primary);
+			}
+
+			.appearance-upload-copy span {
+				font-size: 0.86rem;
+			}
+
+			.appearance-upload-input {
+				display: none;
 			}
 
 			.appearance-background-actions {
@@ -413,17 +454,35 @@ function renderAppearancePage(options: {
 				<section class="appearance-panel">
 					<h2>背景图管理</h2>
 					<div class="appearance-stack">
-						<div class="appearance-upload-form">
-							<input type="file" name="file" accept="${escapeAttribute(getAllowedMediaAcceptValue())}" data-appearance-upload-input />
-							<button
-								type="submit"
-								class="btn btn-primary"
-								formaction="/api/admin/appearance/background/upload"
-								formmethod="post"
-							>
-								上传并设为当前背景
-							</button>
+						<div
+							class="appearance-upload-dropzone"
+							data-appearance-upload-dropzone
+							role="button"
+							tabindex="0"
+							aria-label="拖拽文件或点击上传背景图"
+						>
+							<div class="appearance-upload-copy">
+								<strong>拖拽图片到这里</strong>
+								<span>或点击选择文件，自动上传并设为当前背景</span>
+							</div>
 						</div>
+						<input
+							type="file"
+							name="file"
+							accept="${escapeAttribute(getAllowedMediaAcceptValue())}"
+							class="appearance-upload-input"
+							data-appearance-upload-input
+						/>
+						<button
+							type="submit"
+							formaction="/api/admin/appearance/background/upload"
+							formmethod="post"
+							formnovalidate
+							data-appearance-upload-submit
+							hidden
+						>
+							上传并设为当前背景
+						</button>
 					</div>
 					<div class="form-group">
 						<label for="backgroundImageKey">背景图键名</label>

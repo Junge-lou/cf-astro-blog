@@ -517,7 +517,13 @@ initDynamicLinkEditor("hero");
 const appearanceStage = document.querySelector("[data-appearance-stage]");
 const appearanceFocus = document.querySelector("[data-appearance-focus]");
 const appearanceEmpty = document.querySelector("[data-appearance-empty]");
+const appearanceUploadDropzone = document.querySelector(
+	"[data-appearance-upload-dropzone]",
+);
 const uploadInput = document.querySelector("[data-appearance-upload-input]");
+const appearanceUploadSubmit = document.querySelector(
+	"[data-appearance-upload-submit]",
+);
 const appearanceControls = {
 	backgroundScale: document.querySelector(
 		'[data-appearance-control="backgroundScale"]',
@@ -609,8 +615,8 @@ function updateAppearancePreview() {
 
 let appearanceObjectUrl = "";
 
-uploadInput?.addEventListener("change", () => {
-	if (!(uploadInput instanceof HTMLInputElement) || !uploadInput.files?.[0]) {
+function updateAppearanceUploadPreview(file) {
+	if (!(file instanceof File)) {
 		return;
 	}
 
@@ -623,9 +629,93 @@ uploadInput?.addEventListener("change", () => {
 		URL.revokeObjectURL(appearanceObjectUrl);
 	}
 
-	appearanceObjectUrl = URL.createObjectURL(uploadInput.files[0]);
+	appearanceObjectUrl = URL.createObjectURL(file);
 	image.src = appearanceObjectUrl;
 	updateAppearancePreview();
+}
+
+function submitAppearanceUpload() {
+	if (
+		!(uploadInput instanceof HTMLInputElement) ||
+		!(uploadInput.form instanceof HTMLFormElement)
+	) {
+		return;
+	}
+
+	if (appearanceUploadSubmit instanceof HTMLButtonElement) {
+		uploadInput.form.requestSubmit(appearanceUploadSubmit);
+		return;
+	}
+
+	uploadInput.form.requestSubmit();
+}
+
+function handleAppearanceUploadSelection(file) {
+	if (!(file instanceof File)) {
+		return;
+	}
+
+	updateAppearanceUploadPreview(file);
+	submitAppearanceUpload();
+}
+
+uploadInput?.addEventListener("change", () => {
+	if (!(uploadInput instanceof HTMLInputElement) || !uploadInput.files?.[0]) {
+		return;
+	}
+
+	handleAppearanceUploadSelection(uploadInput.files[0]);
+});
+
+appearanceUploadDropzone?.addEventListener("click", () => {
+	if (uploadInput instanceof HTMLInputElement) {
+		uploadInput.click();
+	}
+});
+
+appearanceUploadDropzone?.addEventListener("keydown", (event) => {
+	if (event.key !== "Enter" && event.key !== " ") {
+		return;
+	}
+
+	event.preventDefault();
+	if (uploadInput instanceof HTMLInputElement) {
+		uploadInput.click();
+	}
+});
+
+appearanceUploadDropzone?.addEventListener("dragover", (event) => {
+	event.preventDefault();
+	if (appearanceUploadDropzone instanceof HTMLElement) {
+		appearanceUploadDropzone.classList.add("is-dragover");
+	}
+});
+
+appearanceUploadDropzone?.addEventListener("dragleave", () => {
+	if (appearanceUploadDropzone instanceof HTMLElement) {
+		appearanceUploadDropzone.classList.remove("is-dragover");
+	}
+});
+
+appearanceUploadDropzone?.addEventListener("drop", (event) => {
+	event.preventDefault();
+	if (appearanceUploadDropzone instanceof HTMLElement) {
+		appearanceUploadDropzone.classList.remove("is-dragover");
+	}
+
+	if (!(uploadInput instanceof HTMLInputElement)) {
+		return;
+	}
+
+	const file = event.dataTransfer?.files?.[0];
+	if (!(file instanceof File)) {
+		return;
+	}
+
+	const dataTransfer = new DataTransfer();
+	dataTransfer.items.add(file);
+	uploadInput.files = dataTransfer.files;
+	handleAppearanceUploadSelection(file);
 });
 
 let draggingAppearanceFocus = false;
