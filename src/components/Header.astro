@@ -189,10 +189,15 @@ function isLinkActive(href: string) {
 	}
 
 	.site-brand-copy strong {
+		display: block;
+		max-width: 18rem;
 		font-size: 1rem;
 		font-weight: 700;
 		color: var(--color-text);
 		letter-spacing: -0.02em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.site-brand-copy small {
@@ -289,9 +294,8 @@ function isLinkActive(href: string) {
 		}
 
 		.site-nav-shell {
-			display: flex;
-			flex-wrap: wrap;
-			justify-content: center;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto auto;
 			width: 100%;
 			padding:
 				0.82rem
@@ -301,27 +305,35 @@ function isLinkActive(href: string) {
 		}
 
 		.site-brand {
-			width: 100%;
-			justify-content: center;
+			width: auto;
+			justify-content: flex-start;
 		}
 
 		.site-brand-copy {
-			justify-items: center;
+			justify-items: start;
 		}
 
 		.site-brand-copy small {
-			white-space: normal;
-			text-align: center;
+			white-space: nowrap;
+			text-align: left;
 		}
 
 		.nav-links {
-			order: 2;
-			justify-content: center;
-			flex-wrap: wrap;
+			justify-self: end;
+			justify-content: flex-end;
+			flex-wrap: nowrap;
+			row-gap: 0;
+			max-width: none;
+			gap: 0.36rem;
 		}
 
 		.nav-actions {
-			order: 3;
+			justify-self: end;
+		}
+
+		.nav-link {
+			padding: 0.62rem 0.78rem;
+			font-size: 0.88rem;
 		}
 
 		:global(html[data-nav-condensed]) .site-header {
@@ -338,19 +350,41 @@ function isLinkActive(href: string) {
 
 	@media (max-width: 640px) {
 		.site-nav-shell {
-			padding: 0.8rem;
+			grid-template-columns: minmax(0, 1fr) auto auto;
+			gap: 0.42rem;
+			padding: 0.72rem 0.8rem;
 		}
 
-		.nav-links,
-		.nav-actions {
-			width: 100%;
-			justify-content: center;
-			flex-wrap: wrap;
-			gap: 0.5rem;
+		.site-brand {
+			gap: 0.52rem;
+		}
+
+		.site-brand-mark {
+			width: 2.45rem;
+			height: 2.45rem;
+			padding: 0.22rem;
+		}
+
+		.site-brand-copy strong {
+			max-width: min(42vw, 10.5rem);
+			font-size: 0.92rem;
+		}
+
+		.site-brand-copy small {
+			display: none;
+		}
+
+		.nav-links {
+			gap: 0.2rem;
 		}
 
 		.nav-link {
-			padding-inline: 0.88rem;
+			padding: 0.52rem 0.66rem;
+			font-size: 0.84rem;
+		}
+
+		.nav-actions :global(.theme-toggle) {
+			padding: 0.58rem;
 		}
 
 		:global(html[data-nav-condensed]) .site-nav::before {
