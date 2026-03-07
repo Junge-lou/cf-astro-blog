@@ -227,7 +227,7 @@ export const adminSharedStyles = `
 		.sidebar-nav {
 			display: grid;
 			gap: 0.55rem;
-			flex: 1;
+			align-content: start;
 		}
 
 		.sidebar-nav a {
@@ -276,6 +276,7 @@ export const adminSharedStyles = `
 			display: grid;
 			gap: 0.65rem;
 			padding: 1rem;
+			margin-top: auto;
 			border-radius: calc(var(--radius-lg) - 8px);
 			background: var(--bg-tertiary);
 			border: 1px solid var(--border);
