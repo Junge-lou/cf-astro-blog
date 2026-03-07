@@ -157,7 +157,14 @@ export function postEditorPage(data: EditorData): string {
 
 					<div class="form-group">
 						<label for="featuredImageKey">封面图片</label>
-						<input type="hidden" id="featuredImageKey" name="featuredImageKey" value="${escapeAttribute(featuredImageKey)}" maxlength="255" />
+						<input
+							type="hidden"
+							id="featuredImageKey"
+							name="featuredImageKey"
+							value="${escapeAttribute(featuredImageKey)}"
+							maxlength="255"
+							data-cover-key-input="true"
+						/>
 						<div
 							class="cover-uploader"
 							data-cover-uploader="true"

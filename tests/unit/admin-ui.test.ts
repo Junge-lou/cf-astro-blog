@@ -48,4 +48,16 @@ describe("后台界面风格保护", () => {
 		assert.match(source, /heroTopicText/u);
 		assert.match(source, /heroWritingText/u);
 	});
+
+	test("文章封面上传会回填隐藏字段用于持久化保存", async () => {
+		const editorSource = await readFile(
+			"src/admin/views/posts/editor.ts",
+			"utf8",
+		);
+		const adminScriptSource = await readFile("public/admin.js", "utf8");
+
+		assert.match(editorSource, /data-cover-key-input="true"/u);
+		assert.match(adminScriptSource, /\[data-cover-key-input='true'\]/u);
+		assert.match(adminScriptSource, /uploader\.closest\("\.form-group"\)/u);
+	});
 });

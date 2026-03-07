@@ -307,7 +307,10 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 
 	const uploadUrl = uploader.dataset.uploadUrl || "";
 	const csrfToken = uploader.dataset.csrfToken || "";
-	const hiddenKeyInput = uploader.querySelector("#featuredImageKey");
+	const hiddenKeyInput =
+		uploader.querySelector("[data-cover-key-input='true']") ||
+		uploader.closest(".form-group")?.querySelector("[data-cover-key-input='true']") ||
+		document.querySelector("[data-cover-key-input='true']");
 	const fileInput = uploader.querySelector("[data-cover-file-input='true']");
 	const dropzone = uploader.querySelector("[data-cover-dropzone='true']");
 	const keyDisplay = uploader.querySelector("[data-cover-key-display]");
