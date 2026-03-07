@@ -32,6 +32,7 @@ interface ParsedPostInput {
 	content: string;
 	excerpt: string | null;
 	status: "draft" | "published" | "scheduled";
+	publishAt: string | null;
 	featuredImageKey: string | null;
 	featuredImageAlt: string | null;
 	metaTitle: string | null;
@@ -83,6 +84,19 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 		return { error: "文章状态不合法喵" } as const;
 	}
 
+	const publishAtRaw = sanitizePlainText(body.publishAt, 32, { trim: true });
+	let publishAt: string | null = null;
+	if (publishAtRaw) {
+		const parsed = new Date(publishAtRaw);
+		if (Number.isNaN(parsed.getTime())) {
+			return { error: "定时发布时间格式不合法喵" } as const;
+		}
+		publishAt = parsed.toISOString();
+	}
+	if (status === "scheduled" && !publishAt) {
+		return { error: "定时发布需要填写发布时间喵" } as const;
+	}
+
 	const categoryIdRaw = String(body.categoryId ?? "").trim();
 	const isNewCategorySelected = categoryIdRaw === "__new__";
 	const categoryId =
@@ -125,6 +139,7 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 			excerpt:
 				sanitizePlainText(body.excerpt, 200, { allowNewlines: true }) || null,
 			status,
+			publishAt,
 			featuredImageKey,
 			featuredImageAlt: sanitizePlainText(body.featuredImageAlt, 200) || null,
 			metaTitle: sanitizePlainText(body.metaTitle, 200) || null,
@@ -383,6 +398,12 @@ posts.post("/", async (c) => {
 		parsed.data.newTagNames,
 	);
 	const slug = await resolveUniquePostSlug(db, parsed.data.slug);
+	const publishAt =
+		parsed.data.status === "scheduled"
+			? parsed.data.publishAt
+			: parsed.data.status === "published"
+				? now
+				: null;
 	const publishedAt = parsed.data.status === "published" ? now : null;
 
 	const [inserted] = await db
@@ -393,6 +414,7 @@ posts.post("/", async (c) => {
 			content: parsed.data.content,
 			excerpt: parsed.data.excerpt,
 			status: parsed.data.status,
+			publishAt,
 			publishedAt,
 			featuredImageKey: parsed.data.featuredImageKey,
 			featuredImageAlt: parsed.data.featuredImageAlt,
@@ -476,7 +498,11 @@ posts.post("/:id", async (c) => {
 	const now = new Date().toISOString();
 
 	const [existing] = await db
-		.select({ status: blogPosts.status, publishedAt: blogPosts.publishedAt })
+		.select({
+			status: blogPosts.status,
+			publishedAt: blogPosts.publishedAt,
+			publishAt: blogPosts.publishAt,
+		})
 		.from(blogPosts)
 		.where(eq(blogPosts.id, id))
 		.limit(1);
@@ -488,6 +514,12 @@ posts.post("/:id", async (c) => {
 		parsed.data.status === "published" && existing.status !== "published"
 			? now
 			: (existing.publishedAt ?? null);
+	const publishAt =
+		parsed.data.status === "scheduled"
+			? parsed.data.publishAt
+			: parsed.data.status === "published"
+				? now
+				: null;
 	const categoryId = await resolveCategoryId(
 		db,
 		parsed.data.categoryId,
@@ -508,6 +540,7 @@ posts.post("/:id", async (c) => {
 			content: parsed.data.content,
 			excerpt: parsed.data.excerpt,
 			status: parsed.data.status,
+			publishAt,
 			publishedAt,
 			featuredImageKey: parsed.data.featuredImageKey,
 			featuredImageAlt: parsed.data.featuredImageAlt,

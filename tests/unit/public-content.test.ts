@@ -13,23 +13,26 @@ import { buildProtectedAssetHeaders } from "../../src/lib/security";
 const dialect = new SQLiteSyncDialect();
 
 describe("公开内容保护喵", () => {
-	test("文章详情过滤条件会强制限制为已发布状态喵", () => {
+	test("文章详情过滤条件会限制为已发布或已到时的定时文章喵", () => {
 		const compiled = dialect.sqlToQuery(
 			sql`select * from ${blogPosts} where ${getPublicPostBySlugCondition("draft-post")}`,
 		);
 
 		assert.match(compiled.sql, /"blog_posts"\."slug" = \?/u);
 		assert.match(compiled.sql, /"blog_posts"\."status" = \?/u);
-		assert.deepEqual(compiled.params, ["draft-post", "published"]);
+		assert.ok(compiled.params.includes("draft-post"));
+		assert.ok(compiled.params.includes("published"));
+		assert.ok(compiled.params.includes("scheduled"));
 	});
 
-	test("搜索过滤条件会强制限制为已发布状态喵", () => {
+	test("搜索过滤条件会限制为已发布或已到时的定时文章喵", () => {
 		const compiled = dialect.sqlToQuery(
 			sql`select * from ${blogPosts} where ${getPublicPostSearchCondition("%draft%")}`,
 		);
 
 		assert.match(compiled.sql, /"blog_posts"\."status" = \?/u);
 		assert.ok(compiled.params.includes("published"));
+		assert.ok(compiled.params.includes("scheduled"));
 		assert.equal(
 			compiled.params.filter((value) => value === "%draft%").length,
 			3,

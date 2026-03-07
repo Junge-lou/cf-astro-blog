@@ -5,6 +5,7 @@ import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import { getPublicPostVisibilityCondition } from "@/lib/public-content";
 import { siteConfig } from "@/lib/types";
 
 let recentPosts: Array<{
@@ -34,7 +35,7 @@ try {
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-		.where(eq(blogPosts.status, "published"))
+		.where(getPublicPostVisibilityCondition())
 		.orderBy(desc(blogPosts.publishedAt))
 		.limit(6);
 } catch {

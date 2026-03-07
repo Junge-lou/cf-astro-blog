@@ -4,6 +4,7 @@ import PostCard from "@/components/PostCard.astro";
 import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
+import { getPublicPostVisibilityCondition } from "@/lib/public-content";
 
 const page = Number(Astro.url.searchParams.get("page") || "1");
 const limit = 10;
@@ -28,7 +29,7 @@ try {
 	const [countResult] = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(blogPosts)
-		.where(eq(blogPosts.status, "published"));
+		.where(getPublicPostVisibilityCondition());
 	totalPosts = countResult?.count ?? 0;
 
 	posts = await db
@@ -44,7 +45,7 @@ try {
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-		.where(eq(blogPosts.status, "published"))
+		.where(getPublicPostVisibilityCondition())
 		.orderBy(desc(blogPosts.publishedAt))
 		.limit(limit)
 		.offset(offset);

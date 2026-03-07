@@ -577,6 +577,10 @@ export const adminSharedStyles = `
 			margin-bottom: 1rem;
 		}
 
+		.form-group.is-disabled {
+			opacity: 0.72;
+		}
+
 		.form-group label {
 			display: block;
 			margin-bottom: 0.45rem;
@@ -699,6 +703,10 @@ export const adminSharedStyles = `
 
 		.new-category-wrap {
 			margin-top: 0.7rem;
+		}
+
+		.new-category-wrap.is-disabled {
+			opacity: 0.72;
 		}
 
 		.sr-only {

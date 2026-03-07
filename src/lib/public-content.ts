@@ -1,10 +1,19 @@
-import { and, eq, like, or } from "drizzle-orm";
+import { and, eq, isNotNull, like, lte, or } from "drizzle-orm";
 import { blogPosts } from "@/db/schema";
 
 export const PUBLIC_POST_STATUS = "published";
+export const SCHEDULED_POST_STATUS = "scheduled";
 
 export function getPublicPostVisibilityCondition() {
-	return eq(blogPosts.status, PUBLIC_POST_STATUS);
+	const nowIso = new Date().toISOString();
+	return or(
+		eq(blogPosts.status, PUBLIC_POST_STATUS),
+		and(
+			eq(blogPosts.status, SCHEDULED_POST_STATUS),
+			isNotNull(blogPosts.publishAt),
+			lte(blogPosts.publishAt, nowIso),
+		),
+	);
 }
 
 export function getPublicPostBySlugCondition(slug: string) {

@@ -5,6 +5,9 @@ const slugPreview = document.querySelector("[data-slug-preview]");
 const categorySelect = document.getElementById("categoryId");
 const newCategoryWrap = document.querySelector("[data-new-category-wrap='true']");
 const newCategoryInput = document.getElementById("newCategoryName");
+const statusSelect = document.getElementById("status");
+const scheduleField = document.querySelector("[data-schedule-field='true']");
+const publishAtInput = document.querySelector("[data-publish-at-input='true']");
 const contentTextarea = document.getElementById("content");
 const contentUploadStatus = document.querySelector("[data-content-upload-status]");
 const editorForm = document.querySelector("form[data-editor-upload-url]");
@@ -34,7 +37,7 @@ function setStatusMessage(target, message, mode = "") {
 
 async function uploadImageToMedia(file, uploadUrl, csrfToken) {
 	if (!file || !uploadUrl || !csrfToken) {
-		throw new Error("上传配置缺失，请刷新页面后重试喵");
+		throw new Error("上传配置缺失，请刷新页面后重试");
 	}
 
 	const formData = new FormData();
@@ -49,7 +52,7 @@ async function uploadImageToMedia(file, uploadUrl, csrfToken) {
 
 	const payload = await response.json().catch(() => ({}));
 	if (!response.ok || !payload?.key) {
-		throw new Error(payload?.message || "图片上传失败，请重试喵");
+		throw new Error(payload?.message || "图片上传失败，请重试");
 	}
 
 	return {
@@ -98,14 +101,30 @@ function syncNewCategoryInputVisibility() {
 		categorySelect.value === "__new__";
 
 	if (newCategoryWrap instanceof HTMLElement) {
-		newCategoryWrap.hidden = !isCreatingNew;
+		newCategoryWrap.classList.toggle("is-disabled", !isCreatingNew);
 	}
 
 	if (newCategoryInput instanceof HTMLInputElement) {
+		newCategoryInput.disabled = !isCreatingNew;
 		newCategoryInput.required = isCreatingNew;
 		if (!isCreatingNew) {
 			newCategoryInput.value = "";
 		}
+	}
+}
+
+function syncScheduleFieldVisibility() {
+	const isScheduled =
+		statusSelect instanceof HTMLSelectElement &&
+		statusSelect.value === "scheduled";
+
+	if (scheduleField instanceof HTMLElement) {
+		scheduleField.classList.toggle("is-disabled", !isScheduled);
+	}
+
+	if (publishAtInput instanceof HTMLInputElement) {
+		publishAtInput.disabled = !isScheduled;
+		publishAtInput.required = isScheduled;
 	}
 }
 
@@ -185,6 +204,8 @@ for (const checkbox of document.querySelectorAll("input[data-tag-checkbox='true'
 
 categorySelect?.addEventListener("change", syncNewCategoryInputVisibility);
 syncNewCategoryInputVisibility();
+statusSelect?.addEventListener("change", syncScheduleFieldVisibility);
+syncScheduleFieldVisibility();
 
 for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")) {
 	if (!(uploader instanceof HTMLElement)) {
@@ -226,7 +247,7 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 		}
 
 		dropzone.innerHTML =
-			'<div class="cover-empty" data-cover-empty="true">拖拽图片到这里，或点击按钮上传喵</div>';
+			'<div class="cover-empty" data-cover-empty="true">拖拽图片或点击上传</div>';
 	};
 
 	const setStatus = (message) => {
@@ -239,7 +260,7 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 		}
 
 		if (keyDisplay instanceof HTMLElement) {
-			keyDisplay.textContent = key || "未设置";
+			keyDisplay.textContent = key || "";
 		}
 
 		if (!key) {
@@ -258,15 +279,15 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 			return;
 		}
 
-		setStatus("正在上传封面，请稍候喵");
+		setStatus("正在上传封面");
 
 		try {
 			const uploaded = await uploadImageToMedia(file, uploadUrl, csrfToken);
 			setCoverValue(uploaded.key, uploaded.url);
-			setStatusMessage(status, "封面上传成功，已自动填入键名喵", "success");
+			setStatusMessage(status, "封面上传成功", "success");
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : "封面上传失败，请检查网络后重试喵";
+				error instanceof Error ? error.message : "封面上传失败，请检查网络后重试";
 			setStatusMessage(status, message, "error");
 		}
 	};
@@ -288,7 +309,7 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 
 	clearButton?.addEventListener("click", () => {
 		setCoverValue("", "");
-		setStatus("封面已清空喵");
+		setStatus("封面已清空");
 	});
 
 	dropzone?.addEventListener("dragover", (event) => {
@@ -330,14 +351,14 @@ const handleEditorImageUpload = async (file) => {
 		return;
 	}
 
-	setStatusMessage(contentUploadStatus, "正在上传图片并插入正文，请稍候喵");
+	setStatusMessage(contentUploadStatus, "上传中");
 	try {
 		const uploaded = await uploadImageToMedia(file, editorUploadUrl, editorCsrfToken);
 		insertMarkdownImage(contentTextarea, file, uploaded.url);
-		setStatusMessage(contentUploadStatus, "图片上传完成，已插入正文喵", "success");
+		setStatusMessage(contentUploadStatus, "已插入", "success");
 	} catch (error) {
 		const message =
-			error instanceof Error ? error.message : "正文图片上传失败，请稍后重试喵";
+			error instanceof Error ? error.message : "正文图片上传失败，请稍后重试";
 		setStatusMessage(contentUploadStatus, message, "error");
 	}
 };

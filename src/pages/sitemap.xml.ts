@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro";
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { blogPosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
+import { getPublicPostVisibilityCondition } from "@/lib/public-content";
 import { siteConfig } from "@/lib/types";
 
 export const GET: APIRoute = async (context) => {
@@ -20,7 +21,7 @@ export const GET: APIRoute = async (context) => {
 				updatedAt: blogPosts.updatedAt,
 			})
 			.from(blogPosts)
-			.where(eq(blogPosts.status, "published"))
+			.where(getPublicPostVisibilityCondition())
 			.orderBy(desc(blogPosts.updatedAt));
 	} catch {
 		// D1 not bound

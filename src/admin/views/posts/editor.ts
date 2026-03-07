@@ -19,12 +19,29 @@ interface EditorData {
 	error?: string;
 }
 
+function toDateTimeLocalValue(value?: string | null): string {
+	if (!value) {
+		return "";
+	}
+
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) {
+		return "";
+	}
+
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	const hour = String(date.getHours()).padStart(2, "0");
+	const minute = String(date.getMinutes()).padStart(2, "0");
+	return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
 export function postEditorPage(data: EditorData): string {
 	const {
 		post,
 		categories,
 		tags,
-		currentUsername,
 		selectedTagIds = [],
 		csrfToken,
 		error,
@@ -37,6 +54,7 @@ export function postEditorPage(data: EditorData): string {
 	const featuredImageKey = post?.featuredImageKey || "";
 	const featuredImageAlt = post?.featuredImageAlt || "";
 	const featuredImageUrl = featuredImageKey ? `/media/${featuredImageKey}` : "";
+	const publishAtValue = toDateTimeLocalValue(post?.publishAt || null);
 
 	const content = `
 		<h1>${isEdit ? "编辑文章" : "新建文章"}</h1>
@@ -57,7 +75,7 @@ export function postEditorPage(data: EditorData): string {
 					</div>
 
 					<div class="form-group">
-						<label for="slug">访问路径（可选）</label>
+						<label for="slug">访问路径</label>
 						<input
 							type="text"
 							id="slug"
@@ -66,12 +84,10 @@ export function postEditorPage(data: EditorData): string {
 							value="${escapeAttribute(post?.slug || "")}"
 							pattern="[a-z0-9\\-]*"
 							maxlength="120"
-							placeholder="留空时自动根据标题生成"
+							placeholder="留空自动生成"
 							data-manual="${isEdit ? "true" : "false"}"
 						/>
-						<p class="form-help">
-							访问路径：/blog/<span data-slug-preview>${escapeHtml(post?.slug || "自动生成")}</span>
-						</p>
+						<p class="form-help">/blog/<span data-slug-preview>${escapeHtml(post?.slug || "自动生成")}</span></p>
 					</div>
 
 					<div class="form-group">
@@ -82,45 +98,61 @@ export function postEditorPage(data: EditorData): string {
 					<div class="form-group">
 						<label for="content">正文（Markdown）</label>
 						<textarea id="content" name="content" class="form-textarea" required>${escapeTextarea(post?.content || "")}</textarea>
-						<p class="form-help">可以把图片直接拖到正文里，系统会自动上传并插入 Markdown 图片语法喵</p>
-						<p class="form-help" data-content-upload-status>支持 JPG、PNG、WEBP、AVIF、GIF，单图不超过 5MB 喵</p>
+						<p class="form-help" data-content-upload-status></p>
 					</div>
 				</div>
 
 				<div class="editor-panel">
 					<div class="form-group">
 						<label for="status">状态</label>
-						<select id="status" name="status" class="form-select">
+						<select
+							id="status"
+							name="status"
+							class="form-select"
+							onchange="var wrap=this.form&&this.form.querySelector('[data-schedule-field]');var input=this.form&&this.form.querySelector('[data-publish-at-input]');var enabled=this.value==='scheduled';if(wrap){wrap.classList.toggle('is-disabled',!enabled);}if(input){input.disabled=!enabled;input.required=enabled;}"
+						>
 							<option value="draft" ${currentStatus === "draft" ? "selected" : ""}>${getPostStatusLabel("draft")}</option>
 							<option value="published" ${currentStatus === "published" ? "selected" : ""}>${getPostStatusLabel("published")}</option>
 							<option value="scheduled" ${currentStatus === "scheduled" ? "selected" : ""}>${getPostStatusLabel("scheduled")}</option>
 						</select>
 					</div>
 
+					<div class="form-group schedule-field ${currentStatus === "scheduled" ? "" : "is-disabled"}" data-schedule-field="true">
+						<label for="publishAt">定时发布时间</label>
+						<input
+							type="datetime-local"
+							id="publishAt"
+							name="publishAt"
+							class="form-input"
+							value="${escapeAttribute(publishAtValue)}"
+							data-publish-at-input="true"
+							${currentStatus === "scheduled" ? "" : "disabled"}
+						/>
+					</div>
+
 					<div class="form-group">
 						<label for="categoryId">分类</label>
-						<select id="categoryId" name="categoryId" class="form-select">
+						<select
+							id="categoryId"
+							name="categoryId"
+							class="form-select"
+							onchange="var wrap=this.form&&this.form.querySelector('[data-new-category-wrap]');var input=this.form&&this.form.querySelector('#newCategoryName');var enabled=this.value==='__new__';if(wrap){wrap.classList.toggle('is-disabled',!enabled);}if(input){input.disabled=!enabled;input.required=enabled;if(!enabled){input.value='';}}"
+						>
 							<option value="">未分类</option>
 							${categories.map((cat) => `<option value="${cat.id}" ${post?.categoryId === cat.id ? "selected" : ""}>${escapeHtml(cat.name)}</option>`).join("")}
 							<option value="__new__">+ 新建分类</option>
 						</select>
-						<div class="new-category-wrap" data-new-category-wrap="true" hidden>
+						<div class="new-category-wrap is-disabled" data-new-category-wrap="true">
 							<input
 								type="text"
 								id="newCategoryName"
 								name="newCategoryName"
 								class="form-input"
 								maxlength="60"
-								placeholder="输入新分类名，保存时自动创建并使用"
+								placeholder="输入新分类"
+								disabled
 							/>
-							<p class="form-help">输入后会自动创建这个分类并用于当前文章喵</p>
 						</div>
-					</div>
-
-					<div class="form-group">
-						<label>发布作者</label>
-						<div class="form-readonly">${escapeHtml(currentUsername)}</div>
-						<p class="form-help">作者固定为当前登录账号，不需要手动填写喵</p>
 					</div>
 
 					<div class="form-group">
@@ -142,15 +174,14 @@ export function postEditorPage(data: EditorData): string {
 								${
 									featuredImageUrl
 										? `<img src="${escapeAttribute(featuredImageUrl)}" alt="${escapeAttribute(featuredImageAlt || "封面预览")}" class="cover-preview-image" data-cover-preview-image="true" />`
-										: `<div class="cover-empty" data-cover-empty="true">拖拽图片到这里，或点击按钮上传喵</div>`
+										: `<div class="cover-empty" data-cover-empty="true">拖拽图片或点击上传</div>`
 								}
 							</div>
 							<div class="cover-actions">
 								<button type="button" class="btn btn-sm" data-cover-select="true">上传封面</button>
 								<button type="button" class="btn btn-sm btn-danger" data-cover-clear="true">清空封面</button>
 							</div>
-							<p class="form-help">当前键名：<span data-cover-key-display>${escapeHtml(featuredImageKey || "未设置")}</span></p>
-							<p class="form-help" data-cover-upload-status>支持 JPG、PNG、WEBP、AVIF、GIF，单图不超过 5MB 喵</p>
+							<p class="form-help" data-cover-upload-status></p>
 						</div>
 					</div>
 
@@ -160,8 +191,7 @@ export function postEditorPage(data: EditorData): string {
 					</div>
 
 					<details>
-						<summary>SEO 设置（可选）</summary>
-						<p class="form-help">SEO 就是给搜索引擎和社交平台看的标题与描述，不填也能正常发文喵</p>
+						<summary>SEO（可选）</summary>
 						<div class="form-group">
 							<label for="metaTitle">SEO 标题</label>
 							<input type="text" id="metaTitle" name="metaTitle" class="form-input" value="${escapeAttribute(post?.metaTitle || "")}" maxlength="200" />
@@ -195,7 +225,7 @@ export function postEditorPage(data: EditorData): string {
 								</label>`,
 											)
 											.join("")
-									: `<span class="form-help">当前还没有可选标签，直接在下面输入新标签即可喵</span>`
+									: `<span class="form-help">暂无标签</span>`
 							}
 						</div>
 						<input
@@ -204,9 +234,8 @@ export function postEditorPage(data: EditorData): string {
 							name="newTagNames"
 							class="form-input"
 							maxlength="400"
-							placeholder="输入新标签，多个用逗号分隔，例如 Astro, Cloudflare"
+							placeholder="新标签，多个用逗号分隔"
 						/>
-						<p class="form-help">新标签会在保存时自动创建并自动勾选喵</p>
 					</div>
 
 					<div class="form-actions">
