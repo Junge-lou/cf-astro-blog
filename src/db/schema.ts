@@ -77,6 +77,27 @@ export const blogPostTags = sqliteTable(
 	(table) => [primaryKey({ columns: [table.postId, table.tagId] })],
 );
 
+// ─── 友链申请与展示 ───────────────────────────────────────────────────────────
+
+export const friendLinks = sqliteTable(
+	"friend_links",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		name: text("name").notNull(),
+		siteUrl: text("site_url").notNull().unique(),
+		avatarUrl: text("avatar_url"),
+		description: text("description").notNull(),
+		contact: text("contact").notNull(),
+		note: text("note"),
+		status: text("status").notNull().default("pending"),
+		reviewNote: text("review_note"),
+		reviewedAt: text("reviewed_at"),
+		createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+		updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+	},
+	(table) => [index("friend_links_status_idx").on(table.status)],
+);
+
 // ─── 站点外观设置 ────────────────────────────────────────────────────────────
 
 export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
@@ -191,6 +212,9 @@ export type NewBlogTag = typeof blogTags.$inferInsert;
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type NewBlogPost = typeof blogPosts.$inferInsert;
+
+export type FriendLink = typeof friendLinks.$inferSelect;
+export type NewFriendLink = typeof friendLinks.$inferInsert;
 
 export type SiteAppearanceSetting = typeof siteAppearanceSettings.$inferSelect;
 export type NewSiteAppearanceSetting =

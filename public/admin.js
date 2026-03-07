@@ -147,7 +147,7 @@ function syncNewCategoryInputVisibility() {
 		categorySelect.value === "__new__";
 
 	if (newCategoryWrap instanceof HTMLElement) {
-		newCategoryWrap.classList.toggle("is-disabled", !isCreatingNew);
+		newCategoryWrap.classList.toggle("is-hidden", !isCreatingNew);
 	}
 
 	if (newCategoryInput instanceof HTMLInputElement) {
@@ -165,7 +165,7 @@ function syncScheduleFieldVisibility() {
 		statusSelect.value === "scheduled";
 
 	if (scheduleField instanceof HTMLElement) {
-		scheduleField.classList.toggle("is-disabled", !isScheduled);
+		scheduleField.classList.toggle("is-hidden", !isScheduled);
 	}
 
 	if (publishAtInput instanceof HTMLInputElement) {

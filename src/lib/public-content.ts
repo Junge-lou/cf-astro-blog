@@ -20,13 +20,17 @@ export function getPublicPostBySlugCondition(slug: string) {
 	return and(eq(blogPosts.slug, slug), getPublicPostVisibilityCondition());
 }
 
+export function getPublicPostKeywordCondition(pattern: string) {
+	return or(
+		like(blogPosts.title, pattern),
+		like(blogPosts.content, pattern),
+		like(blogPosts.excerpt, pattern),
+	);
+}
+
 export function getPublicPostSearchCondition(pattern: string) {
 	return and(
 		getPublicPostVisibilityCondition(),
-		or(
-			like(blogPosts.title, pattern),
-			like(blogPosts.content, pattern),
-			like(blogPosts.excerpt, pattern),
-		),
+		getPublicPostKeywordCondition(pattern),
 	);
 }

@@ -55,6 +55,7 @@ export function postEditorPage(data: EditorData): string {
 	const featuredImageAlt = post?.featuredImageAlt || "";
 	const featuredImageUrl = featuredImageKey ? `/media/${featuredImageKey}` : "";
 	const publishAtValue = toDateTimeLocalValue(post?.publishAt || null);
+	const isScheduled = currentStatus === "scheduled";
 
 	const content = `
 		<h1>${isEdit ? "编辑文章" : "新建文章"}</h1>
@@ -105,19 +106,14 @@ export function postEditorPage(data: EditorData): string {
 				<div class="editor-panel">
 					<div class="form-group">
 						<label for="status">状态</label>
-						<select
-							id="status"
-							name="status"
-							class="form-select"
-							onchange="var wrap=this.form&&this.form.querySelector('[data-schedule-field]');var input=this.form&&this.form.querySelector('[data-publish-at-input]');var enabled=this.value==='scheduled';if(wrap){wrap.classList.toggle('is-disabled',!enabled);}if(input){input.disabled=!enabled;input.required=enabled;}"
-						>
+						<select id="status" name="status" class="form-select">
 							<option value="draft" ${currentStatus === "draft" ? "selected" : ""}>${getPostStatusLabel("draft")}</option>
 							<option value="published" ${currentStatus === "published" ? "selected" : ""}>${getPostStatusLabel("published")}</option>
 							<option value="scheduled" ${currentStatus === "scheduled" ? "selected" : ""}>${getPostStatusLabel("scheduled")}</option>
 						</select>
 					</div>
 
-					<div class="form-group schedule-field ${currentStatus === "scheduled" ? "" : "is-disabled"}" data-schedule-field="true">
+					<div class="form-group schedule-field ${isScheduled ? "" : "is-hidden"}" data-schedule-field="true">
 						<label for="publishAt">定时发布时间</label>
 						<input
 							type="datetime-local"
@@ -126,23 +122,19 @@ export function postEditorPage(data: EditorData): string {
 							class="form-input"
 							value="${escapeAttribute(publishAtValue)}"
 							data-publish-at-input="true"
-							${currentStatus === "scheduled" ? "" : "disabled"}
+							${isScheduled ? "" : "disabled"}
+							${isScheduled ? "required" : ""}
 						/>
 					</div>
 
 					<div class="form-group">
 						<label for="categoryId">分类</label>
-						<select
-							id="categoryId"
-							name="categoryId"
-							class="form-select"
-							onchange="var wrap=this.form&&this.form.querySelector('[data-new-category-wrap]');var input=this.form&&this.form.querySelector('#newCategoryName');var enabled=this.value==='__new__';if(wrap){wrap.classList.toggle('is-disabled',!enabled);}if(input){input.disabled=!enabled;input.required=enabled;if(!enabled){input.value='';}}"
-						>
+						<select id="categoryId" name="categoryId" class="form-select">
 							<option value="">未分类</option>
 							${categories.map((cat) => `<option value="${cat.id}" ${post?.categoryId === cat.id ? "selected" : ""}>${escapeHtml(cat.name)}</option>`).join("")}
 							<option value="__new__">+ 新建分类</option>
 						</select>
-						<div class="new-category-wrap is-disabled" data-new-category-wrap="true">
+						<div class="new-category-wrap is-hidden" data-new-category-wrap="true">
 							<input
 								type="text"
 								id="newCategoryName"
@@ -151,6 +143,7 @@ export function postEditorPage(data: EditorData): string {
 								maxlength="60"
 								placeholder="输入新分类"
 								disabled
+								data-new-category-input="true"
 							/>
 						</div>
 					</div>

@@ -4,12 +4,19 @@ interface AdminLayoutOptions {
 	csrfToken?: string;
 }
 
-type AdminNavKey = "dashboard" | "appearance" | "posts" | "media" | "analytics";
+type AdminNavKey =
+	| "dashboard"
+	| "appearance"
+	| "posts"
+	| "friends"
+	| "media"
+	| "analytics";
 
 const navItems: Array<{ key: AdminNavKey; label: string; href: string }> = [
 	{ key: "dashboard", label: "控制台", href: "/api/admin" },
 	{ key: "appearance", label: "外观", href: "/api/admin/appearance" },
 	{ key: "posts", label: "文章", href: "/api/admin/posts" },
+	{ key: "friends", label: "友链", href: "/api/admin/friends" },
 	{ key: "media", label: "媒体", href: "/api/admin/media" },
 	{ key: "analytics", label: "统计", href: "/api/admin/analytics" },
 ];
@@ -527,6 +534,10 @@ export const adminSharedStyles = `
 			opacity: 0.72;
 		}
 
+		.is-hidden {
+			display: none !important;
+		}
+
 		.form-group label {
 			display: block;
 			margin-bottom: 0.45rem;
@@ -975,6 +986,7 @@ export const adminSharedStyles = `
 
 function resolveActiveNav(title: string): AdminNavKey {
 	if (title.includes("外观")) return "appearance";
+	if (title.includes("友链")) return "friends";
 	if (
 		title.includes("文章") ||
 		title.includes("编辑") ||

@@ -218,6 +218,23 @@ function normalizeLinkItems(
 	return normalizedItems;
 }
 
+function ensureFriendNavLink(items: SiteNavLink[]): SiteNavLink[] {
+	const hasFriend = items.some((item) => item.href === "/friends");
+	if (hasFriend) {
+		return items;
+	}
+
+	const nextItems = [...items];
+	const insertIndex = nextItems.findIndex((item) => item.href === "/search");
+	if (insertIndex >= 0) {
+		nextItems.splice(insertIndex, 0, { label: "友链", href: "/friends" });
+	} else {
+		nextItems.push({ label: "友链", href: "/friends" });
+	}
+
+	return nextItems.slice(0, MAX_DYNAMIC_LINK_ITEMS);
+}
+
 export function normalizeSiteAppearanceInput(
 	input: SiteAppearanceInput,
 ): SiteAppearance {
@@ -277,9 +294,8 @@ export function normalizeSiteAppearanceInput(
 		{ label: legacyHeroSecondaryLabel, href: legacyHeroSecondaryHref },
 	];
 
-	const navLinks = normalizeLinkItems(
-		input.navLinks ?? input.navLinksJson,
-		fallbackNavLinks,
+	const navLinks = ensureFriendNavLink(
+		normalizeLinkItems(input.navLinks ?? input.navLinksJson, fallbackNavLinks),
 	);
 	const heroActions = normalizeLinkItems(
 		input.heroActions ?? input.heroActionsJson,
@@ -407,7 +423,9 @@ export function normalizeSiteAppearanceInput(
 }
 
 export function buildSiteNavLinks(appearance: SiteAppearance): SiteNavLink[] {
-	return normalizeLinkItems(appearance.navLinks, DEFAULT_NAV_LINKS);
+	return ensureFriendNavLink(
+		normalizeLinkItems(appearance.navLinks, DEFAULT_NAV_LINKS),
+	);
 }
 
 export function buildHeroActionLinks(

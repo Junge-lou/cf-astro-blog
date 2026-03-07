@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
 import { getDb } from "@/lib/db";
@@ -47,6 +47,13 @@ interface ParsedPostInput {
 }
 
 type ParsedPostInputResult = { data: ParsedPostInput } | { error: string };
+
+interface TaxonomyRow {
+	id: number;
+	name: string;
+	slug: string;
+	postCount: number;
+}
 
 function renderPostErrorPage(csrfToken: string, message: string) {
 	return adminLayout(
@@ -321,10 +328,63 @@ async function resolveTagIds(
 	return [...finalTagIds];
 }
 
+function resolvePostsAlert(status: string | null) {
+	switch (status) {
+		case "schedule-cancelled":
+			return {
+				type: "success",
+				message: "已取消定时发布，文章已转为草稿",
+			} as const;
+		case "category-deleted":
+			return { type: "success", message: "分类已删除" } as const;
+		case "tag-deleted":
+			return { type: "success", message: "标签已删除" } as const;
+		case "category-in-use":
+			return { type: "error", message: "分类仍有关联文章，无法删除" } as const;
+		case "tag-in-use":
+			return { type: "error", message: "标签仍有关联文章，无法删除" } as const;
+		case "invalid-id":
+			return { type: "error", message: "参数不合法" } as const;
+		case "csrf-failed":
+			return { type: "error", message: "CSRF 校验失败，请刷新后重试" } as const;
+		default:
+			return undefined;
+	}
+}
+
+async function getCategoryRows(db: BlogDb): Promise<TaxonomyRow[]> {
+	return await db
+		.select({
+			id: blogCategories.id,
+			name: blogCategories.name,
+			slug: blogCategories.slug,
+			postCount: sql<number>`count(${blogPosts.id})`,
+		})
+		.from(blogCategories)
+		.leftJoin(blogPosts, eq(blogPosts.categoryId, blogCategories.id))
+		.groupBy(blogCategories.id)
+		.orderBy(asc(blogCategories.name));
+}
+
+async function getTagRows(db: BlogDb): Promise<TaxonomyRow[]> {
+	return await db
+		.select({
+			id: blogTags.id,
+			name: blogTags.name,
+			slug: blogTags.slug,
+			postCount: sql<number>`count(${blogPostTags.postId})`,
+		})
+		.from(blogTags)
+		.leftJoin(blogPostTags, eq(blogPostTags.tagId, blogTags.id))
+		.groupBy(blogTags.id)
+		.orderBy(asc(blogTags.name));
+}
+
 posts.use("*", requireAuth);
 
 posts.get("/", async (c) => {
 	const session = getAuthenticatedSession(c);
+	const status = c.req.query("status") || null;
 	try {
 		const db = getDb(c.env.DB);
 		const allPosts = await db
@@ -341,10 +401,24 @@ posts.get("/", async (c) => {
 			.from(blogPosts)
 			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
 			.orderBy(desc(blogPosts.createdAt));
+		const [categories, tags] = await Promise.all([
+			getCategoryRows(db),
+			getTagRows(db),
+		]);
 
-		return c.html(postsListPage(allPosts, session.csrfToken));
+		return c.html(
+			postsListPage(
+				allPosts,
+				categories,
+				tags,
+				session.csrfToken,
+				resolvePostsAlert(status),
+			),
+		);
 	} catch {
-		return c.html(postsListPage([], session.csrfToken));
+		return c.html(
+			postsListPage([], [], [], session.csrfToken, resolvePostsAlert(status)),
+		);
 	}
 });
 
@@ -582,6 +656,84 @@ posts.post("/:id/delete", async (c) => {
 	const db = getDb(c.env.DB);
 	await db.delete(blogPosts).where(eq(blogPosts.id, id));
 	return c.redirect("/api/admin/posts");
+});
+
+posts.post("/:id/cancel-schedule", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.redirect("/api/admin/posts?status=csrf-failed");
+	}
+
+	const id = parseOptionalPositiveInt(c.req.param("id"));
+	if (!id) {
+		return c.redirect("/api/admin/posts?status=invalid-id");
+	}
+
+	const db = getDb(c.env.DB);
+	const now = new Date().toISOString();
+	await db
+		.update(blogPosts)
+		.set({
+			status: "draft",
+			publishAt: null,
+			publishedAt: null,
+			updatedAt: now,
+		})
+		.where(and(eq(blogPosts.id, id), eq(blogPosts.status, "scheduled")));
+	return c.redirect("/api/admin/posts?status=schedule-cancelled");
+});
+
+posts.post("/categories/:id/delete", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.redirect("/api/admin/posts?status=csrf-failed");
+	}
+
+	const id = parseOptionalPositiveInt(c.req.param("id"));
+	if (!id) {
+		return c.redirect("/api/admin/posts?status=invalid-id");
+	}
+
+	const db = getDb(c.env.DB);
+	const [usage] = await db
+		.select({ count: sql<number>`count(*)` })
+		.from(blogPosts)
+		.where(eq(blogPosts.categoryId, id));
+
+	if ((usage?.count ?? 0) > 0) {
+		return c.redirect("/api/admin/posts?status=category-in-use");
+	}
+
+	await db.delete(blogCategories).where(eq(blogCategories.id, id));
+	return c.redirect("/api/admin/posts?status=category-deleted");
+});
+
+posts.post("/tags/:id/delete", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.redirect("/api/admin/posts?status=csrf-failed");
+	}
+
+	const id = parseOptionalPositiveInt(c.req.param("id"));
+	if (!id) {
+		return c.redirect("/api/admin/posts?status=invalid-id");
+	}
+
+	const db = getDb(c.env.DB);
+	const [usage] = await db
+		.select({ count: sql<number>`count(*)` })
+		.from(blogPostTags)
+		.where(eq(blogPostTags.tagId, id));
+
+	if ((usage?.count ?? 0) > 0) {
+		return c.redirect("/api/admin/posts?status=tag-in-use");
+	}
+
+	await db.delete(blogTags).where(eq(blogTags.id, id));
+	return c.redirect("/api/admin/posts?status=tag-deleted");
 });
 
 export { posts as postsRoutes };

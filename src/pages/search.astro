@@ -1,13 +1,31 @@
 ---
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import PostCard from "@/components/PostCard.astro";
 import SearchBox from "@/components/Search.astro";
-import { blogCategories, blogPosts } from "@/db/schema";
+import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
-import { getPublicPostSearchCondition } from "@/lib/public-content";
+import {
+	getPublicPostKeywordCondition,
+	getPublicPostVisibilityCondition,
+} from "@/lib/public-content";
+import { sanitizeSlug } from "@/lib/security";
 
 const query = Astro.url.searchParams.get("q")?.trim() || "";
+const rawSelectedCategory =
+	Astro.url.searchParams.get("category")?.trim().toLowerCase() || "";
+const selectedCategory = sanitizeSlug(rawSelectedCategory) || "";
+const selectedTags = [
+	...new Set(
+		Astro.url.searchParams
+			.getAll("tags")
+			.map((item) => sanitizeSlug(item))
+			.filter((item): item is string => Boolean(item)),
+	),
+];
+const hasSearchCriteria = Boolean(
+	query || selectedCategory || selectedTags.length > 0,
+);
 
 let results: Array<{
 	title: string;
@@ -20,11 +38,37 @@ let results: Array<{
 	featuredImageAlt: string | null;
 }> = [];
 
-if (query) {
-	try {
-		const { env } = Astro.locals.runtime;
-		const db = getDb(env.DB);
-		const pattern = `%${query}%`;
+let categories: Array<{ slug: string; name: string }> = [];
+let tags: Array<{ slug: string; name: string }> = [];
+
+try {
+	const { env } = Astro.locals.runtime;
+	const db = getDb(env.DB);
+	const [allCategories, allTags] = await Promise.all([
+		db
+			.select({ slug: blogCategories.slug, name: blogCategories.name })
+			.from(blogCategories)
+			.orderBy(blogCategories.name),
+		db
+			.select({ slug: blogTags.slug, name: blogTags.name })
+			.from(blogTags)
+			.orderBy(blogTags.name),
+	]);
+
+	categories = allCategories;
+	tags = allTags;
+
+	if (hasSearchCriteria) {
+		const whereConditions = [getPublicPostVisibilityCondition()];
+		if (query) {
+			whereConditions.push(getPublicPostKeywordCondition(`%${query}%`));
+		}
+		if (selectedCategory) {
+			whereConditions.push(eq(blogCategories.slug, selectedCategory));
+		}
+		if (selectedTags.length > 0) {
+			whereConditions.push(inArray(blogTags.slug, selectedTags));
+		}
 
 		results = await db
 			.select({
@@ -39,16 +83,35 @@ if (query) {
 			})
 			.from(blogPosts)
 			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-			.where(getPublicPostSearchCondition(pattern))
-			.orderBy(desc(blogPosts.publishedAt))
+			.leftJoin(blogPostTags, eq(blogPostTags.postId, blogPosts.id))
+			.leftJoin(blogTags, eq(blogTags.id, blogPostTags.tagId))
+			.where(and(...whereConditions))
+			.groupBy(
+				blogPosts.id,
+				blogPosts.title,
+				blogPosts.slug,
+				blogPosts.excerpt,
+				blogPosts.publishedAt,
+				blogPosts.authorName,
+				blogCategories.name,
+				blogPosts.featuredImageKey,
+				blogPosts.featuredImageAlt,
+			)
+			.orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
 			.limit(20);
-	} catch {
-		// D1 未绑定时回退为空结果
 	}
+} catch {
+	// D1 未绑定时回退为空结果
 }
+
+const activeFilters = [
+	query ? `关键词：${query}` : "",
+	selectedCategory ? `分类：${selectedCategory}` : "",
+	selectedTags.length > 0 ? `标签：${selectedTags.join("、")}` : "",
+].filter(Boolean);
 ---
 
-<Base title="搜索" description="按标题、摘要或关键词检索文章">
+<Base title="搜索" description="按关键词、分类和标签组合检索文章">
 	<section
 		class="search-hero search-hero-depth glass-panel"
 		data-tilt-card
@@ -57,25 +120,29 @@ if (query) {
 	>
 		<span class="section-kicker">站内检索</span>
 		<h1 class="page-title">搜索</h1>
-		<p class="page-intro">
-			如果你已经记得一个关键词，直接从这里跳到对应文章会比翻归档更快。
-		</p>
+		<p class="page-intro">支持关键词、分类与标签组合筛选，快速定位目标内容。</p>
 		<div class="search-entry-stage" transition:name="search-entry">
-			<SearchBox initialQuery={query} />
+			<SearchBox
+				initialQuery={query}
+				categories={categories}
+				tags={tags}
+				selectedCategory={selectedCategory}
+				selectedTags={selectedTags}
+			/>
 		</div>
 	</section>
 
-	{query ? (
+	{hasSearchCriteria ? (
 		<section class="search-results-block">
 			<div class="section-head">
 				<div>
 					<h2 class="section-heading">搜索结果</h2>
-					<p class="section-subheading">关键词：{query}</p>
+					<p class="section-subheading">{activeFilters.length > 0 ? activeFilters.join(" · ") : "已启用筛选"}</p>
 				</div>
 				<p class="results-summary">
 					{results.length > 0
 						? `共找到 ${results.length} 篇相关文章`
-						: `没有找到与“${query}”相关的内容`}
+						: "没有找到符合当前条件的内容"}
 				</p>
 			</div>
 
@@ -97,7 +164,7 @@ if (query) {
 				</div>
 			) : (
 				<div class="empty-state glass-panel">
-					<p>换一个更具体的词，或者直接去归档页浏览最近更新。</p>
+					<p>换一个关键词，或调整分类/标签筛选条件后再试。</p>
 				</div>
 			)}
 		</section>

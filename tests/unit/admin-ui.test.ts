@@ -61,6 +61,35 @@ describe("后台界面风格保护", () => {
 		assert.match(adminScriptSource, /uploader\.closest\("\.form-group"\)/u);
 	});
 
+	test("文章编辑页状态与分类联动使用隐藏显示逻辑", async () => {
+		const [editorSource, adminScriptSource] = await Promise.all([
+			readFile("src/admin/views/posts/editor.ts", "utf8"),
+			readFile("public/admin.js", "utf8"),
+		]);
+
+		assert.ok(editorSource.includes("schedule-field"));
+		assert.ok(editorSource.includes("is-hidden"));
+		assert.match(editorSource, /new-category-wrap is-hidden/u);
+		assert.ok(
+			adminScriptSource.includes('classList.toggle("is-hidden", !isScheduled)'),
+		);
+		assert.ok(
+			adminScriptSource.includes(
+				'classList.toggle("is-hidden", !isCreatingNew)',
+			),
+		);
+	});
+
+	test("文章列表提供取消定时和历史分类标签删除入口", async () => {
+		const source = await readFile("src/admin/views/posts/list.ts", "utf8");
+
+		assert.match(source, /cancel-schedule/u);
+		assert.match(source, /历史分类管理/u);
+		assert.match(source, /历史标签管理/u);
+		assert.ok(source.includes("/api/admin/posts/categories/"));
+		assert.ok(source.includes("/api/admin/posts/tags/"));
+	});
+
 	test("外观页首屏图片预留位支持拖拽上传并自动回填路径", async () => {
 		const [appearanceSource, adminScriptSource] = await Promise.all([
 			readFile("src/admin/routes/appearance.ts", "utf8"),

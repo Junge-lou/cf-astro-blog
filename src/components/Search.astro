@@ -1,9 +1,26 @@
 ---
-interface Props {
-	initialQuery?: string;
+interface TaxonomyOption {
+	slug: string;
+	name: string;
 }
 
-const { initialQuery = "" }: Props = Astro.props;
+interface Props {
+	initialQuery?: string;
+	categories?: TaxonomyOption[];
+	tags?: TaxonomyOption[];
+	selectedCategory?: string;
+	selectedTags?: string[];
+}
+
+const {
+	initialQuery = "",
+	categories = [],
+	tags = [],
+	selectedCategory = "",
+	selectedTags = [],
+}: Props = Astro.props;
+
+const selectedTagSet = new Set(selectedTags);
 ---
 
 <div class="search-container">
@@ -17,7 +34,36 @@ const { initialQuery = "" }: Props = Astro.props;
 			autocomplete="off"
 			value={initialQuery}
 		/>
+		{categories.length > 0 ? (
+			<select name="category" class="search-select" aria-label="按分类筛选">
+				<option value="">全部分类</option>
+				{categories.map((category) => (
+					<option value={category.slug} selected={selectedCategory === category.slug}>
+						{category.name}
+					</option>
+				))}
+			</select>
+		) : null}
 		<button type="submit" class="button search-button">开始搜索</button>
+
+		{tags.length > 0 ? (
+			<fieldset class="search-tags">
+				<legend>按标签筛选</legend>
+				<div class="search-tag-list">
+					{tags.map((tag) => (
+						<label class="search-tag-chip">
+							<input
+								type="checkbox"
+								name="tags"
+								value={tag.slug}
+								checked={selectedTagSet.has(tag.slug)}
+							/>
+							<span>{tag.name}</span>
+						</label>
+					))}
+				</div>
+			</fieldset>
+		) : null}
 	</form>
 	<div id="search-results" class="search-results"></div>
 </div>
@@ -30,6 +76,7 @@ const { initialQuery = "" }: Props = Astro.props;
 
 	.search-form {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.75rem;
 		padding: 0.7rem;
 		border-radius: var(--radius-card);
@@ -39,8 +86,10 @@ const { initialQuery = "" }: Props = Astro.props;
 		-webkit-backdrop-filter: blur(12px) saturate(120%);
 	}
 
-	.search-input {
+	.search-input,
+	.search-select {
 		flex: 1;
+		min-width: min(100%, 12rem);
 		padding: 0.95rem 1rem;
 		border: 1px solid transparent;
 		border-radius: var(--radius-pill);
@@ -53,11 +102,16 @@ const { initialQuery = "" }: Props = Astro.props;
 			background-color var(--transition);
 	}
 
+	.search-select {
+		appearance: none;
+	}
+
 	.search-input::placeholder {
 		color: var(--color-text-muted);
 	}
 
-	.search-input:focus {
+	.search-input:focus,
+	.search-select:focus {
 		outline: none;
 		border-color: rgba(10, 132, 255, 0.22);
 		background: var(--color-bg-tertiary);
@@ -65,6 +119,43 @@ const { initialQuery = "" }: Props = Astro.props;
 
 	.search-button {
 		padding: 0.95rem 1.2rem;
+	}
+
+	.search-tags {
+		width: 100%;
+		border: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 0.55rem;
+	}
+
+	.search-tags legend {
+		font-size: 0.82rem;
+		color: var(--color-text-muted);
+	}
+
+	.search-tag-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.search-tag-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.4rem 0.62rem;
+		border-radius: var(--radius-pill);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		background: rgba(255, 255, 255, 0.06);
+		font-size: 0.8rem;
+		color: var(--color-text);
+		cursor: pointer;
+	}
+
+	.search-tag-chip input {
+		margin: 0;
 	}
 
 	.search-results {

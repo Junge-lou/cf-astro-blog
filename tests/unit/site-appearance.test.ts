@@ -44,7 +44,18 @@ describe("站点外观设置", () => {
 			heroTitle: "",
 		});
 
-		assert.deepEqual(normalized, DEFAULT_SITE_APPEARANCE);
+		assert.equal(
+			normalized.backgroundImageKey,
+			DEFAULT_SITE_APPEARANCE.backgroundImageKey,
+		);
+		assert.equal(normalized.heroTitle, DEFAULT_SITE_APPEARANCE.heroTitle);
+		assert.equal(normalized.navLink1Href, "/");
+		assert.equal(normalized.navLink2Href, "/blog");
+		assert.equal(
+			normalized.navLinks.some((item) => item.href === "/friends"),
+			true,
+		);
+		assert.equal(normalized.heroPrimaryHref, "/blog");
 	});
 
 	test("normalizeSiteAppearanceInput 会保留合法的文案与链接", () => {
@@ -79,10 +90,11 @@ describe("站点外观设置", () => {
 	test("buildSiteNavLinks 会按顺序生成顶部导航数据", () => {
 		const links = buildSiteNavLinks(DEFAULT_SITE_APPEARANCE);
 
-		assert.equal(links.length, 3);
+		assert.equal(links.length, 4);
 		assert.deepEqual(links[0], { label: "首页", href: "/" });
 		assert.deepEqual(links[1], { label: "归档", href: "/blog" });
-		assert.deepEqual(links[2], { label: "搜索", href: "/search" });
+		assert.deepEqual(links[2], { label: "友链", href: "/friends" });
+		assert.deepEqual(links[3], { label: "搜索", href: "/search" });
 	});
 
 	test("normalizeSiteAppearanceInput 支持动态导航与按钮", () => {
@@ -98,7 +110,7 @@ describe("站点外观设置", () => {
 			],
 		});
 
-		assert.equal(normalized.navLinks.length, 2);
+		assert.equal(normalized.navLinks.length, 3);
 		assert.deepEqual(normalized.navLinks[0], {
 			label: "项目",
 			href: "/projects",
@@ -106,6 +118,10 @@ describe("站点外观设置", () => {
 		assert.deepEqual(normalized.navLinks[1], {
 			label: "友链",
 			href: "https://example.com/friends",
+		});
+		assert.deepEqual(normalized.navLinks[2], {
+			label: "友链",
+			href: "/friends",
 		});
 		assert.equal(normalized.heroActions.length, 3);
 		assert.equal(normalized.heroPrimaryLabel, "看文章");

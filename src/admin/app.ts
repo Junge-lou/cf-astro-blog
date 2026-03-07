@@ -4,6 +4,8 @@ import { analyticsRoutes } from "./routes/analytics";
 import { appearanceRoutes } from "./routes/appearance";
 import { authRoutes } from "./routes/auth";
 import { dashboardRoutes } from "./routes/dashboard";
+import { friendLinksRoutes } from "./routes/friend-links";
+import { friendsRoutes } from "./routes/friends";
 import { mediaRoutes } from "./routes/media";
 import { postsRoutes } from "./routes/posts";
 
@@ -74,8 +76,10 @@ app.route("/auth", authRoutes);
 app.route("/admin", dashboardRoutes);
 app.route("/admin/appearance", appearanceRoutes);
 app.route("/admin/posts", postsRoutes);
+app.route("/admin/friends", friendsRoutes);
 app.route("/admin/media", mediaRoutes);
 app.route("/admin/analytics", analyticsRoutes);
+app.route("/friend-links", friendLinksRoutes);
 
 app.get("/health", (c) =>
 	c.json({ status: "ok", timestamp: new Date().toISOString() }),

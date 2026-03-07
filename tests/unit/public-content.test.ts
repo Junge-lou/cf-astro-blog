@@ -6,6 +6,7 @@ import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { blogPosts } from "../../src/db/schema";
 import {
 	getPublicPostBySlugCondition,
+	getPublicPostKeywordCondition,
 	getPublicPostSearchCondition,
 } from "../../src/lib/public-content";
 import { buildProtectedAssetHeaders } from "../../src/lib/security";
@@ -39,6 +40,20 @@ describe("公开内容保护", () => {
 		);
 	});
 
+	test("关键词过滤条件会覆盖标题、正文与摘要", () => {
+		const compiled = dialect.sqlToQuery(
+			sql`select * from ${blogPosts} where ${getPublicPostKeywordCondition("%astro%")}`,
+		);
+
+		assert.equal(
+			compiled.params.filter((value) => value === "%astro%").length,
+			3,
+		);
+		assert.match(compiled.sql, /"blog_posts"\."title" like \?/u);
+		assert.match(compiled.sql, /"blog_posts"\."content" like \?/u);
+		assert.match(compiled.sql, /"blog_posts"\."excerpt" like \?/u);
+	});
+
 	test("受保护资源响应头会禁用共享缓存", () => {
 		const headers = buildProtectedAssetHeaders("image/png");
 
@@ -58,7 +73,8 @@ describe("源码回归保护", () => {
 		]);
 
 		assert.match(postPageSource, /getPublicPostBySlugCondition/u);
-		assert.match(searchPageSource, /getPublicPostSearchCondition/u);
+		assert.match(searchPageSource, /getPublicPostVisibilityCondition/u);
+		assert.match(searchPageSource, /getPublicPostKeywordCondition/u);
 	});
 
 	test("主题切换组件不再包含内联脚本，并改由外置脚本接管", async () => {

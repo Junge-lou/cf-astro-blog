@@ -58,6 +58,12 @@ describe("后台接口", () => {
 		assert.equal(res.headers.get("location"), "/api/auth/login");
 	});
 
+	test("未登录访问 /admin/friends 会跳转到登录页", async () => {
+		const res = await app.request("/admin/friends", { redirect: "manual" });
+		assert.equal(res.status, 302);
+		assert.equal(res.headers.get("location"), "/api/auth/login");
+	});
+
 	test("未登录访问 /admin/appearance 会跳转到登录页", async () => {
 		const res = await app.request("/admin/appearance", {
 			redirect: "manual",

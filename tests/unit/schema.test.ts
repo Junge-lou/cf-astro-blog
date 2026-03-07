@@ -7,6 +7,7 @@ import {
 	blogPosts,
 	blogPostTags,
 	blogTags,
+	friendLinks,
 	loginAttempts,
 	siteAppearanceSettings,
 } from "../../src/db/schema";
@@ -51,6 +52,22 @@ describe("数据库结构", () => {
 		const columns = Object.keys(blogPostTags);
 		assert.ok(columns.includes("postId"));
 		assert.ok(columns.includes("tagId"));
+	});
+
+	test("friendLinks 表包含必要字段", () => {
+		const columns = Object.keys(friendLinks);
+		assert.ok(columns.includes("id"));
+		assert.ok(columns.includes("name"));
+		assert.ok(columns.includes("siteUrl"));
+		assert.ok(columns.includes("avatarUrl"));
+		assert.ok(columns.includes("description"));
+		assert.ok(columns.includes("contact"));
+		assert.ok(columns.includes("note"));
+		assert.ok(columns.includes("status"));
+		assert.ok(columns.includes("reviewNote"));
+		assert.ok(columns.includes("reviewedAt"));
+		assert.ok(columns.includes("createdAt"));
+		assert.ok(columns.includes("updatedAt"));
 	});
 
 	test("analyticsSessions 表包含必要字段", () => {
