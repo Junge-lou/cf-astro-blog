@@ -341,6 +341,35 @@ pre code {
 	padding-block: clamp(1.5rem, 3vw, 3rem) clamp(3rem, 5vw, 5rem);
 }
 
+html[data-admin-preview="true"] {
+	scroll-behavior: auto;
+}
+
+html[data-admin-preview="true"],
+html[data-admin-preview="true"] body {
+	overflow: hidden;
+}
+
+html[data-admin-preview="true"] body::before,
+html[data-admin-preview="true"] body::after,
+html[data-admin-preview="true"] .site-footer {
+	display: none;
+}
+
+html[data-admin-preview="true"] .site-header {
+	position: static;
+	padding-inline: 0;
+}
+
+html[data-admin-preview="true"] .site-route-frame {
+	padding-bottom: 0;
+}
+
+html[data-admin-preview="true"] .site-main {
+	gap: var(--space-xl);
+	padding-block: 0.9rem 0;
+}
+
 ::view-transition-group(page-shell) {
 	animation-duration: 280ms;
 	animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);

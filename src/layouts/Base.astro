@@ -39,7 +39,11 @@ const backgroundImageStyle = backgroundImageUrl
 ---
 
 <!doctype html>
-<html lang={siteConfig.language} transition:animate="none">
+<html
+	lang={siteConfig.language}
+	data-admin-preview={isAdminPreview ? "true" : undefined}
+	transition:animate="none"
+>
 	<head>
 		<BaseHead
 			title={title}

@@ -612,10 +612,15 @@ initDynamicLinkEditor("hero");
 
 const appearanceForm = document.querySelector("[data-appearance-form='true']");
 const appearanceLiveFrame = document.querySelector("[data-appearance-live-frame]");
+const appearanceLivePreviewContainer = document.querySelector(
+	"[data-appearance-live-preview]",
+);
 const appearanceUploadDropzone = document.querySelector(
 	"[data-appearance-upload-dropzone]",
 );
 const uploadInput = document.querySelector("[data-appearance-upload-input]");
+const APPEARANCE_PREVIEW_DESKTOP_WIDTH = 1440;
+const APPEARANCE_PREVIEW_DESKTOP_HEIGHT = 900;
 const appearanceControls = {
 	backgroundScale: document.querySelector(
 		'[data-appearance-control="backgroundScale"]',
@@ -761,10 +766,30 @@ function ensurePreviewBackgroundImage(previewDocument) {
 
 let appearanceLivePreviewFrame = 0;
 
+function syncAppearanceLiveFrameViewportSize() {
+	if (
+		!(appearanceLiveFrame instanceof HTMLIFrameElement) ||
+		!(appearanceLivePreviewContainer instanceof HTMLElement)
+	) {
+		return;
+	}
+
+	const containerWidth = appearanceLivePreviewContainer.clientWidth;
+	if (!containerWidth) {
+		return;
+	}
+
+	const scale = Math.min(1, containerWidth / APPEARANCE_PREVIEW_DESKTOP_WIDTH);
+	appearanceLiveFrame.style.transform = `scale(${scale.toFixed(4)})`;
+	appearanceLivePreviewContainer.style.height = `${Math.round(APPEARANCE_PREVIEW_DESKTOP_HEIGHT * scale)}px`;
+}
+
 function syncAppearanceLivePreview() {
 	if (!(appearanceLiveFrame instanceof HTMLIFrameElement)) {
 		return;
 	}
+
+	syncAppearanceLiveFrameViewportSize();
 
 	let previewDocument = null;
 	try {
@@ -1054,7 +1079,12 @@ appearanceUploadDropzone?.addEventListener("drop", (event) => {
 });
 
 appearanceLiveFrame?.addEventListener("load", () => {
+	syncAppearanceLiveFrameViewportSize();
 	queueAppearanceLivePreviewSync();
+});
+
+window.addEventListener("resize", () => {
+	syncAppearanceLiveFrameViewportSize();
 });
 
 appearanceForm?.addEventListener("input", () => {

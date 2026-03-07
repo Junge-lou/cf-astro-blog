@@ -28,7 +28,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 				"form-action 'self'",
 				"script-src 'self'",
 				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data:",
+				"img-src 'self' data: https://assets.ericterminal.com",
 				"font-src 'self'",
 				"connect-src 'self'",
 			].join("; "),

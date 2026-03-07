@@ -238,7 +238,7 @@ function renderAppearancePage(options: {
 
 			.appearance-live-preview {
 				position: relative;
-				aspect-ratio: 16 / 10;
+				min-height: 240px;
 				border-radius: 1rem;
 				overflow: hidden;
 				background: #0f172a;
@@ -246,12 +246,16 @@ function renderAppearancePage(options: {
 			}
 
 			.appearance-live-preview iframe {
-				width: 100%;
-				height: 100%;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 1440px;
+				height: 900px;
 				border: 0;
 				display: block;
 				background: #0f172a;
 				pointer-events: none;
+				transform-origin: top left;
 			}
 
 			.appearance-hint {
@@ -548,11 +552,12 @@ function renderAppearancePage(options: {
 			<div class="appearance-stack">
 				<section class="appearance-panel">
 					<h2>实时联动预览</h2>
-					<div class="appearance-live-preview">
+					<div class="appearance-live-preview" data-appearance-live-preview>
 						<iframe
 							src="/?adminPreview=1"
 							title="首页实时联动预览"
-							loading="lazy"
+							loading="eager"
+							scrolling="no"
 							data-appearance-live-frame
 						></iframe>
 					</div>
