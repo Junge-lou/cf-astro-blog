@@ -296,7 +296,7 @@ auth.get("/github/callback", async (c) => {
 	if (!timingSafeEqualText(profile.login, config.adminLogin)) {
 		return c.html(
 			loginPage({
-				error: `当前 GitHub 账号 ${profile.login} 没有后台权限喵`,
+				error: `当前 GitHub 账号 ${profile.login} 没有后台权限喵，这个是我的 CMS，请回吧～`,
 				githubLogin: config.adminLogin,
 				oauthEnabled: true,
 			}),
