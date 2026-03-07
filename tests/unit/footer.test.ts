@@ -27,9 +27,9 @@ describe("页脚精简保护喵", () => {
 		]);
 
 		assert.match(footerSource, /data-footer-reveal/u);
-		assert.match(footerSource, /\.site-footer\.is-visible/u);
 		assert.match(baseLayoutSource, /footer-reveal\.js/u);
 		assert.match(globalStylesSource, /--footer-reveal-space:/u);
+		assert.match(globalStylesSource, /\.site-footer\.is-visible/u);
 		assert.match(footerScriptSource, /remaining <=/u);
 		assert.match(footerScriptSource, /is-visible/u);
 	});
