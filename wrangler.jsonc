@@ -40,7 +40,7 @@
 	"vars": {
 		"SITE_NAME": "My Blog",
 		"SITE_URL": "https://blog.ericterminal.com",
-		"TURNSTILE_SITE_KEY": ""
+		"TURNSTILE_SITE_KEY": "0x4AAAAAACnxh79QQawnz9UI"
 	}
 
 	// 机密变量可通过 `wrangler secret put` 或本地 `.dev.vars` 配置
