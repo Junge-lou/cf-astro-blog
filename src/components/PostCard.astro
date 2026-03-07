@@ -37,9 +37,7 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 		{coverImageUrl ? (
 			<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
 		) : (
-			<div class="post-card-cover-fallback" aria-hidden="true">
-				<span>{categoryName || "未分类"}</span>
-			</div>
+			<div class="post-card-cover-fallback" aria-hidden="true"></div>
 		)}
 	</a>
 	<div class="post-card-content">
@@ -135,11 +133,7 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 
 	.post-card-cover-fallback {
 		position: relative;
-		display: grid;
-		align-content: end;
-		gap: 0.65rem;
 		height: 100%;
-		padding: 1.25rem;
 		overflow: hidden;
 	}
 
@@ -157,27 +151,6 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 		opacity: 0.75;
 		transform: rotate(10deg);
 		transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	.post-card-cover-fallback span {
-		position: relative;
-		z-index: 2;
-		color: #f7fbff;
-		text-shadow: 0 6px 20px rgba(4, 12, 22, 0.46);
-	}
-
-	.post-card-cover-fallback span {
-		display: inline-flex;
-		align-items: center;
-		width: fit-content;
-		padding: 0.34rem 0.6rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		background: rgba(15, 23, 42, 0.38);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		opacity: 0.84;
 	}
 
 	.post-card-content {
@@ -281,10 +254,6 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 	.post-card-cover-right .post-card-cover img {
 		transform-origin: right center;
 		transform: scale(0.88);
-	}
-
-	.post-card-cover-right .post-card-cover-fallback {
-		padding-left: clamp(1.9rem, 1.5rem + 1vw, 2.6rem);
 	}
 
 	.post-card:hover {
