@@ -45,6 +45,7 @@ function isLinkActive(href: string) {
 							<a
 								href={item.href}
 								class:list={["nav-link", { active: isLinkActive(item.href) }]}
+								data-astro-prefetch={isInternalHref(item.href) ? "load" : undefined}
 								target={isInternalHref(item.href) ? undefined : "_blank"}
 								rel={isInternalHref(item.href) ? undefined : "noopener noreferrer"}
 							>
