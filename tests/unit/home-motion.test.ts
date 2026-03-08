@@ -18,6 +18,19 @@ describe("首页灵动交互保护", () => {
 		assert.match(homePageSource, /hero-aura-primary/u);
 	});
 
+	test("右侧信息卡毛玻璃会跟随主题在深浅底之间切换", async () => {
+		const homePageSource = await readFile("src/pages/index.astro", "utf8");
+
+		assert.match(homePageSource, /hero-signal-pane-bg/u);
+		assert.ok(
+			homePageSource.includes(':global([data-theme="dark"]) .hero-signal-card'),
+		);
+		assert.ok(
+			homePageSource.includes(':global(:root:not([data-theme="light"]))'),
+		);
+		assert.match(homePageSource, /hero-signal-pane-border/u);
+	});
+
 	test("首页交互脚本会在切页后重新初始化并驱动鼠标联动变量", async () => {
 		const homeMotionSource = await readFile("public/home-motion.js", "utf8");
 

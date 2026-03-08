@@ -489,6 +489,12 @@ function isInternalHref(href: string) {
 	}
 
 		.hero-signal-card {
+			--hero-signal-pane-bg: rgba(255, 255, 255, 0.24);
+			--hero-signal-pane-border: rgba(255, 255, 255, 0.36);
+			--hero-signal-label-bg: rgba(255, 255, 255, 0.3);
+			--hero-signal-label-border: rgba(255, 255, 255, 0.34);
+			--hero-signal-chip-bg: rgba(255, 255, 255, 0.3);
+			--hero-signal-chip-border: rgba(255, 255, 255, 0.3);
 			position: relative;
 			display: block;
 			height: 100%;
@@ -514,6 +520,26 @@ function isInternalHref(href: string) {
 			animation-delay: 130ms;
 		}
 
+		:global([data-theme="dark"]) .hero-signal-card {
+			--hero-signal-pane-bg: rgba(9, 18, 32, 0.3);
+			--hero-signal-pane-border: rgba(255, 255, 255, 0.24);
+			--hero-signal-label-bg: rgba(255, 255, 255, 0.14);
+			--hero-signal-label-border: rgba(255, 255, 255, 0.14);
+			--hero-signal-chip-bg: rgba(255, 255, 255, 0.16);
+			--hero-signal-chip-border: rgba(255, 255, 255, 0.16);
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:global(:root:not([data-theme="light"])) .hero-signal-card {
+				--hero-signal-pane-bg: rgba(9, 18, 32, 0.3);
+				--hero-signal-pane-border: rgba(255, 255, 255, 0.24);
+				--hero-signal-label-bg: rgba(255, 255, 255, 0.14);
+				--hero-signal-label-border: rgba(255, 255, 255, 0.14);
+				--hero-signal-chip-bg: rgba(255, 255, 255, 0.16);
+				--hero-signal-chip-border: rgba(255, 255, 255, 0.16);
+			}
+		}
+
 		.hero-signal-card-has-image {
 			background: rgba(255, 255, 255, 0.1);
 			display: flex;
@@ -531,8 +557,8 @@ function isInternalHref(href: string) {
 
 		.hero-signal-card-has-image .hero-signal-content {
 			margin-top: auto;
-			border-top: 1px solid rgba(255, 255, 255, 0.24);
-			background: rgba(9, 18, 32, 0.3);
+			border-top: 1px solid var(--hero-signal-pane-border);
+			background: var(--hero-signal-pane-bg);
 			backdrop-filter: blur(min(calc(var(--hero-card-blur, 18px) * 1.5), 56px))
 				saturate(148%);
 			-webkit-backdrop-filter: blur(
@@ -590,8 +616,8 @@ function isInternalHref(href: string) {
 		width: fit-content;
 		padding: 0.42rem 0.72rem;
 		border-radius: var(--radius-pill);
-		background: rgba(255, 255, 255, 0.14);
-		border: 1px solid rgba(255, 255, 255, 0.14);
+		background: var(--hero-signal-label-bg);
+		border: 1px solid var(--hero-signal-label-border);
 		font-size: 0.74rem;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -640,8 +666,8 @@ function isInternalHref(href: string) {
 		.hero-signal-chip {
 			padding: 0.48rem 0.76rem;
 			border-radius: var(--radius-pill);
-			background: rgba(255, 255, 255, 0.16);
-			border: 1px solid rgba(255, 255, 255, 0.16);
+			background: var(--hero-signal-chip-bg);
+			border: 1px solid var(--hero-signal-chip-border);
 			font-size: 0.78rem;
 			color: var(--color-text-secondary);
 		}
