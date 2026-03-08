@@ -94,7 +94,7 @@ const tocEntries = (toc ?? [])
 				<nav class="article-toc glass-panel" aria-label="文章目录">
 					<div class="article-toc-head">
 						<span aria-hidden="true">TOC</span>
-						<strong>Content</strong>
+						<strong>目录</strong>
 					</div>
 					<ol class="article-toc-list">
 						{tocEntries.map((item) => (
@@ -257,10 +257,11 @@ const tocEntries = (toc ?? [])
 	}
 
 	.article-toc-head strong {
-		font-size: 1.8rem;
-		line-height: 1;
-		letter-spacing: -0.02em;
-		font-family: "Iowan Old Style", "Times New Roman", serif;
+		font-size: 1.12rem;
+		line-height: 1.1;
+		letter-spacing: 0;
+		font-weight: 640;
+		font-family: var(--font-sans);
 	}
 
 	.article-toc-list {
