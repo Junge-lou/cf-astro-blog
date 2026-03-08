@@ -92,10 +92,7 @@ const tocEntries = (toc ?? [])
 			</section>
 			{tocEntries.length > 0 && (
 				<nav class="article-toc glass-panel" aria-label="文章目录">
-					<div class="article-toc-head">
-						<span aria-hidden="true">TOC</span>
-						<strong>目录</strong>
-					</div>
+					<div class="article-toc-head">目录</div>
 					<ol class="article-toc-list">
 						{tocEntries.map((item) => (
 							<li class={`article-toc-item level-${item.level}`}>
@@ -245,23 +242,13 @@ const tocEntries = (toc ?? [])
 	}
 
 	.article-toc-head {
-		display: flex;
-		align-items: center;
-		gap: 0.58rem;
-		color: var(--color-text-secondary);
-	}
-
-	.article-toc-head span {
-		font-size: 1rem;
-		line-height: 1;
-	}
-
-	.article-toc-head strong {
-		font-size: 1.12rem;
-		line-height: 1.1;
+		display: block;
+		font-size: 0.92rem;
+		line-height: 1.7;
 		letter-spacing: 0;
-		font-weight: 640;
+		font-weight: 600;
 		font-family: var(--font-sans);
+		color: var(--color-text-secondary);
 	}
 
 	.article-toc-list {
@@ -289,7 +276,10 @@ const tocEntries = (toc ?? [])
 		padding: 0.36rem 0.5rem;
 		border-left: 2px solid transparent;
 		border-radius: 0.36rem;
+		font-size: 0.92rem;
 		line-height: 1.45;
+		font-family: var(--font-sans);
+		font-weight: 500;
 		color: var(--color-text-secondary);
 		transition:
 			color var(--duration-normal) ease,
