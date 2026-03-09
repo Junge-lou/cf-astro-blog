@@ -25,8 +25,7 @@ describe("后台界面风格保护", () => {
 		});
 
 		assert.match(html, /class="login-shell"/u);
-		assert.match(html, /class="login-hero"/u);
-		assert.match(html, /主页同款后台/u);
+		assert.ok(!html.includes('class="login-hero"'));
 		assert.match(html, /GitHub OAuth/u);
 		assert.match(html, /\/api\/auth\/github/u);
 	});
