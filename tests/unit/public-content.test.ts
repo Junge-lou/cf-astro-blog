@@ -66,15 +66,15 @@ describe("公开内容保护", () => {
 });
 
 describe("源码回归保护", () => {
-	test("公开文章详情与搜索页面都使用发布态过滤辅助函数", async () => {
+	test("公开文章详情页使用发布态过滤，搜索页改为 Pagefind 客户端检索", async () => {
 		const [postPageSource, searchPageSource] = await Promise.all([
 			readFile("src/pages/blog/[slug].astro", "utf8"),
 			readFile("src/pages/search.astro", "utf8"),
 		]);
 
 		assert.match(postPageSource, /getPublicPostBySlugCondition/u);
-		assert.match(searchPageSource, /getPublicPostVisibilityCondition/u);
-		assert.match(searchPageSource, /getPublicPostKeywordCondition/u);
+		assert.match(searchPageSource, /pagefind-search\.js/u);
+		assert.match(searchPageSource, /pagefind-search-results/u);
 	});
 
 	test("主题切换组件不再包含内联脚本，并改由外置脚本接管", async () => {

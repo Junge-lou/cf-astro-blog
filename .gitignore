@@ -43,3 +43,8 @@ coverage/
 # local collaboration docs
 AGENTS.md
 operations-log.md
+
+# generated search index
+.pagefind-source/
+public/pagefind/
+public/pagefind-meta.json

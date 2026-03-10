@@ -28,10 +28,7 @@ describe("评论组件保护", () => {
 		const typesSource = await readFile("src/lib/types.ts", "utf8");
 
 		assert.match(typesSource, /comments:/u);
-		assert.match(
-			typesSource,
-			/repo:\s*"Eric-Terminal\/cf-astro-blog"/u,
-		);
+		assert.match(typesSource, /repo:\s*"Eric-Terminal\/cf-astro-blog"/u);
 		assert.match(typesSource, /repoId:\s*"R_kgDORhlfAw"/u);
 		assert.match(typesSource, /category:\s*"Announcements"/u);
 		assert.match(typesSource, /categoryId:\s*"DIC_kwDORhlfA84C39BM"/u);

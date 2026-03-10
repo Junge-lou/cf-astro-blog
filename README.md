@@ -111,6 +111,8 @@ npm run hash:password -- 你的密码
 | `npm run dev` | 启动本地开发服务器 |
 | `npm run build` | 生成生产构建 |
 | `npm run preview` | 构建后用 Wrangler 本地预览 |
+| `npm run search:index:local` | 读取本地 D1 并生成 Pagefind 索引 |
+| `npm run search:index:remote` | 读取远端 D1 并生成 Pagefind 索引 |
 | `npm run check` | 运行类型检查和 Biome 检查 |
 | `npm run lint` | 运行 Biome lint |
 | `npm run format` | 格式化源码、脚本和测试 |
@@ -124,6 +126,14 @@ npm run hash:password -- 你的密码
 - `rss.xml`：由 `src/pages/rss.xml.ts` 动态输出，默认收录最近 30 篇公开文章。
 - `robots.txt`：由 `src/pages/robots.txt.ts` 输出，允许公开页面抓取，屏蔽后台登录与管理相关路径（`/api/auth`、`/api/admin`、`/admin`）。
 - `webmention`：由 `src/admin/routes/webmention.ts` 提供接收端点 `/api/webmention`，通过 `source/target` 校验后写入待审核队列；后台在 `/api/admin/mentions` 进行审核。
+
+## Pagefind 搜索
+
+- 搜索页改为浏览器端 Pagefind 检索，不再依赖服务端搜索 API 查询正文。
+- 索引生成脚本为 `scripts/build-pagefind-index.mjs`，会从 D1 拉取公开文章并输出：
+  - `public/pagefind/`（Pagefind 索引文件）
+  - `public/pagefind-meta.json`（分类、标签与文章元数据）
+- `npm run build` 会默认先执行本地索引构建；`npm run deploy` 会在发布前执行远端索引构建。
 
 ## 部署前检查
 

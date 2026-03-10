@@ -1,14 +1,8 @@
 ---
-import { and, desc, eq, inArray } from "drizzle-orm";
-import PostCard from "@/components/PostCard.astro";
 import SearchBox from "@/components/Search.astro";
-import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
+import { blogCategories, blogTags } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
-import {
-	getPublicPostKeywordCondition,
-	getPublicPostVisibilityCondition,
-} from "@/lib/public-content";
 import { sanitizeSlug } from "@/lib/security";
 
 const query = Astro.url.searchParams.get("q")?.trim() || "";
@@ -26,17 +20,6 @@ const selectedTags = [
 const hasSearchCriteria = Boolean(
 	query || selectedCategory || selectedTags.length > 0,
 );
-
-let results: Array<{
-	title: string;
-	slug: string;
-	excerpt: string | null;
-	publishedAt: string | null;
-	authorName: string | null;
-	categoryName: string | null;
-	featuredImageKey: string | null;
-	featuredImageAlt: string | null;
-}> = [];
 
 let categories: Array<{ slug: string; name: string }> = [];
 let tags: Array<{ slug: string; name: string }> = [];
@@ -57,51 +40,8 @@ try {
 
 	categories = allCategories;
 	tags = allTags;
-
-	if (hasSearchCriteria) {
-		const whereConditions = [getPublicPostVisibilityCondition()];
-		if (query) {
-			whereConditions.push(getPublicPostKeywordCondition(`%${query}%`));
-		}
-		if (selectedCategory) {
-			whereConditions.push(eq(blogCategories.slug, selectedCategory));
-		}
-		if (selectedTags.length > 0) {
-			whereConditions.push(inArray(blogTags.slug, selectedTags));
-		}
-
-		results = await db
-			.select({
-				title: blogPosts.title,
-				slug: blogPosts.slug,
-				excerpt: blogPosts.excerpt,
-				publishedAt: blogPosts.publishedAt,
-				authorName: blogPosts.authorName,
-				categoryName: blogCategories.name,
-				featuredImageKey: blogPosts.featuredImageKey,
-				featuredImageAlt: blogPosts.featuredImageAlt,
-			})
-			.from(blogPosts)
-			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-			.leftJoin(blogPostTags, eq(blogPostTags.postId, blogPosts.id))
-			.leftJoin(blogTags, eq(blogTags.id, blogPostTags.tagId))
-			.where(and(...whereConditions))
-			.groupBy(
-				blogPosts.id,
-				blogPosts.title,
-				blogPosts.slug,
-				blogPosts.excerpt,
-				blogPosts.publishedAt,
-				blogPosts.authorName,
-				blogCategories.name,
-				blogPosts.featuredImageKey,
-				blogPosts.featuredImageAlt,
-			)
-			.orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
-			.limit(20);
-	}
 } catch {
-	// D1 未绑定时回退为空结果
+	// D1 未绑定时回退为空选项
 }
 
 const activeFilters = [
@@ -111,7 +51,7 @@ const activeFilters = [
 ].filter(Boolean);
 ---
 
-<Base title="搜索" description="按关键词、分类和标签组合检索文章">
+<Base title="搜索" description="使用 Pagefind 在浏览器本地检索文章内容">
 	<section
 		class="search-hero search-hero-depth glass-panel"
 		data-tilt-card
@@ -120,7 +60,9 @@ const activeFilters = [
 	>
 		<span class="section-kicker">站内检索</span>
 		<h1 class="page-title">搜索</h1>
-		<p class="page-intro">支持关键词、分类与标签组合筛选，快速定位目标内容。</p>
+		<p class="page-intro">
+			本页搜索由 Pagefind 在浏览器内执行，不依赖服务端检索 API。
+		</p>
 		<div class="search-entry-stage" transition:name="search-entry">
 			<SearchBox
 				initialQuery={query}
@@ -132,43 +74,22 @@ const activeFilters = [
 		</div>
 	</section>
 
-	{hasSearchCriteria ? (
-		<section class="search-results-block">
-			<div class="section-head">
-				<div>
-					<h2 class="section-heading">搜索结果</h2>
-					<p class="section-subheading">{activeFilters.length > 0 ? activeFilters.join(" · ") : "已启用筛选"}</p>
-				</div>
-				<p class="results-summary">
-					{results.length > 0
-						? `共找到 ${results.length} 篇相关文章`
-						: "没有找到符合当前条件的内容"}
+	<section class="search-results-block">
+		<div class="section-head">
+			<div>
+				<h2 class="section-heading">搜索结果</h2>
+				<p class="section-subheading">
+					{activeFilters.length > 0 ? activeFilters.join(" · ") : "输入关键词后开始检索"}
 				</p>
 			</div>
+			<p id="pagefind-results-summary" class="results-summary">
+				{hasSearchCriteria ? "正在加载搜索结果..." : "输入关键词或筛选条件后开始搜索"}
+			</p>
+		</div>
+		<div id="pagefind-search-results" class="search-grid" />
+	</section>
 
-			{results.length > 0 ? (
-				<div class="search-grid">
-					{results.map((post, index) => (
-						<PostCard
-							title={post.title}
-							slug={post.slug}
-							excerpt={post.excerpt}
-							publishedAt={post.publishedAt}
-							authorName={post.authorName}
-							categoryName={post.categoryName}
-							featuredImageKey={post.featuredImageKey}
-							featuredImageAlt={post.featuredImageAlt}
-							coverSide={index % 2 === 0 ? "left" : "right"}
-						/>
-					))}
-				</div>
-			) : (
-				<div class="empty-state glass-panel">
-					<p>换一个关键词，或调整分类/标签筛选条件后再试。</p>
-				</div>
-			)}
-		</section>
-	) : null}
+	<script is:inline type="module" src="/pagefind-search.js"></script>
 </Base>
 
 <style>
@@ -268,7 +189,37 @@ const activeFilters = [
 
 	.search-grid {
 		display: grid;
-		gap: 1.2rem;
+		gap: 1rem;
+	}
+
+	.search-result-card {
+		display: grid;
+		gap: 0.65rem;
+		padding: 1rem 1.1rem;
+	}
+
+	.search-result-card h3 {
+		margin: 0;
+		font-size: 1.1rem;
+	}
+
+	.search-result-card h3 a {
+		color: var(--color-text);
+		text-decoration: none;
+	}
+
+	.search-result-card h3 a:hover {
+		color: var(--color-accent);
+	}
+
+	.search-result-card p {
+		margin: 0;
+		color: var(--color-text-secondary);
+	}
+
+	.search-result-meta {
+		color: var(--color-text-muted);
+		font-size: 0.86rem;
 	}
 
 	@media (max-width: 840px) {
