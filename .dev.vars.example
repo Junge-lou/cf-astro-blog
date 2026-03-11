@@ -17,4 +17,7 @@ TURNSTILE_SECRET_KEY=
 # 可选：后台发布/更新公开文章后，会请求这个部署钩子用于触发重建索引喵
 AUTO_DEPLOY_WEBHOOK_URL=
 # 可选：部署钩子鉴权令牌，会以 x-deploy-token 请求头发送喵
+# 如果 URL 是 GitHub dispatch 接口，会自动改用 Authorization: Bearer 发送喵
 AUTO_DEPLOY_WEBHOOK_SECRET=
+# 可选：GitHub dispatch 事件名，默认 rebuild-search-index 喵
+AUTO_DEPLOY_GITHUB_EVENT_TYPE=rebuild-search-index

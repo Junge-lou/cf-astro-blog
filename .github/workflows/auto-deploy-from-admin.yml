@@ -1,0 +1,33 @@
+name: 后台发布自动部署
+
+on:
+  repository_dispatch:
+    types:
+      - rebuild-search-index
+
+concurrency:
+  group: auto-deploy-from-admin
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event.client_payload.source == 'admin-posts' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 执行部署
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npm run deploy

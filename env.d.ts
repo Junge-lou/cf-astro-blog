@@ -13,6 +13,7 @@ interface Env {
 	TURNSTILE_SITE_KEY: string;
 	AUTO_DEPLOY_WEBHOOK_URL?: string;
 	AUTO_DEPLOY_WEBHOOK_SECRET?: string;
+	AUTO_DEPLOY_GITHUB_EVENT_TYPE?: string;
 
 	JWT_SECRET: string;
 	ADMIN_USERNAME: string;

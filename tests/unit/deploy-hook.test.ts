@@ -85,4 +85,41 @@ describe("部署钩子", () => {
 		assert.equal(payload.postStatus, "published");
 		assert.ok(payload.triggeredAt);
 	});
+
+	test("GitHub dispatch 模式会改用 Authorization 并包装 payload", async () => {
+		const calls: Array<{ input: string; init?: RequestInit }> = [];
+		globalThis.fetch = (async (input, init) => {
+			calls.push({ input: String(input), init });
+			return new Response(null, { status: 204 });
+		}) as typeof fetch;
+
+		const triggered = await triggerDeployHook(
+			createEnv({
+				AUTO_DEPLOY_WEBHOOK_URL:
+					"https://api.github.com/repos/Eric-Terminal/cf-astro-blog/dispatches",
+				AUTO_DEPLOY_WEBHOOK_SECRET: "ghp_test_token",
+				AUTO_DEPLOY_GITHUB_EVENT_TYPE: "rebuild-search-index",
+			}),
+			{
+				event: "post-created",
+				postId: 3,
+				postSlug: "auto-deploy",
+				postStatus: "published",
+			},
+		);
+
+		assert.equal(triggered, true);
+		assert.equal(calls.length, 1);
+		const requestInfo = calls[0];
+
+		const headers = new Headers(requestInfo.init?.headers);
+		assert.equal(headers.get("authorization"), "Bearer ghp_test_token");
+		assert.equal(headers.get("x-deploy-token"), null);
+		assert.equal(headers.get("accept"), "application/vnd.github+json");
+
+		const body = JSON.parse(String(requestInfo.init?.body));
+		assert.equal(body.event_type, "rebuild-search-index");
+		assert.equal(body.client_payload.source, "admin-posts");
+		assert.equal(body.client_payload.postId, 3);
+	});
 });

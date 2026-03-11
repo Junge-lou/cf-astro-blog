@@ -145,6 +145,10 @@ npm run hash:password -- 你的密码
 - 如需自动重建 Pagefind 索引，可配置 `AUTO_DEPLOY_WEBHOOK_URL`（可选附带 `AUTO_DEPLOY_WEBHOOK_SECRET`）。
 - 当后台发生会影响公开可见内容的操作（创建/更新/删除已公开文章、取消已生效的定时发布）时，系统会向该钩子发送 `POST` 请求。
 - 该钩子建议对接到你的 CI/CD（例如 GitHub Actions 的触发入口），在流水线中执行 `npm run deploy`。
+- 当 `AUTO_DEPLOY_WEBHOOK_URL` 指向 GitHub `repository_dispatch` 接口（`https://api.github.com/repos/<owner>/<repo>/dispatches`）时：
+  - 会自动发送 `Authorization: Bearer <AUTO_DEPLOY_WEBHOOK_SECRET>`；
+  - 请求体会自动包装为 `{ event_type, client_payload }`；
+  - `event_type` 默认 `rebuild-search-index`，可通过 `AUTO_DEPLOY_GITHUB_EVENT_TYPE` 覆盖。
 
 ## 部署前检查
 

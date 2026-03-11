@@ -168,10 +168,12 @@ describe("源码回归保护", () => {
 	});
 
 	test("后台文章变更会触发可选部署钩子", async () => {
-		const [postRouteSource, deployHookSource] = await Promise.all([
-			readFile("src/admin/routes/posts.ts", "utf8"),
-			readFile("src/admin/lib/deploy-hook.ts", "utf8"),
-		]);
+		const [postRouteSource, deployHookSource, workflowSource] =
+			await Promise.all([
+				readFile("src/admin/routes/posts.ts", "utf8"),
+				readFile("src/admin/lib/deploy-hook.ts", "utf8"),
+				readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
+			]);
 
 		assert.ok(postRouteSource.includes("triggerDeployHook"));
 		assert.ok(postRouteSource.includes("post-created"));
@@ -179,5 +181,10 @@ describe("源码回归保护", () => {
 		assert.ok(postRouteSource.includes("post-deleted"));
 		assert.ok(deployHookSource.includes("AUTO_DEPLOY_WEBHOOK_URL"));
 		assert.ok(deployHookSource.includes("x-deploy-token"));
+		assert.ok(deployHookSource.includes("authorization"));
+		assert.ok(deployHookSource.includes("Bearer"));
+		assert.ok(workflowSource.includes("repository_dispatch"));
+		assert.ok(workflowSource.includes("rebuild-search-index"));
+		assert.ok(workflowSource.includes("npm run deploy"));
 	});
 });

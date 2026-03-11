@@ -7,6 +7,13 @@ interface DeployHookPayload {
 	postStatus?: string;
 }
 
+function isGitHubDispatchUrl(url: URL): boolean {
+	return (
+		url.hostname === "api.github.com" &&
+		/^\/repos\/[^/]+\/[^/]+\/dispatches$/u.test(url.pathname)
+	);
+}
+
 function normalizeWebhookUrl(rawUrl: unknown): string | null {
 	if (typeof rawUrl !== "string") {
 		return null;
@@ -42,7 +49,31 @@ export async function triggerDeployHook(
 		"user-agent": "cf-astro-blog-admin/1.0",
 	});
 	const secret = String(env.AUTO_DEPLOY_WEBHOOK_SECRET ?? "").trim();
-	if (secret) {
+	const webhook = new URL(webhookUrl);
+	const githubDispatchMode = isGitHubDispatchUrl(webhook);
+
+	let requestBody: Record<string, unknown> = {
+		source: "admin-posts",
+		siteUrl: String(env.SITE_URL ?? ""),
+		triggeredAt: new Date().toISOString(),
+		...payload,
+	};
+	if (githubDispatchMode) {
+		if (!secret) {
+			console.error("[部署钩子] GitHub dispatch 模式缺少令牌，已跳过。");
+			return false;
+		}
+
+		headers.set("accept", "application/vnd.github+json");
+		headers.set("x-github-api-version", "2022-11-28");
+		headers.set("authorization", `Bearer ${secret}`);
+		requestBody = {
+			event_type:
+				String(env.AUTO_DEPLOY_GITHUB_EVENT_TYPE ?? "").trim() ||
+				"rebuild-search-index",
+			client_payload: requestBody,
+		};
+	} else if (secret) {
 		headers.set("x-deploy-token", secret);
 	}
 
@@ -55,12 +86,7 @@ export async function triggerDeployHook(
 		const response = await fetch(webhookUrl, {
 			method: "POST",
 			headers,
-			body: JSON.stringify({
-				source: "admin-posts",
-				siteUrl: String(env.SITE_URL ?? ""),
-				triggeredAt: new Date().toISOString(),
-				...payload,
-			}),
+			body: JSON.stringify(requestBody),
 			signal: abortController.signal,
 		});
 
