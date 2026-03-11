@@ -150,6 +150,7 @@ npm run hash:password -- 你的密码
   - 请求体会自动包装为 `{ event_type, client_payload }`；
   - `event_type` 默认 `rebuild-search-index`，可通过 `AUTO_DEPLOY_GITHUB_EVENT_TYPE` 覆盖。
 - 配套的 GitHub Actions 工作流见 `.github/workflows/auto-deploy-from-admin.yml`，它会读取仓库 Secret `CLOUDFLARE_REFRESH_TOKEN`，动态换取 Access Token 后执行 `npm run deploy`。
+- 由于 Cloudflare Refresh Token 可能轮换，工作流会把新的 refresh token 回写到 `CLOUDFLARE_REFRESH_TOKEN`。为此需要额外配置仓库 Secret `GH_ADMIN_TOKEN`（需有仓库 secrets 写权限）。
 
 ## 部署前检查
 

@@ -42,9 +42,28 @@ jobs:
             --data-urlencode "refresh_token=${CLOUDFLARE_REFRESH_TOKEN}" \
             --data-urlencode "client_id=54d11594-84e4-41aa-b438-e81b8fa78ee7")
 
-          ACCESS_TOKEN=$(node -e 'const data = JSON.parse(process.argv[1]); if (!data.access_token) { console.error(JSON.stringify(data)); process.exit(1); } process.stdout.write(data.access_token);' "$RESPONSE")
+          TOKEN_JSON=$(node -e 'const data = JSON.parse(process.argv[1]); if (!data.access_token) { console.error(JSON.stringify(data)); process.exit(1); } process.stdout.write(JSON.stringify({ accessToken: data.access_token, refreshToken: data.refresh_token || "" }));' "$RESPONSE")
+          ACCESS_TOKEN=$(node -e 'const data = JSON.parse(process.argv[1]); process.stdout.write(data.accessToken);' "$TOKEN_JSON")
+          NEXT_REFRESH_TOKEN=$(node -e 'const data = JSON.parse(process.argv[1]); process.stdout.write(data.refreshToken);' "$TOKEN_JSON")
+
           echo "::add-mask::$ACCESS_TOKEN"
           echo "token=$ACCESS_TOKEN" >> "$GITHUB_OUTPUT"
+          if [ -n "$NEXT_REFRESH_TOKEN" ]; then
+            echo "::add-mask::$NEXT_REFRESH_TOKEN"
+            echo "refresh_token=$NEXT_REFRESH_TOKEN" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 回写 Cloudflare Refresh Token
+        if: ${{ steps.cf_token.outputs.refresh_token != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+          NEXT_REFRESH_TOKEN: ${{ steps.cf_token.outputs.refresh_token }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "缺少 GitHub Secret: GH_ADMIN_TOKEN"
+            exit 1
+          fi
+          gh secret set CLOUDFLARE_REFRESH_TOKEN --repo "${{ github.repository }}" --body "$NEXT_REFRESH_TOKEN"
 
       - name: 执行部署
         env:
