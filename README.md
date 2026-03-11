@@ -94,6 +94,8 @@ npm run hash:password -- 你的密码
 | `GITHUB_OAUTH_REDIRECT_URI` | Variable | 否 | Cloudflare Variable | 可选，留空会按当前域名自动推导回调地址 |
 | `TURNSTILE_SITE_KEY` | Variable | 否 | Cloudflare Variable | 可选，登录页与友链申请页验证码站点 Key |
 | `TURNSTILE_SECRET_KEY` | Secret | 否 | Cloudflare Secret | 可选，登录页与友链申请验证码服务端密钥 |
+| `AUTO_DEPLOY_WEBHOOK_URL` | Variable | 否 | Cloudflare Variable | 可选，后台发布公开文章后触发外部部署钩子 |
+| `AUTO_DEPLOY_WEBHOOK_SECRET` | Secret | 否 | Cloudflare Secret | 可选，部署钩子鉴权令牌（请求头 `x-deploy-token`） |
 | `SITE_NAME` | Variable | 建议 | Cloudflare Variable | 站点名称 |
 | `SITE_URL` | Variable | 建议 | Cloudflare Variable | 站点主域名 |
 
@@ -136,6 +138,13 @@ npm run hash:password -- 你的密码
   - `public/pagefind-meta.json`（分类、标签与文章元数据）
 - `npm run build` 会默认先执行 `search:index:auto`（本地为空时自动回退远端），避免误发布空索引。
 - `npm run deploy` 会在发布前执行远端索引构建，保证线上搜索与远端 D1 一致。
+
+## 发布后自动重建索引（可选）
+
+- 默认情况下，后台“发布文章”只会写入 D1，不会自动触发部署。
+- 如需自动重建 Pagefind 索引，可配置 `AUTO_DEPLOY_WEBHOOK_URL`（可选附带 `AUTO_DEPLOY_WEBHOOK_SECRET`）。
+- 当后台发生会影响公开可见内容的操作（创建/更新/删除已公开文章、取消已生效的定时发布）时，系统会向该钩子发送 `POST` 请求。
+- 该钩子建议对接到你的 CI/CD（例如 GitHub Actions 的触发入口），在流水线中执行 `npm run deploy`。
 
 ## 部署前检查
 

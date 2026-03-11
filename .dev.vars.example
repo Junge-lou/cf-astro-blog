@@ -14,3 +14,7 @@ GITHUB_OAUTH_REDIRECT_URI=
 ADMIN_PASSWORD_HASH=
 # 如未启用 Turnstile，可留空喵
 TURNSTILE_SECRET_KEY=
+# 可选：后台发布/更新公开文章后，会请求这个部署钩子用于触发重建索引喵
+AUTO_DEPLOY_WEBHOOK_URL=
+# 可选：部署钩子鉴权令牌，会以 x-deploy-token 请求头发送喵
+AUTO_DEPLOY_WEBHOOK_SECRET=

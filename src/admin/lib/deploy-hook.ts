@@ -1,0 +1,79 @@
+const DEPLOY_HOOK_TIMEOUT_MS = 6000;
+
+interface DeployHookPayload {
+	event: string;
+	postId?: number;
+	postSlug?: string;
+	postStatus?: string;
+}
+
+function normalizeWebhookUrl(rawUrl: unknown): string | null {
+	if (typeof rawUrl !== "string") {
+		return null;
+	}
+
+	const value = rawUrl.trim();
+	if (!value) {
+		return null;
+	}
+
+	try {
+		const parsed = new URL(value);
+		if (!["http:", "https:"].includes(parsed.protocol)) {
+			return null;
+		}
+		return parsed.toString();
+	} catch {
+		return null;
+	}
+}
+
+export async function triggerDeployHook(
+	env: Env,
+	payload: DeployHookPayload,
+): Promise<boolean> {
+	const webhookUrl = normalizeWebhookUrl(env.AUTO_DEPLOY_WEBHOOK_URL);
+	if (!webhookUrl) {
+		return false;
+	}
+
+	const headers = new Headers({
+		"content-type": "application/json",
+		"user-agent": "cf-astro-blog-admin/1.0",
+	});
+	const secret = String(env.AUTO_DEPLOY_WEBHOOK_SECRET ?? "").trim();
+	if (secret) {
+		headers.set("x-deploy-token", secret);
+	}
+
+	const abortController = new AbortController();
+	const timeoutId = setTimeout(() => {
+		abortController.abort();
+	}, DEPLOY_HOOK_TIMEOUT_MS);
+
+	try {
+		const response = await fetch(webhookUrl, {
+			method: "POST",
+			headers,
+			body: JSON.stringify({
+				source: "admin-posts",
+				siteUrl: String(env.SITE_URL ?? ""),
+				triggeredAt: new Date().toISOString(),
+				...payload,
+			}),
+			signal: abortController.signal,
+		});
+
+		if (!response.ok) {
+			console.error(`[部署钩子] 请求失败，状态码：${response.status}`);
+			return false;
+		}
+
+		return true;
+	} catch (error) {
+		console.error("[部署钩子] 请求异常", error);
+		return false;
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}

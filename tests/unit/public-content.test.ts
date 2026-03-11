@@ -166,4 +166,18 @@ describe("源码回归保护", () => {
 		assert.ok(postPageSource.includes("renderSafeMarkdownWithToc"));
 		assert.ok(postPageSource.includes("toc={toc}"));
 	});
+
+	test("后台文章变更会触发可选部署钩子", async () => {
+		const [postRouteSource, deployHookSource] = await Promise.all([
+			readFile("src/admin/routes/posts.ts", "utf8"),
+			readFile("src/admin/lib/deploy-hook.ts", "utf8"),
+		]);
+
+		assert.ok(postRouteSource.includes("triggerDeployHook"));
+		assert.ok(postRouteSource.includes("post-created"));
+		assert.ok(postRouteSource.includes("post-updated"));
+		assert.ok(postRouteSource.includes("post-deleted"));
+		assert.ok(deployHookSource.includes("AUTO_DEPLOY_WEBHOOK_URL"));
+		assert.ok(deployHookSource.includes("x-deploy-token"));
+	});
 });

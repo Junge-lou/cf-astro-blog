@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { triggerDeployHook } from "@/admin/lib/deploy-hook";
 import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import {
@@ -55,6 +56,22 @@ interface TaxonomyRow {
 	name: string;
 	slug: string;
 	postCount: number;
+}
+
+function isPostPublic(
+	status: string | null | undefined,
+	publishAt: string | null | undefined,
+): boolean {
+	if (status === "published") {
+		return true;
+	}
+
+	if (status !== "scheduled" || !publishAt) {
+		return false;
+	}
+
+	const timestamp = Date.parse(publishAt);
+	return !Number.isNaN(timestamp) && timestamp <= Date.now();
 }
 
 function renderPostErrorPage(csrfToken: string, message: string) {
@@ -547,6 +564,15 @@ posts.post("/", async (c) => {
 		);
 	}
 
+	if (isPostPublic(parsed.data.status, publishAt)) {
+		await triggerDeployHook(c.env, {
+			event: "post-created",
+			postId: inserted?.id,
+			postSlug: slug,
+			postStatus: parsed.data.status,
+		});
+	}
+
 	return c.redirect("/api/admin/posts");
 });
 
@@ -675,6 +701,17 @@ posts.post("/:id", async (c) => {
 		);
 	}
 
+	const wasPublic = isPostPublic(existing.status, existing.publishAt);
+	const willBePublic = isPostPublic(parsed.data.status, publishAt);
+	if (wasPublic || willBePublic) {
+		await triggerDeployHook(c.env, {
+			event: "post-updated",
+			postId: id,
+			postSlug: slug,
+			postStatus: parsed.data.status,
+		});
+	}
+
 	return c.redirect("/api/admin/posts");
 });
 
@@ -690,7 +727,24 @@ posts.post("/:id/delete", async (c) => {
 		return c.redirect("/api/admin/posts");
 	}
 	const db = getDb(c.env.DB);
+	const [existing] = await db
+		.select({
+			slug: blogPosts.slug,
+			status: blogPosts.status,
+			publishAt: blogPosts.publishAt,
+		})
+		.from(blogPosts)
+		.where(eq(blogPosts.id, id))
+		.limit(1);
 	await db.delete(blogPosts).where(eq(blogPosts.id, id));
+	if (existing && isPostPublic(existing.status, existing.publishAt)) {
+		await triggerDeployHook(c.env, {
+			event: "post-deleted",
+			postId: id,
+			postSlug: existing.slug,
+			postStatus: existing.status,
+		});
+	}
 	return c.redirect("/api/admin/posts");
 });
 
@@ -707,6 +761,15 @@ posts.post("/:id/cancel-schedule", async (c) => {
 	}
 
 	const db = getDb(c.env.DB);
+	const [existing] = await db
+		.select({
+			slug: blogPosts.slug,
+			status: blogPosts.status,
+			publishAt: blogPosts.publishAt,
+		})
+		.from(blogPosts)
+		.where(eq(blogPosts.id, id))
+		.limit(1);
 	const now = new Date().toISOString();
 	await db
 		.update(blogPosts)
@@ -717,6 +780,14 @@ posts.post("/:id/cancel-schedule", async (c) => {
 			updatedAt: now,
 		})
 		.where(and(eq(blogPosts.id, id), eq(blogPosts.status, "scheduled")));
+	if (existing && isPostPublic(existing.status, existing.publishAt)) {
+		await triggerDeployHook(c.env, {
+			event: "post-schedule-cancelled",
+			postId: id,
+			postSlug: existing.slug,
+			postStatus: "draft",
+		});
+	}
 	return c.redirect("/api/admin/posts?status=schedule-cancelled");
 });
 
