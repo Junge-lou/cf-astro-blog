@@ -198,37 +198,37 @@ function isInternalHref(href: string) {
 		</div>
 	</section>
 
-	<section class="section-head">
-		<div>
-			<span class="section-kicker">置顶文章</span>
-			<h2 class="section-heading">置顶文章</h2>
-		</div>
-		<p class="section-subheading">
-			可在后台编辑文章时勾选“首页置顶”，并用顺序值控制展示先后。
-		</p>
-	</section>
+	{
+		pinnedPosts.length > 0 && (
+			<>
+				<section class="section-head">
+					<div>
+						<span class="section-kicker">置顶文章</span>
+						<h2 class="section-heading">置顶文章</h2>
+					</div>
+					<p class="section-subheading">
+						可在后台编辑文章时勾选“首页置顶”，并用顺序值控制展示先后。
+					</p>
+				</section>
 
-	{pinnedPosts.length > 0 ? (
-		<div class="home-grid home-grid-pinned">
-			{pinnedPosts.map((post, index) => (
-				<PostCard
-					title={post.title}
-					slug={post.slug}
-					excerpt={post.excerpt}
-					publishedAt={post.publishedAt}
-					authorName={post.authorName}
-					categoryName={post.categoryName}
-					featuredImageKey={post.featuredImageKey}
-					featuredImageAlt={post.featuredImageAlt}
-					coverSide={index % 2 === 0 ? "left" : "right"}
-				/>
-			))}
-		</div>
-	) : (
-		<div class="empty-state glass-panel">
-			<p>当前还没有置顶文章，去后台编辑文章即可设置。</p>
-		</div>
-	)}
+				<div class="home-grid home-grid-pinned">
+					{pinnedPosts.map((post, index) => (
+						<PostCard
+							title={post.title}
+							slug={post.slug}
+							excerpt={post.excerpt}
+							publishedAt={post.publishedAt}
+							authorName={post.authorName}
+							categoryName={post.categoryName}
+							featuredImageKey={post.featuredImageKey}
+							featuredImageAlt={post.featuredImageAlt}
+							coverSide={index % 2 === 0 ? "left" : "right"}
+						/>
+					))}
+				</div>
+			</>
+		)
+	}
 
 	<section class="section-head">
 		<div>

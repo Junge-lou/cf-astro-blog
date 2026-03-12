@@ -28,6 +28,13 @@ describe("首页灵动交互保护", () => {
 		assert.match(homePageSource, /recentSectionSubheading/u);
 	});
 
+	test("首页仅在存在置顶文章时渲染置顶栏目", async () => {
+		const homePageSource = await readFile("src/pages/index.astro", "utf8");
+
+		assert.match(homePageSource, /pinnedPosts\.length > 0/u);
+		assert.match(homePageSource, /pinnedPosts\.length > 0 && \(/u);
+	});
+
 	test("右侧信息卡毛玻璃会跟随主题在深浅底之间切换", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
