@@ -91,21 +91,21 @@ describe("源码回归保护", () => {
 	});
 
 	test("文章卡片封面不再被额外高斯遮罩并保持满高显示", async () => {
-		const postCardSource = await readFile(
-			"src/components/PostCard.astro",
-			"utf8",
-		);
+		const [postCardSource, postCardStyleSource] = await Promise.all([
+			readFile("src/components/PostCard.astro", "utf8"),
+			readFile("src/styles/post-card.css", "utf8"),
+		]);
 
-		assert.ok(!postCardSource.includes("transform: scale(0.88);"));
+		assert.ok(!postCardStyleSource.includes("transform: scale(0.88);"));
 		assert.ok(
-			!postCardSource.includes(
+			!postCardStyleSource.includes(
 				"backdrop-filter: blur(var(--post-card-cover-blur-effective))",
 			),
 		);
 		assert.ok(!postCardSource.includes("post-card-cover-fallback"));
 		assert.match(postCardSource, /post-card-no-cover/u);
 		assert.match(postCardSource, /\{hasCover && \(/u);
-		assert.match(postCardSource, /object-position: center;/u);
+		assert.match(postCardStyleSource, /object-position: center;/u);
 	});
 
 	test("友链页只保留申请入口卡片，申请表移到独立页面", async () => {
