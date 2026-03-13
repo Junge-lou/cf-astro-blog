@@ -56,7 +56,7 @@ try {
 
 	<section class="friends-list glass-panel">
 		<div class="section-head">
-			<h2 class="section-heading">已通过友链</h2>
+			<h2 class="section-heading">友链</h2>
 			<p class="results-summary">共 {approvedLinks.length} 个站点</p>
 		</div>
 
@@ -135,6 +135,7 @@ try {
 	.friend-link-list {
 		list-style: none;
 		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.8rem;
 	}
 
@@ -240,7 +241,11 @@ try {
 		border-color: rgba(10, 132, 255, 0.16);
 	}
 
-	@media (max-width: 640px) {
+	@media (max-width: 768px) {
+		.friend-link-list {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
 		.friend-apply-link {
 			padding-inline: 1rem;
 			min-height: 5.8rem;
