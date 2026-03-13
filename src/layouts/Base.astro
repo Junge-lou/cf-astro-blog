@@ -52,6 +52,7 @@ const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --
 			image={image}
 			canonicalUrl={canonicalUrl}
 		/>
+		<script is:inline src="/local-time.js"></script>
 		<script is:inline src="/theme.js"></script>
 		{!isAdminPreview && <script is:inline src="/analytics.js"></script>}
 		{!isAdminPreview && <script is:inline src="/home-motion.js"></script>}

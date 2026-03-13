@@ -25,7 +25,7 @@ function formatDate(value) {
 		return "";
 	}
 
-	return parsed.toLocaleDateString("zh-CN");
+	return parsed.toLocaleDateString();
 }
 
 function createResultCard(post) {

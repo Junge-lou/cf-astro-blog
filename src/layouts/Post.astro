@@ -79,7 +79,15 @@ const tocEntries = (toc ?? [])
 					{formattedDate && (
 						<div class="article-profile-item">
 							<span>发布时间</span>
-							<strong>{formattedDate}</strong>
+							<strong>
+								<time
+									class="local-time-pending"
+									datetime={publishedAt}
+									data-local-time="date"
+								>
+									{formattedDate}
+								</time>
+							</strong>
 						</div>
 					)}
 					{categoryName && (
@@ -116,7 +124,15 @@ const tocEntries = (toc ?? [])
 					</p>
 				)}
 				<div class="pill-row" transition:name={`meta-${slug}`}>
-					{formattedDate && <time class="pill" datetime={publishedAt}>{formattedDate}</time>}
+					{formattedDate && (
+						<time
+							class="pill local-time-pending"
+							datetime={publishedAt}
+							data-local-time="date"
+						>
+							{formattedDate}
+						</time>
+					)}
 					{authorName && <span class="pill">{authorName}</span>}
 					{categoryName && <span class="pill">{categoryName}</span>}
 				</div>

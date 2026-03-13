@@ -52,7 +52,11 @@ const cardClassName = [
 		<div class="post-card-top">
 			<div class="pill-row" transition:name={`meta-${slug}`}>
 				{formattedDate && (
-					<time class="pill" datetime={publishedAt ?? undefined}>
+					<time
+						class="pill local-time-pending"
+						datetime={publishedAt ?? undefined}
+						data-local-time="date"
+					>
 						{formattedDate}
 					</time>
 				)}
