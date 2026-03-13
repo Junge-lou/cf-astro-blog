@@ -737,8 +737,7 @@ html[data-admin-preview="true"] .site-main {
 }
 
 .prose pre {
-	position: relative;
-	padding: 3.2rem 1.1rem 1.15rem;
+	padding: 0.9rem 1rem 1rem;
 	border-radius: calc(var(--radius-card) - 2px);
 	background:
 		linear-gradient(
@@ -754,28 +753,49 @@ html[data-admin-preview="true"] .site-main {
 		0 18px 38px -34px rgba(8, 18, 34, 0.82);
 	color: var(--code-window-text);
 	scrollbar-color: rgba(214, 229, 255, 0.34) rgba(255, 255, 255, 0.08);
+	overflow-x: auto;
 }
 
-.prose pre::before {
-	content: "";
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 2.2rem;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.prose .prose-code-block {
+	margin-bottom: 1.35rem;
+	border-radius: calc(var(--radius-card) - 2px);
+	overflow: hidden;
+	border: 1px solid var(--code-window-border);
+	background:
+		linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0.08) 0,
+			rgba(255, 255, 255, 0.03) 20%,
+			rgba(0, 0, 0, 0.16) 100%
+		),
+		var(--code-window-bg);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.08),
+		0 18px 38px -34px rgba(8, 18, 34, 0.82);
+}
+
+.prose .prose-code-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.9rem;
+	padding: 0.46rem 0.72rem;
 	background: linear-gradient(
 		90deg,
 		var(--code-window-header),
 		rgba(255, 255, 255, 0.02)
 	);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.prose pre::after {
-	content: "";
-	position: absolute;
-	top: 0.78rem;
-	left: 1rem;
+.prose .prose-code-head-left {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.58rem;
+	min-width: 0;
+}
+
+.prose .code-window-dots {
 	width: 0.72rem;
 	height: 0.72rem;
 	border-radius: 50%;
@@ -783,12 +803,10 @@ html[data-admin-preview="true"] .site-main {
 	box-shadow:
 		1.18rem 0 0 #febc2e,
 		2.36rem 0 0 #28c840;
+	flex-shrink: 0;
 }
 
-.prose pre .code-lang-chip {
-	position: absolute;
-	top: 0.58rem;
-	left: 4.1rem;
+.prose .prose-code-lang {
 	padding: 0.14rem 0.55rem;
 	border-radius: 999px;
 	border: 1px solid var(--code-window-chip-border);
@@ -799,14 +817,13 @@ html[data-admin-preview="true"] .site-main {
 	letter-spacing: 0.02em;
 	line-height: 1.3;
 	user-select: none;
-	pointer-events: none;
-	z-index: 1;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
 }
 
-.prose pre .code-copy-btn {
-	position: absolute;
-	top: 0.45rem;
-	right: 0.7rem;
+.prose .prose-code-copy {
+	flex-shrink: 0;
 	padding: 0.24rem 0.62rem;
 	border-radius: 999px;
 	border: 1px solid rgba(255, 255, 255, 0.14);
@@ -820,18 +837,36 @@ html[data-admin-preview="true"] .site-main {
 		background-color var(--transition),
 		border-color var(--transition),
 		transform var(--transition);
-	z-index: 1;
 }
 
-.prose pre .code-copy-btn:hover,
-.prose pre .code-copy-btn:focus-visible {
+.prose .prose-code-copy:hover,
+.prose .prose-code-copy:focus-visible {
 	background: var(--code-window-copy-bg-hover);
 	border-color: rgba(135, 190, 255, 0.42);
 	outline: none;
 }
 
-.prose pre .code-copy-btn:active {
+.prose .prose-code-copy:active {
 	transform: scale(0.97);
+}
+
+.prose .prose-code-scroll {
+	background:
+		linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0.02),
+			rgba(255, 255, 255, 0.01)
+		),
+		var(--code-window-bg-soft);
+}
+
+.prose .prose-code-block pre {
+	margin: 0;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	padding: 0.9rem 1rem 1rem;
 }
 
 .prose pre code {
@@ -932,29 +967,25 @@ html[data-admin-preview="true"] .site-main {
 	}
 
 	.prose pre {
-		padding: 3rem 0.9rem 1.05rem;
+		padding: 0.84rem 0.9rem 0.95rem;
 	}
 
-	.prose pre::before {
-		height: 2rem;
+	.prose .prose-code-head {
+		padding: 0.4rem 0.55rem;
+		gap: 0.65rem;
 	}
 
-	.prose pre::after {
-		top: 0.7rem;
-		left: 0.85rem;
-	}
-
-	.prose pre .code-lang-chip {
-		left: 3.68rem;
-		top: 0.52rem;
+	.prose .prose-code-lang {
 		font-size: 0.68rem;
 	}
 
-	.prose pre .code-copy-btn {
-		top: 0.4rem;
-		right: 0.55rem;
+	.prose .prose-code-copy {
 		font-size: 0.66rem;
 		padding: 0.22rem 0.52rem;
+	}
+
+	.prose .prose-code-block pre {
+		padding: 0.82rem 0.88rem 0.95rem;
 	}
 }
 

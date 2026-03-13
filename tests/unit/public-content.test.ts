@@ -180,11 +180,13 @@ describe("源码回归保护", () => {
 			]);
 
 		assert.ok(baseLayoutSource.includes("/code-block-enhance.js"));
-		assert.ok(scriptSource.includes("code-lang-chip"));
-		assert.ok(scriptSource.includes("code-copy-btn"));
+		assert.ok(scriptSource.includes("prose-code-block"));
+		assert.ok(scriptSource.includes("prose-code-head"));
+		assert.ok(scriptSource.includes("prose-code-copy"));
 		assert.ok(scriptSource.includes("language-"));
-		assert.ok(globalStyleSource.includes(".prose pre .code-lang-chip"));
-		assert.ok(globalStyleSource.includes(".prose pre .code-copy-btn"));
+		assert.ok(globalStyleSource.includes(".prose .prose-code-head"));
+		assert.ok(globalStyleSource.includes(".prose .prose-code-copy"));
+		assert.ok(globalStyleSource.includes(".prose .prose-code-block pre"));
 	});
 
 	test("后台文章变更会触发可选部署钩子", async () => {

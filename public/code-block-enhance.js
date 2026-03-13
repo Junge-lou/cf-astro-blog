@@ -133,6 +133,13 @@
 		button.dataset.state = text;
 	};
 
+	const createMacDots = () => {
+		const dots = document.createElement("span");
+		dots.className = "code-window-dots";
+		dots.setAttribute("aria-hidden", "true");
+		return dots;
+	};
+
 	const enhanceCodeBlock = (preElement) => {
 		if (!(preElement instanceof HTMLPreElement)) {
 			return;
@@ -147,22 +154,39 @@
 			return;
 		}
 
+		const parent = preElement.parentElement;
+		if (!parent) {
+			return;
+		}
+
 		const language = detectLanguage(codeElement);
 		const languageLabel = formatLanguageLabel(language);
 
+		const wrapper = document.createElement("figure");
+		wrapper.className = "prose-code-block";
+		wrapper.dataset.codeLanguage = language;
+
+		const head = document.createElement("figcaption");
+		head.className = "prose-code-head";
+
+		const headLeft = document.createElement("span");
+		headLeft.className = "prose-code-head-left";
+
+		const dots = createMacDots();
 		const languageChip = document.createElement("span");
-		languageChip.className = "code-lang-chip";
+		languageChip.className = "prose-code-lang";
 		languageChip.textContent = languageLabel;
 		languageChip.setAttribute("aria-hidden", "true");
 
+		headLeft.append(dots, languageChip);
+
 		const copyButton = document.createElement("button");
 		copyButton.type = "button";
-		copyButton.className = "code-copy-btn";
+		copyButton.className = "prose-code-copy";
 		copyButton.textContent = COPY_DEFAULT;
 		copyButton.setAttribute("aria-label", `复制 ${languageLabel} 代码`);
 
 		let resetTimer = 0;
-
 		copyButton.addEventListener("click", async () => {
 			const content = codeElement.textContent ?? "";
 			const copied = await copyText(content);
@@ -173,9 +197,17 @@
 			}, copied ? 1500 : 1800);
 		});
 
+		const scroll = document.createElement("div");
+		scroll.className = "prose-code-scroll";
+
+		head.append(headLeft, copyButton);
+		wrapper.append(head, scroll);
+
+		parent.insertBefore(wrapper, preElement);
+		scroll.append(preElement);
+
 		preElement.dataset.codeLanguage = language;
 		preElement.dataset[ENHANCED_MARK] = "true";
-		preElement.append(languageChip, copyButton);
 	};
 
 	const enhanceAll = (root = document) => {
