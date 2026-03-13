@@ -639,18 +639,31 @@ posts.post("/ai-seo", async (c) => {
 		);
 	}
 
-	const generated = await generatePostSeoWithInternalAi(
-		{
-			title,
-			content,
-		},
-		aiSettings.settings.internal,
-	);
+	let generated = null;
+	try {
+		generated = await generatePostSeoWithInternalAi(
+			{
+				title,
+				content,
+			},
+			aiSettings.settings.internal,
+		);
+	} catch (error) {
+		console.error("[文章 AI 生成] 请求失败", error);
+		return c.json(
+			{
+				success: false,
+				message:
+					error instanceof Error ? error.message : "AI 生成失败，请稍后重试",
+			},
+			502,
+		);
+	}
 	if (!generated) {
 		return c.json(
 			{
 				success: false,
-				message: "AI 暂未生成有效结果，请稍后重试",
+				message: "AI 未生成结果，请检查标题和正文后重试",
 			},
 			502,
 		);

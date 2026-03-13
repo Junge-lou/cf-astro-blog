@@ -14,6 +14,11 @@ interface GeneratedSeoPayload {
 	metaKeywords?: unknown;
 }
 
+interface GeneratedSeoResponse {
+	payload: GeneratedSeoPayload | null;
+	rawResponse: string;
+}
+
 export interface GeneratedPostSeoFields {
 	excerpt: string | null;
 	metaTitle: string | null;
@@ -133,7 +138,7 @@ function normalizeGeneratedSeoFields(
 async function requestGeneratedSeoPayload(
 	input: { title: string; content: string },
 	endpoint: OpenAICompatibleEndpointConfig,
-): Promise<GeneratedSeoPayload | null> {
+): Promise<GeneratedSeoResponse> {
 	const responseContent = await requestOpenAICompatibleChatCompletion(
 		endpoint,
 		[
@@ -173,11 +178,10 @@ async function requestGeneratedSeoPayload(
 		},
 	);
 	const parsed = extractJsonObject(responseContent);
-	if (!parsed) {
-		return null;
-	}
-
-	return parsed as GeneratedSeoPayload;
+	return {
+		payload: parsed ? (parsed as GeneratedSeoPayload) : null,
+		rawResponse: responseContent,
+	};
 }
 
 function mergeGeneratedSeo<T extends PostSeoFields>(
@@ -207,33 +211,32 @@ export async function generatePostSeoWithInternalAi(
 		return null;
 	}
 
-	try {
-		const generatedPayload = await requestGeneratedSeoPayload(
-			{
-				title,
-				content: cleanedContent,
-			},
-			endpoint,
+	const generatedResponse = await requestGeneratedSeoPayload(
+		{
+			title,
+			content: cleanedContent,
+		},
+		endpoint,
+	);
+	if (!generatedResponse.payload) {
+		const snippet =
+			sanitizePlainText(generatedResponse.rawResponse, 180) || "空响应";
+		throw new Error(
+			`AI 返回内容无法解析为 JSON，请确认模型支持 JSON 输出。响应片段：${snippet}`,
 		);
-		if (!generatedPayload) {
-			return null;
-		}
-
-		const normalized = normalizeGeneratedSeoFields(generatedPayload);
-		if (
-			!normalized.excerpt &&
-			!normalized.metaTitle &&
-			!normalized.metaDescription &&
-			!normalized.metaKeywords
-		) {
-			return null;
-		}
-
-		return normalized;
-	} catch (error) {
-		console.error("[AI 摘要与 SEO] 手动生成失败", error);
-		return null;
 	}
+
+	const normalized = normalizeGeneratedSeoFields(generatedResponse.payload);
+	if (
+		!normalized.excerpt &&
+		!normalized.metaTitle &&
+		!normalized.metaDescription &&
+		!normalized.metaKeywords
+	) {
+		throw new Error("AI 已返回 JSON，但摘要与 SEO 字段均为空");
+	}
+
+	return normalized;
 }
 
 export async function autoFillPostSeoWithInternalAi<T extends PostSeoFields>(
