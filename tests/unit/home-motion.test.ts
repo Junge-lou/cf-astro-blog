@@ -15,7 +15,10 @@ describe("首页灵动交互保护", () => {
 
 		assert.match(homePageSource, /data-hero-depth/u);
 		assert.match(homePageSource, /data-tilt-card/u);
+		assert.match(homePageSource, /data-tilt-scale="0\.78"/u);
+		assert.match(homePageSource, /data-tilt-shift-scale="1\.08"/u);
 		assert.match(homePageSource, /hero-signal-card/u);
+		assert.match(homePageSource, /hero-main-media/u);
 		assert.match(homePageSource, /hero-aura-primary/u);
 	});
 
