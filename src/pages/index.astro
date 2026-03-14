@@ -91,7 +91,7 @@ const latestUpdate = latestUpdateAt
 	: "等待第一篇正式发布的文章";
 const recentSectionSubheading =
 	pinnedPosts.length > 0
-		? "展示最近发布的内容，完整文章请前往归档页查看。"
+		? ""
 		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
 
@@ -224,9 +224,6 @@ function isInternalHref(href: string) {
 						<span class="section-kicker">置顶文章</span>
 						<h2 class="section-heading">置顶文章</h2>
 					</div>
-					<p class="section-subheading">
-						展示重点推荐内容。
-					</p>
 				</section>
 
 				<div class="home-grid home-grid-pinned">
