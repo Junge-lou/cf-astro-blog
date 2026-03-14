@@ -6,6 +6,7 @@
 
 	const STORAGE_KEY = "articleOpaqueMode";
 	const ROOT = document.documentElement;
+	const TOGGLE_SELECTOR = "[data-article-transparency-toggle]";
 
 	const readPreference = () => {
 		try {
@@ -32,6 +33,12 @@
 		button.setAttribute("aria-pressed", String(enabled));
 	};
 
+	const syncToggleButtons = (buttons, enabled) => {
+		for (const button of buttons) {
+			updateToggleLabel(button, enabled);
+		}
+	};
+
 	const initArticleToggle = () => {
 		const articleShell = document.querySelector(".article-shell");
 		if (!(articleShell instanceof HTMLElement)) {
@@ -42,25 +49,30 @@
 		const enabled = readPreference();
 		setOpaqueMode(enabled);
 
-		const toggleButton = document.querySelector(
-			"[data-article-transparency-toggle]",
+		const toggleButtons = Array.from(
+			document.querySelectorAll(TOGGLE_SELECTOR),
+		).filter((button) => button instanceof HTMLButtonElement);
+		if (toggleButtons.length === 0) {
+			return;
+		}
+
+		syncToggleButtons(
+			toggleButtons,
+			enabled,
 		);
-		if (!(toggleButton instanceof HTMLButtonElement)) {
-			return;
-		}
 
-		updateToggleLabel(toggleButton, enabled);
-		if (toggleButton.dataset.bound === "true") {
-			return;
+		for (const toggleButton of toggleButtons) {
+			if (toggleButton.dataset.bound === "true") {
+				continue;
+			}
+			toggleButton.dataset.bound = "true";
+			toggleButton.addEventListener("click", () => {
+				const nextEnabled = !ROOT.classList.contains("article-opaque-mode");
+				setOpaqueMode(nextEnabled);
+				writePreference(nextEnabled);
+				syncToggleButtons(toggleButtons, nextEnabled);
+			});
 		}
-		toggleButton.dataset.bound = "true";
-
-		toggleButton.addEventListener("click", () => {
-			const nextEnabled = !ROOT.classList.contains("article-opaque-mode");
-			setOpaqueMode(nextEnabled);
-			writePreference(nextEnabled);
-			updateToggleLabel(toggleButton, nextEnabled);
-		});
 	};
 
 	if (document.readyState === "loading") {

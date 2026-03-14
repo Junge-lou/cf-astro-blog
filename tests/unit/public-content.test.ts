@@ -167,6 +167,7 @@ describe("源码回归保护", () => {
 		assert.ok(postLayoutSource.includes("article-profile-avatar"));
 		assert.ok(postLayoutSource.includes("article-toc"));
 		assert.ok(postLayoutSource.includes("data-article-transparency-toggle"));
+		assert.ok(postLayoutSource.includes("article-transparency-toggle-compact"));
 		assert.ok(postLayoutSource.includes("/article-transparency-toggle.js"));
 		assert.ok(postLayoutSource.includes("article-opaque-mode"));
 		assert.ok(postLayoutSource.includes("orientation: portrait"));
@@ -175,6 +176,7 @@ describe("源码回归保护", () => {
 		assert.ok(postPageSource.includes("renderSafeMarkdownWithToc"));
 		assert.ok(postPageSource.includes("toc={toc}"));
 		assert.ok(articleToggleScript.includes("articleOpaqueMode"));
+		assert.ok(articleToggleScript.includes("querySelectorAll"));
 		assert.ok(articleToggleScript.includes("astro:page-load"));
 	});
 

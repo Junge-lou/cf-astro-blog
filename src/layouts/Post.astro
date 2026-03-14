@@ -98,12 +98,22 @@ const tocEntries = (toc ?? [])
 					)}
 				</div>
 			</section>
-			{tocEntries.length > 0 && (
-				<nav class="article-toc glass-panel" aria-label="文章目录">
-					<div class="article-toc-head">目录</div>
-					<ol class="article-toc-list">
-						{tocEntries.map((item) => (
-							<li class={`article-toc-item level-${item.level}`}>
+				{tocEntries.length > 0 && (
+					<nav class="article-toc glass-panel" aria-label="文章目录">
+						<div class="article-toc-head">
+							<span>目录</span>
+							<button
+								type="button"
+								class="article-transparency-toggle article-transparency-toggle-compact"
+								data-article-transparency-toggle="true"
+								aria-pressed="false"
+							>
+								取消透明度
+							</button>
+						</div>
+						<ol class="article-toc-list">
+							{tocEntries.map((item) => (
+								<li class={`article-toc-item level-${item.level}`}>
 								<a href={`#${item.id}`} class="article-toc-link">
 									{item.text}
 								</a>
@@ -271,6 +281,13 @@ const tocEntries = (toc ?? [])
 	}
 
 	.article-toc-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.6rem;
+	}
+
+	.article-toc-head > span {
 		display: block;
 		font-size: 0.92rem;
 		line-height: 1.7;
@@ -278,6 +295,13 @@ const tocEntries = (toc ?? [])
 		font-weight: 600;
 		font-family: var(--font-sans);
 		color: var(--color-text-secondary);
+	}
+
+	.article-transparency-toggle-compact {
+		padding: 0.38rem 0.62rem;
+		font-size: 0.76rem;
+		line-height: 1.1;
+		white-space: nowrap;
 	}
 
 	.article-toc-list {
