@@ -168,7 +168,7 @@ npm run hash:password -- 你的密码
   - 兼容别名：`summary`、`category`、`tags`、`seoTitle`、`seoDescription`、`seoKeywords`，以及 `seo` 对象（`{ title, description, keywords, canonicalUrl }`）。
   - 默认 `status=published`（可显式传 `draft` 或 `scheduled`）。
 - 安全策略：
-  - 若未配置 `MCP_BEARER_TOKEN`，端点会返回服务不可用。
+  - 若未配置 `MCP_BEARER_TOKEN` 或鉴权失败，端点统一返回 `404 Not Found`，降低被扫描识别价值。
   - 默认启用每分钟每 IP 限流（可通过 `MCP_RATE_LIMIT_PER_MINUTE` 调整）。
 
 ## 部署前检查

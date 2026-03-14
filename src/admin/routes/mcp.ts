@@ -784,18 +784,12 @@ mcpRoutes.all("/", async (c) => {
 
 	const expectedToken = sanitizePlainText(c.env.MCP_BEARER_TOKEN, 500);
 	if (!expectedToken) {
-		return c.json(
-			buildJsonRpcErrorPayload(
-				-32001,
-				"MCP 服务未配置，请设置 MCP_BEARER_TOKEN",
-			),
-			503,
-		);
+		return c.text("Not Found", 404);
 	}
 
 	const providedToken = parseBearerToken(c.req.header("authorization"));
 	if (!providedToken || !timingSafeEqualText(providedToken, expectedToken)) {
-		return c.json(buildJsonRpcErrorPayload(-32001, "MCP 鉴权失败"), 401);
+		return c.text("Not Found", 404);
 	}
 
 	const ip = getClientIp(c);

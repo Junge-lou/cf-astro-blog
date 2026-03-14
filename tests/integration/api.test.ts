@@ -374,7 +374,7 @@ describe("后台接口", () => {
 		assert.match(await res.text(), /请求过于频繁/u);
 	});
 
-	test("POST /mcp 缺少 Bearer 时返回 401", async () => {
+	test("POST /mcp 缺少 Bearer 时返回 404", async () => {
 		const initializeRequest = {
 			jsonrpc: "2.0",
 			id: 1,
@@ -404,8 +404,8 @@ describe("后台接口", () => {
 			} as unknown as Env,
 		);
 
-		assert.equal(res.status, 401);
-		assert.match(await res.text(), /MCP 鉴权失败/u);
+		assert.equal(res.status, 404);
+		assert.equal(await res.text(), "Not Found");
 	});
 
 	test("POST /mcp 在 create_post 缺少 authorName 时返回工具错误", async () => {
