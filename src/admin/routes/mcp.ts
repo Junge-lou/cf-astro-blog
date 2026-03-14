@@ -84,6 +84,23 @@ function buildJsonRpcErrorPayload(code: number, message: string) {
 	};
 }
 
+function pickFirstDefined(
+	sources: Array<Record<string, unknown> | null | undefined>,
+	keys: string[],
+): unknown {
+	for (const source of sources) {
+		if (!source) {
+			continue;
+		}
+		for (const key of keys) {
+			if (Object.hasOwn(source, key)) {
+				return source[key];
+			}
+		}
+	}
+	return undefined;
+}
+
 function parseBearerToken(headerValue: string | undefined): string | null {
 	if (!headerValue) {
 		return null;
@@ -324,6 +341,14 @@ function normalizeTagNames(rawValue: unknown): string[] {
 	const values: string[] = [];
 	if (Array.isArray(rawValue)) {
 		for (const item of rawValue) {
+			if (item && typeof item === "object") {
+				const namedValue = pickFirstDefined(
+					[item as Record<string, unknown>],
+					["name", "label", "value", "tag"],
+				);
+				values.push(String(namedValue ?? ""));
+				continue;
+			}
 			values.push(String(item ?? ""));
 		}
 	} else if (typeof rawValue === "string") {
@@ -337,12 +362,42 @@ function normalizeTagNames(rawValue: unknown): string[] {
 	return [...new Set(normalized)].slice(0, MAX_TAG_COUNT);
 }
 
+function normalizeCategoryName(rawValue: unknown): string | null {
+	if (rawValue && typeof rawValue === "object") {
+		const namedValue = pickFirstDefined(
+			[rawValue as Record<string, unknown>],
+			["name", "label", "title"],
+		);
+		return sanitizePlainText(namedValue, MAX_CATEGORY_NAME_LENGTH) || null;
+	}
+
+	return sanitizePlainText(rawValue, MAX_CATEGORY_NAME_LENGTH) || null;
+}
+
+function normalizeMetaKeywords(rawValue: unknown): string | null {
+	if (Array.isArray(rawValue)) {
+		const keywords = rawValue
+			.map((item) => sanitizePlainText(item, MAX_TAG_NAME_LENGTH))
+			.filter(Boolean)
+			.slice(0, 20);
+		return keywords.length > 0
+			? sanitizePlainText(keywords.join(", "), MAX_META_KEYWORDS_LENGTH) || null
+			: null;
+	}
+
+	return sanitizePlainText(rawValue, MAX_META_KEYWORDS_LENGTH) || null;
+}
+
 function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 	if (!args || typeof args !== "object") {
 		return { error: "参数格式不合法，必须是对象" };
 	}
 
 	const input = args as Record<string, unknown>;
+	const seoInput =
+		input.seo && typeof input.seo === "object"
+			? (input.seo as Record<string, unknown>)
+			: null;
 	const title = sanitizePlainText(input.title, MAX_TITLE_LENGTH);
 	if (!title) {
 		return { error: "标题不能为空" };
@@ -401,12 +456,18 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 		return { error: "定时发布需要填写发布时间" };
 	}
 
-	const categoryName =
-		sanitizePlainText(input.categoryName, MAX_CATEGORY_NAME_LENGTH) || null;
-	const tagNames = normalizeTagNames(input.tagNames);
+	const categoryName = normalizeCategoryName(
+		pickFirstDefined([input], ["categoryName", "category", "category_name"]),
+	);
+	const tagNames = normalizeTagNames(
+		pickFirstDefined([input], ["tagNames", "tags", "tag_names"]),
+	);
 
 	const canonicalUrlRaw = sanitizePlainText(
-		input.canonicalUrl,
+		pickFirstDefined(
+			[input, seoInput],
+			["canonicalUrl", "canonical", "url", "canonical_url"],
+		),
 		MAX_CANONICAL_URL_LENGTH,
 	);
 	const canonicalUrl = canonicalUrlRaw
@@ -434,9 +495,16 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 			content,
 			authorName,
 			excerpt:
-				sanitizePlainText(input.excerpt, MAX_EXCERPT_LENGTH, {
-					allowNewlines: true,
-				}) || null,
+				sanitizePlainText(
+					pickFirstDefined(
+						[input],
+						["excerpt", "summary", "description", "excerptText"],
+					),
+					MAX_EXCERPT_LENGTH,
+					{
+						allowNewlines: true,
+					},
+				) || null,
 			status,
 			publishAt,
 			categoryName,
@@ -448,12 +516,25 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 					MAX_FEATURED_IMAGE_ALT_LENGTH,
 				) || null,
 			metaTitle:
-				sanitizePlainText(input.metaTitle, MAX_META_TITLE_LENGTH) || null,
+				sanitizePlainText(
+					pickFirstDefined([input], ["metaTitle", "seoTitle", "meta_title"]) ??
+						pickFirstDefined([seoInput], ["title"]),
+					MAX_META_TITLE_LENGTH,
+				) || null,
 			metaDescription:
-				sanitizePlainText(input.metaDescription, MAX_META_DESCRIPTION_LENGTH) ||
-				null,
-			metaKeywords:
-				sanitizePlainText(input.metaKeywords, MAX_META_KEYWORDS_LENGTH) || null,
+				sanitizePlainText(
+					pickFirstDefined(
+						[input],
+						["metaDescription", "seoDescription", "meta_description"],
+					) ?? pickFirstDefined([seoInput], ["description"]),
+					MAX_META_DESCRIPTION_LENGTH,
+				) || null,
+			metaKeywords: normalizeMetaKeywords(
+				pickFirstDefined(
+					[input],
+					["metaKeywords", "seoKeywords", "meta_keywords", "keywords"],
+				) ?? pickFirstDefined([seoInput], ["keywords"]),
+			),
 			canonicalUrl,
 		},
 	};
@@ -558,6 +639,7 @@ function createMcpServer(env: Env): McpServer {
 				authorName: z.string().describe("作者名，必填"),
 				slug: z.string().optional().describe("访问路径别名，可选"),
 				excerpt: z.string().optional().describe("文章摘要，可选"),
+				summary: z.string().optional().describe("文章摘要别名，可选"),
 				status: z
 					.enum(["draft", "published", "scheduled"])
 					.optional()
@@ -567,15 +649,61 @@ function createMcpServer(env: Env): McpServer {
 					.optional()
 					.describe("定时发布时间，仅 scheduled 时必填"),
 				categoryName: z.string().optional().describe("分类名称，可选"),
+				category: z
+					.union([
+						z.string(),
+						z.object({
+							name: z.string().optional(),
+							label: z.string().optional(),
+							title: z.string().optional(),
+						}),
+					])
+					.optional()
+					.describe("分类别名，可传字符串或对象"),
 				tagNames: z.array(z.string()).optional().describe("标签名称数组，可选"),
+				tags: z
+					.union([
+						z.string(),
+						z.array(
+							z.union([
+								z.string(),
+								z.object({
+									name: z.string().optional(),
+									label: z.string().optional(),
+									value: z.string().optional(),
+									tag: z.string().optional(),
+								}),
+							]),
+						),
+					])
+					.optional()
+					.describe("标签别名，可传逗号字符串、字符串数组或对象数组"),
 				featuredImageKey: z.string().optional().describe("封面图键名，可选"),
 				featuredImageAlt: z
 					.string()
 					.optional()
 					.describe("封面图替代文本，可选"),
 				metaTitle: z.string().optional().describe("SEO 标题，可选"),
+				seoTitle: z.string().optional().describe("SEO 标题别名，可选"),
 				metaDescription: z.string().optional().describe("SEO 描述，可选"),
-				metaKeywords: z.string().optional().describe("SEO 关键词，可选"),
+				seoDescription: z.string().optional().describe("SEO 描述别名，可选"),
+				metaKeywords: z
+					.union([z.string(), z.array(z.string())])
+					.optional()
+					.describe("SEO 关键词，可选"),
+				seoKeywords: z
+					.union([z.string(), z.array(z.string())])
+					.optional()
+					.describe("SEO 关键词别名，可选"),
+				seo: z
+					.object({
+						title: z.string().optional(),
+						description: z.string().optional(),
+						keywords: z.union([z.string(), z.array(z.string())]).optional(),
+						canonicalUrl: z.string().optional(),
+					})
+					.optional()
+					.describe("SEO 对象，可选"),
 				canonicalUrl: z.string().optional().describe("规范链接，可选"),
 			},
 		},

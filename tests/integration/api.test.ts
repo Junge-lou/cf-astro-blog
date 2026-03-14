@@ -67,6 +67,8 @@ function createWebMentionMockD1() {
 
 function createMcpPostMockD1() {
 	const calls: Array<{ sql: string; params: unknown[] }> = [];
+	let nextCategoryId = 3100;
+	let nextTagId = 4100;
 
 	const db = {
 		prepare(sql: string) {
@@ -85,6 +87,18 @@ function createMcpPostMockD1() {
 							) {
 								return [[9527]];
 							}
+							if (
+								/insert into\s+"?blog_categories"?/iu.test(sql) &&
+								/returning/iu.test(sql)
+							) {
+								return [[nextCategoryId++]];
+							}
+							if (
+								/insert into\s+"?blog_tags"?/iu.test(sql) &&
+								/returning/iu.test(sql)
+							) {
+								return [[nextTagId++]];
+							}
 							return [];
 						},
 						all: async () => {
@@ -95,6 +109,18 @@ function createMcpPostMockD1() {
 							) {
 								return { results: [{ id: 9527 }] };
 							}
+							if (
+								/insert into\s+"?blog_categories"?/iu.test(sql) &&
+								/returning/iu.test(sql)
+							) {
+								return { results: [{ id: nextCategoryId++ }] };
+							}
+							if (
+								/insert into\s+"?blog_tags"?/iu.test(sql) &&
+								/returning/iu.test(sql)
+							) {
+								return { results: [{ id: nextTagId++ }] };
+							}
 							return { results: [] };
 						},
 						first: async () => {
@@ -104,6 +130,18 @@ function createMcpPostMockD1() {
 								/returning/iu.test(sql)
 							) {
 								return { id: 9527 };
+							}
+							if (
+								/insert into\s+"?blog_categories"?/iu.test(sql) &&
+								/returning/iu.test(sql)
+							) {
+								return { id: nextCategoryId++ };
+							}
+							if (
+								/insert into\s+"?blog_tags"?/iu.test(sql) &&
+								/returning/iu.test(sql)
+							) {
+								return { id: nextTagId++ };
 							}
 							return undefined;
 						},
@@ -539,6 +577,117 @@ describe("后台接口", () => {
 		assert.ok(insertCall);
 		assert.ok(insertCall?.params.includes("AI-Agent"));
 		assert.ok(insertCall?.params.includes("published"));
+	});
+
+	test("POST /mcp 在 create_post 使用摘要/分类/标签/SEO别名时可写入数据库", async () => {
+		const { db, calls } = createMcpPostMockD1();
+		const initializeRequest = {
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2025-11-25",
+				clientInfo: {
+					name: "integration-test-client",
+					version: "1.0.0",
+				},
+				capabilities: {},
+			},
+		};
+
+		const initRes = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					accept: "application/json, text/event-stream",
+					"content-type": "application/json",
+					authorization: "Bearer mcp-secret",
+				},
+				body: JSON.stringify(initializeRequest),
+			},
+			{
+				...mockEnv,
+				DB: db,
+				MCP_BEARER_TOKEN: "mcp-secret",
+			} as unknown as Env,
+		);
+		assert.equal(initRes.status, 200);
+
+		const sessionId = initRes.headers.get("mcp-session-id");
+		assert.ok(sessionId);
+
+		const createRequest = {
+			jsonrpc: "2.0",
+			id: 2,
+			method: "tools/call",
+			params: {
+				name: "create_post",
+				arguments: {
+					title: "MCP 字段兼容测试",
+					content: "测试正文",
+					authorName: "AI-Agent",
+					summary: "这是一段摘要",
+					category: { name: "工程实践" },
+					tags: [{ name: "MCP" }, { label: "SEO" }],
+					seo: {
+						title: "SEO 主标题",
+						description: "SEO 描述文本",
+						keywords: ["关键词A", "关键词B"],
+					},
+				},
+			},
+		};
+
+		const callRes = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					accept: "application/json, text/event-stream",
+					"content-type": "application/json",
+					authorization: "Bearer mcp-secret",
+					"mcp-session-id": sessionId as string,
+				},
+				body: JSON.stringify(createRequest),
+			},
+			{
+				...mockEnv,
+				DB: db,
+				MCP_BEARER_TOKEN: "mcp-secret",
+			} as unknown as Env,
+		);
+		assert.equal(callRes.status, 200);
+
+		const payload = (await callRes.json()) as {
+			result?: { isError?: boolean; content?: Array<{ text?: string }> };
+		};
+		assert.notEqual(payload?.result?.isError, true);
+
+		const postInsertCall = calls.find((entry) =>
+			/insert into\s+"?blog_posts"?/iu.test(entry.sql),
+		);
+		assert.ok(postInsertCall);
+		assert.ok(postInsertCall?.params.includes("这是一段摘要"));
+		assert.ok(postInsertCall?.params.includes("SEO 主标题"));
+		assert.ok(postInsertCall?.params.includes("SEO 描述文本"));
+		assert.ok(postInsertCall?.params.includes("关键词A, 关键词B"));
+
+		const categoryInsertCall = calls.find((entry) =>
+			/insert into\s+"?blog_categories"?/iu.test(entry.sql),
+		);
+		assert.ok(categoryInsertCall);
+		assert.ok(categoryInsertCall?.params.includes("工程实践"));
+
+		const tagInsertCalls = calls.filter((entry) =>
+			/insert into\s+"?blog_tags"?/iu.test(entry.sql),
+		);
+		assert.ok(tagInsertCalls.length >= 2);
+
+		const relationInsertCall = calls.find((entry) =>
+			/insert into\s+"?blog_post_tags"?/iu.test(entry.sql),
+		);
+		assert.ok(relationInsertCall);
 	});
 
 	test("未登录访问 /admin 会跳转到登录页", async () => {

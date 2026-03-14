@@ -164,6 +164,8 @@ npm run hash:password -- 你的密码
 - 鉴权：`Authorization: Bearer <MCP_BEARER_TOKEN>`，不走 OAuth。
 - 第一版内置工具：`create_post`。
   - 必填参数：`title`、`content`、`authorName`。
+  - 可选参数：`excerpt`、`categoryName`、`tagNames`、`metaTitle`、`metaDescription`、`metaKeywords` 等。
+  - 兼容别名：`summary`、`category`、`tags`、`seoTitle`、`seoDescription`、`seoKeywords`，以及 `seo` 对象（`{ title, description, keywords, canonicalUrl }`）。
   - 默认 `status=published`（可显式传 `draft` 或 `scheduled`）。
 - 安全策略：
   - 若未配置 `MCP_BEARER_TOKEN`，端点会返回服务不可用。
