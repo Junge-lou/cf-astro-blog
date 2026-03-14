@@ -196,6 +196,39 @@ describe("后台界面风格保护", () => {
 		assert.match(adminScriptSource, /右侧卡片图片上传成功/u);
 	});
 
+	test("外观页透明度与模糊参数统一 0-100，并绑定完整滑块监听", async () => {
+		const [appearanceSource, adminScriptSource] = await Promise.all([
+			readFile("src/admin/routes/appearance.ts", "utf8"),
+			readFile("public/admin.js", "utf8"),
+		]);
+
+		assert.match(appearanceSource, /背景透明度/u);
+		assert.match(appearanceSource, /id="backgroundOpacity"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="heroCardOpacity"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="articlePanelOpacity"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="backgroundBlur"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="heroCardBlur"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="articlePanelBlur"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /convertTransparencyToOpacity/u);
+
+		assert.ok(
+			adminScriptSource.includes(
+				'[data-appearance-control="backgroundOpacity"]',
+			),
+		);
+		assert.ok(
+			adminScriptSource.includes(
+				'[data-appearance-control="articlePanelOpacity"]',
+			),
+		);
+		assert.ok(
+			adminScriptSource.includes(
+				'[data-appearance-control="articlePanelBlur"]',
+			),
+		);
+		assert.match(adminScriptSource, /name === "articlePanelBlur"/u);
+	});
+
 	test("媒体文件读取与删除使用通配参数提取键名，避免 /api 前缀重写误删", async () => {
 		const mediaRouteSource = await readFile(
 			"src/admin/routes/media.ts",

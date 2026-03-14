@@ -1889,6 +1889,9 @@ const appearanceUploadDropzone = document.querySelector(
 );
 const uploadInput = document.querySelector("[data-appearance-upload-input]");
 const appearanceControls = {
+	backgroundOpacity: document.querySelector(
+		'[data-appearance-control="backgroundOpacity"]',
+	),
 	backgroundScale: document.querySelector(
 		'[data-appearance-control="backgroundScale"]',
 	),
@@ -1907,6 +1910,12 @@ const appearanceControls = {
 	heroCardBlur: document.querySelector(
 		'[data-appearance-control="heroCardBlur"]',
 	),
+	articlePanelOpacity: document.querySelector(
+		'[data-appearance-control="articlePanelOpacity"]',
+	),
+	articlePanelBlur: document.querySelector(
+		'[data-appearance-control="articlePanelBlur"]',
+	),
 };
 
 function updateAppearanceDisplay(name, value) {
@@ -1917,7 +1926,8 @@ function updateAppearanceDisplay(name, value) {
 
 	target.textContent =
 		name === "backgroundBlur" ||
-		name === "heroCardBlur"
+		name === "heroCardBlur" ||
+		name === "articlePanelBlur"
 			? `${value} px`
 			: `${value}%`;
 }
@@ -1941,9 +1951,18 @@ function updateAppearancePreview() {
 	const blur = Number(blurInput.value);
 	const positionX = Number(positionXInput.value);
 	const positionY = Number(positionYInput.value);
+	const backgroundOpacityInput = appearanceControls.backgroundOpacity;
 	const heroCardOpacityInput = appearanceControls.heroCardOpacity;
 	const heroCardBlurInput = appearanceControls.heroCardBlur;
+	const articlePanelOpacityInput = appearanceControls.articlePanelOpacity;
+	const articlePanelBlurInput = appearanceControls.articlePanelBlur;
 
+	if (backgroundOpacityInput instanceof HTMLInputElement) {
+		updateAppearanceDisplay(
+			"backgroundOpacity",
+			Number(backgroundOpacityInput.value),
+		);
+	}
 	updateAppearanceDisplay("backgroundScale", scale);
 	updateAppearanceDisplay("backgroundBlur", blur);
 	updateAppearanceDisplay("backgroundPositionX", positionX);
@@ -1953,6 +1972,15 @@ function updateAppearancePreview() {
 	}
 	if (heroCardBlurInput instanceof HTMLInputElement) {
 		updateAppearanceDisplay("heroCardBlur", Number(heroCardBlurInput.value));
+	}
+	if (articlePanelOpacityInput instanceof HTMLInputElement) {
+		updateAppearanceDisplay(
+			"articlePanelOpacity",
+			Number(articlePanelOpacityInput.value),
+		);
+	}
+	if (articlePanelBlurInput instanceof HTMLInputElement) {
+		updateAppearanceDisplay("articlePanelBlur", Number(articlePanelBlurInput.value));
 	}
 }
 
