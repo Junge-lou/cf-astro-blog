@@ -115,7 +115,17 @@ const tocEntries = (toc ?? [])
 		</aside>
 		<div class="article-main">
 			<header class="article-hero glass-panel">
-				<a href="/blog" class="article-back">返回归档</a>
+				<div class="article-hero-tools">
+					<a href="/blog" class="article-back">返回归档</a>
+					<button
+						type="button"
+						class="article-transparency-toggle"
+						data-article-transparency-toggle="true"
+						aria-pressed="false"
+					>
+						取消透明度
+					</button>
+				</div>
 				<div class="article-kicker">精选文章</div>
 				<h1 class="article-title" transition:name={`title-${slug}`}>{title}</h1>
 				{description && (
@@ -144,7 +154,8 @@ const tocEntries = (toc ?? [])
 			</div>
 			<CommentsPanel />
 		</div>
-	</article>
+		</article>
+	<script is:inline src="/article-transparency-toggle.js"></script>
 </Base>
 
 <style>
@@ -323,7 +334,15 @@ const tocEntries = (toc ?? [])
 		gap: 1rem;
 	}
 
-	.article-back {
+	.article-hero-tools {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.55rem;
+	}
+
+	.article-back,
+	.article-transparency-toggle {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -336,6 +355,46 @@ const tocEntries = (toc ?? [])
 		font-size: 0.88rem;
 		backdrop-filter: blur(10px) saturate(120%);
 		-webkit-backdrop-filter: blur(10px) saturate(120%);
+	}
+
+	.article-transparency-toggle {
+		cursor: pointer;
+		font-family: inherit;
+	}
+
+	.article-transparency-toggle:hover,
+	.article-transparency-toggle:focus-visible,
+	.article-back:hover,
+	.article-back:focus-visible {
+		border-color: rgba(135, 190, 255, 0.42);
+		background: rgba(255, 255, 255, 0.12);
+		color: var(--color-text);
+		outline: none;
+	}
+
+	:global(html.article-opaque-mode) .article-shell .glass-panel {
+		background: rgba(var(--card-surface-rgb), 0.96);
+		border-color: rgba(255, 255, 255, 0.14);
+		box-shadow: 0 14px 34px -28px rgba(8, 18, 34, 0.52);
+	}
+
+	:global(html.article-opaque-mode) .article-shell .glass-panel::after {
+		background: rgba(var(--card-surface-rgb), 0.98);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+	}
+
+	:global(html.article-opaque-mode) .article-shell .glass-panel::before {
+		opacity: 0.22;
+	}
+
+	:global(html.article-opaque-mode) .article-shell .article-back,
+	:global(html.article-opaque-mode) .article-shell .article-transparency-toggle {
+		background: rgba(var(--card-surface-rgb), 0.94);
+		backdrop-filter: none;
+		-webkit-backdrop-filter: none;
+		border-color: rgba(255, 255, 255, 0.16);
+		color: var(--color-text);
 	}
 
 	.article-kicker {
