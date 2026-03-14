@@ -1,5 +1,4 @@
 ---
-import { slide } from "astro:transitions";
 import BaseHead from "@/components/BaseHead.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
@@ -43,7 +42,6 @@ const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --
 <html
 	lang={siteConfig.language}
 	data-admin-preview={isAdminPreview ? "true" : undefined}
-	transition:animate="none"
 >
 	<head>
 		<BaseHead
@@ -79,11 +77,7 @@ const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --
 			)}
 		</div>
 		<Header siteAppearance={siteAppearance} />
-		<div
-			class="site-route-frame"
-			transition:name="page-shell"
-			transition:animate={slide({ duration: "460ms" })}
-		>
+		<div class="site-route-frame">
 			<main class="container site-main">
 				<slot />
 			</main>

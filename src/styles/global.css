@@ -443,15 +443,39 @@ html[data-admin-preview="true"] .site-main {
 	padding-block: 0.9rem 0;
 }
 
-::view-transition-group(page-shell) {
-	animation-duration: 280ms;
-	animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+/* 整页切换动画：取代局部 slide（局部 slide 需要 view-transition-name 在 frame 上，
+ * 会提升合成层隔离背景，导致子元素 backdrop-filter 失效）。
+ * 改为 root 级别动画：新页面从右侧轻微平移淡入，旧页面向左淡出。 */
+@keyframes vt-slide-from-right {
+	from {
+		opacity: 0;
+		transform: translateX(1.5%);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
-::view-transition-old(page-shell),
-::view-transition-new(page-shell) {
-	animation-duration: 280ms;
-	animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+@keyframes vt-slide-to-left {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+
+	to {
+		opacity: 0;
+		transform: translateX(-1.5%);
+	}
+}
+
+::view-transition-old(root) {
+	animation: vt-slide-to-left 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+::view-transition-new(root) {
+	animation: vt-slide-from-right 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 ::view-transition-group(search-entry) {
