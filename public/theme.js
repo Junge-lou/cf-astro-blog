@@ -66,6 +66,51 @@
 		return normalizedScrollY >= NAV_CONDENSE_ENTER_Y;
 	};
 
+	// 测量导航栏子元素的自然内容宽度（不受容器宽度约束）
+	const measureNavContentWidth = () => {
+		const shell = document.querySelector(".site-nav-shell");
+		if (!shell) return 0;
+		const style = window.getComputedStyle(shell);
+		const gap = parseFloat(style.columnGap) || parseFloat(style.gap) || 0;
+		const pl = parseFloat(style.paddingLeft) || 0;
+		const pr = parseFloat(style.paddingRight) || 0;
+		const children = Array.from(shell.children);
+		if (children.length === 0) return pl + pr;
+		let totalW = pl + pr + gap * Math.max(0, children.length - 1);
+		for (const child of children) {
+			totalW += child.getBoundingClientRect().width;
+		}
+		return Math.ceil(totalW);
+	};
+
+	// 根据内容宽度动态计算胶囊内距，仅在内容超过默认胶囊时扩展
+	const syncCondensedNavWidth = () => {
+		if (!isNavCondensed) {
+			root.style.removeProperty("--nav-shell-condensed-computed-inset");
+			return;
+		}
+		const MIN_INSET_PX = 13; // ~0.8rem 保证与屏幕边缘的最小间距
+		const NAV_MAX_W = 1060; // 与 CSS --nav-shell-max-width 对应
+		const vw = window.innerWidth;
+		// 计算默认胶囊宽度（当前 CSS 公式的 JS 等价）
+		const defaultInset = Math.max(MIN_INSET_PX, (vw - NAV_MAX_W) / 2);
+		const defaultCapsuleW = vw - defaultInset * 2;
+		const contentW = measureNavContentWidth();
+		if (contentW <= defaultCapsuleW || contentW === 0) {
+			// 内容在默认胶囊内放得下，维持现状
+			root.style.removeProperty("--nav-shell-condensed-computed-inset");
+			return;
+		}
+		// 内容超出，扩展胶囊到内容所需宽度（但不超过屏幕边距限制）
+		const maxCapsuleW = vw - MIN_INSET_PX * 2;
+		const newCapsuleW = Math.min(contentW, maxCapsuleW);
+		const newInset = Math.max(MIN_INSET_PX, (vw - newCapsuleW) / 2);
+		root.style.setProperty(
+			"--nav-shell-condensed-computed-inset",
+			`${newInset.toFixed(1)}px`,
+		);
+	};
+
 	const applyNavState = (nextCondensed) => {
 		if (nextCondensed === isNavCondensed) {
 			return;
@@ -73,6 +118,8 @@
 
 		isNavCondensed = nextCondensed;
 		root.toggleAttribute("data-nav-condensed", nextCondensed);
+		// 状态切换后重新计算胶囊宽度
+		window.requestAnimationFrame(syncCondensedNavWidth);
 	};
 
 	const syncRootAttributeToDocument = (name, nextDocument) => {
@@ -114,10 +161,20 @@
 	};
 
 	syncNavState({ force: true });
-	window.addEventListener("scroll", () => requestNavSync(), { passive: true });
-	window.addEventListener("resize", () => requestNavSync(true), {
-		passive: true,
+	// 首次加载时，DOM 就绪后测量并调整胶囊宽度（处理页面刷新时已滚动的情况）
+	document.addEventListener("DOMContentLoaded", () => {
+		window.requestAnimationFrame(syncCondensedNavWidth);
 	});
+	window.addEventListener("scroll", () => requestNavSync(), { passive: true });
+	window.addEventListener(
+		"resize",
+		() => {
+			requestNavSync(true);
+			// resize 时重新测量，即使胶囊状态未变化
+			window.requestAnimationFrame(syncCondensedNavWidth);
+		},
+		{ passive: true },
+	);
 	document.addEventListener("astro:page-load", () => requestNavSync(true));
 	document.addEventListener("astro:before-preparation", (event) => {
 		event.direction = getRouteTransitionDirection(

@@ -18,12 +18,12 @@
 	overflow: hidden;
 	isolation: isolate;
 	transform: translate3d(0, 0, 0);
-	background-color: rgba(
-		var(--card-surface-rgb),
-		var(--post-card-surface-alpha)
-	);
-	backdrop-filter: blur(var(--post-card-blur-effective)) saturate(150%);
-	-webkit-backdrop-filter: blur(var(--post-card-blur-effective)) saturate(150%);
+	/*
+	 * 背景和模糊效果统一由 .glass-panel::after 伪元素处理。
+	 * 若在此元素上直接设置 backdrop-filter，会创建新的合成层，
+	 * 导致内部 ::after 的 backdrop-filter 无法透过父级看到真实页面背景，
+	 * 从而使毛玻璃模糊完全失效。
+	 */
 	opacity: 0;
 	animation: post-card-settle 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	transition:

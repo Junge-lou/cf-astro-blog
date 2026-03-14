@@ -301,9 +301,17 @@ function isLinkActive(href: string) {
 	}
 
 	:global(html[data-nav-condensed]) .site-nav::before {
-		inset-inline: max(
-			var(--nav-shell-condensed-inset-desktop),
-			calc((100% - var(--nav-shell-max-width)) / 2)
+		/*
+		 * --nav-shell-condensed-computed-inset 由 JS 动态设置：
+		 * 内容超出默认 1060px 胶囊时扩展，保证所有导航项可见；
+		 * 未设置时降级到原始公式。
+		 */
+		inset-inline: var(
+			--nav-shell-condensed-computed-inset,
+			max(
+				var(--nav-shell-condensed-inset-desktop),
+				calc((100% - var(--nav-shell-max-width)) / 2)
+			)
 		);
 		border: 1px solid rgba(255, 255, 255, 0.18);
 		border-radius: var(--nav-shell-condensed-radius);
@@ -315,16 +323,21 @@ function isLinkActive(href: string) {
 	:global(html[data-nav-condensed]) .site-nav-shell-scroll {
 		width: calc(
 			100% -
-				(
+				2 *
+				var(
+					--nav-shell-condensed-computed-inset,
 					max(
-							var(--nav-shell-condensed-inset-desktop),
-							calc((100% - var(--nav-shell-max-width)) / 2)
-						) * 2
+						var(--nav-shell-condensed-inset-desktop),
+						calc((100% - var(--nav-shell-max-width)) / 2)
+					)
 				)
 		);
-		margin-inline: max(
-			var(--nav-shell-condensed-inset-desktop),
-			calc((100% - var(--nav-shell-max-width)) / 2)
+		margin-inline: var(
+			--nav-shell-condensed-computed-inset,
+			max(
+				var(--nav-shell-condensed-inset-desktop),
+				calc((100% - var(--nav-shell-max-width)) / 2)
+			)
 		);
 		border-radius: var(--nav-shell-condensed-radius);
 		overflow-x: auto;
