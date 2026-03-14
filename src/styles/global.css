@@ -393,8 +393,8 @@ body.site-shell-has-background-image .site-background::after {
 	height: 116%;
 	object-fit: cover;
 	object-position: center center;
-	opacity: 0.48;
-	filter: blur(var(--bg-blur)) saturate(1.08);
+	opacity: 0.72;
+	filter: blur(var(--bg-blur)) saturate(1.2);
 	transform-origin: center center;
 	transform: translate3d(
 			calc((50 - var(--bg-focus-x)) * 0.45%),
