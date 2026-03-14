@@ -69,10 +69,6 @@ function getBodyFile(body: AppearanceFormBody, key: string): File | null {
 	return value instanceof File ? value : null;
 }
 
-function convertTransparencyToOpacity(value: number): number {
-	return Number.isFinite(value) ? 100 - value : Number.NaN;
-}
-
 function buildLinkItemsFromBody(
 	labels: string[],
 	hrefs: string[],
@@ -183,18 +179,6 @@ function renderAppearancePage(options: {
 	const backgroundPositionYOffset = Math.min(
 		50,
 		Math.max(-50, settings.backgroundPositionY - 50),
-	);
-	const backgroundTransparency = Math.min(
-		100,
-		Math.max(0, 100 - settings.backgroundOpacity),
-	);
-	const heroCardTransparency = Math.min(
-		100,
-		Math.max(0, 100 - settings.heroCardOpacity),
-	);
-	const articlePanelTransparency = Math.min(
-		100,
-		Math.max(0, 100 - settings.articlePanelOpacity),
 	);
 	const alertHtml = alert
 		? `<div class="alert alert-${escapeAttribute(alert.type)}">${escapeHtml(alert.message)}</div>`
@@ -659,14 +643,14 @@ function renderAppearancePage(options: {
 			<div class="appearance-stack">
 				<section class="appearance-panel">
 					<h2>背景与卡片视觉参数</h2>
-					<p class="appearance-note">缩放 0% 表示原始比例；横向/纵向焦点 0% 表示画面居中；透明度 0% 表示完全不透明，100% 表示完全透明。</p>
+					<p class="appearance-note">缩放 0% 表示原始比例；横向/纵向焦点 0% 表示画面居中。</p>
 					<div class="appearance-controls">
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
-								<label for="backgroundOpacity">背景透明度</label>
-								<span data-appearance-display="backgroundOpacity">${escapeHtml(String(backgroundTransparency))}%</span>
+								<label for="backgroundOpacity">背景不透明度</label>
+								<span data-appearance-display="backgroundOpacity">${escapeHtml(String(settings.backgroundOpacity))}%</span>
 							</div>
-							<input id="backgroundOpacity" name="backgroundOpacity" type="range" min="0" max="100" value="${escapeAttribute(String(backgroundTransparency))}" data-appearance-control="backgroundOpacity" />
+							<input id="backgroundOpacity" name="backgroundOpacity" type="range" min="20" max="100" value="${escapeAttribute(String(settings.backgroundOpacity))}" data-appearance-control="backgroundOpacity" />
 						</div>
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
@@ -680,7 +664,7 @@ function renderAppearancePage(options: {
 								<label for="backgroundBlur">高斯模糊</label>
 								<span data-appearance-display="backgroundBlur">${escapeHtml(String(settings.backgroundBlur))} px</span>
 							</div>
-							<input id="backgroundBlur" name="backgroundBlur" type="range" min="0" max="100" value="${escapeAttribute(String(settings.backgroundBlur))}" data-appearance-control="backgroundBlur" />
+							<input id="backgroundBlur" name="backgroundBlur" type="range" min="0" max="60" value="${escapeAttribute(String(settings.backgroundBlur))}" data-appearance-control="backgroundBlur" />
 						</div>
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
@@ -699,16 +683,16 @@ function renderAppearancePage(options: {
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
 								<label for="heroCardOpacity">卡片透明度</label>
-								<span data-appearance-display="heroCardOpacity">${escapeHtml(String(heroCardTransparency))}%</span>
+								<span data-appearance-display="heroCardOpacity">${escapeHtml(String(settings.heroCardOpacity))}%</span>
 							</div>
-							<input id="heroCardOpacity" name="heroCardOpacity" type="range" min="0" max="100" value="${escapeAttribute(String(heroCardTransparency))}" data-appearance-control="heroCardOpacity" />
+							<input id="heroCardOpacity" name="heroCardOpacity" type="range" min="4" max="40" value="${escapeAttribute(String(settings.heroCardOpacity))}" data-appearance-control="heroCardOpacity" />
 						</div>
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
 								<label for="heroCardBlur">卡片高斯模糊</label>
 								<span data-appearance-display="heroCardBlur">${escapeHtml(String(settings.heroCardBlur))} px</span>
 							</div>
-							<input id="heroCardBlur" name="heroCardBlur" type="range" min="0" max="100" value="${escapeAttribute(String(settings.heroCardBlur))}" data-appearance-control="heroCardBlur" />
+							<input id="heroCardBlur" name="heroCardBlur" type="range" min="0" max="48" value="${escapeAttribute(String(settings.heroCardBlur))}" data-appearance-control="heroCardBlur" />
 						</div>
 					</div>
 				</section>
@@ -718,16 +702,16 @@ function renderAppearancePage(options: {
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
 								<label for="articlePanelOpacity">文章页透明度</label>
-								<span data-appearance-display="articlePanelOpacity">${escapeHtml(String(articlePanelTransparency))}%</span>
+								<span data-appearance-display="articlePanelOpacity">${escapeHtml(String(settings.articlePanelOpacity))}%</span>
 							</div>
-							<input id="articlePanelOpacity" name="articlePanelOpacity" type="range" min="0" max="100" value="${escapeAttribute(String(articlePanelTransparency))}" data-appearance-control="articlePanelOpacity" />
+							<input id="articlePanelOpacity" name="articlePanelOpacity" type="range" min="4" max="40" value="${escapeAttribute(String(settings.articlePanelOpacity))}" data-appearance-control="articlePanelOpacity" />
 						</div>
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
 								<label for="articlePanelBlur">文章页高斯模糊</label>
 								<span data-appearance-display="articlePanelBlur">${escapeHtml(String(settings.articlePanelBlur))} px</span>
 							</div>
-							<input id="articlePanelBlur" name="articlePanelBlur" type="range" min="0" max="100" value="${escapeAttribute(String(settings.articlePanelBlur))}" data-appearance-control="articlePanelBlur" />
+							<input id="articlePanelBlur" name="articlePanelBlur" type="range" min="0" max="48" value="${escapeAttribute(String(settings.articlePanelBlur))}" data-appearance-control="articlePanelBlur" />
 						</div>
 					</div>
 				</section>
@@ -1070,13 +1054,13 @@ appearance.post("/", async (c) => {
 		);
 	}
 
-	const unifiedCardTransparency = Number(
+	const unifiedCardOpacity = Number(
 		getBodyText(body, "heroCardOpacity") || Number.NaN,
 	);
 	const unifiedCardBlur = Number(
 		getBodyText(body, "heroCardBlur") || Number.NaN,
 	);
-	const articlePanelTransparency = Number(
+	const articlePanelOpacity = Number(
 		getBodyText(body, "articlePanelOpacity") || Number.NaN,
 	);
 	const articlePanelBlur = Number(
@@ -1099,9 +1083,7 @@ appearance.post("/", async (c) => {
 
 	await saveSiteAppearance(db, {
 		backgroundImageKey: backgroundImageKey || null,
-		backgroundOpacity: convertTransparencyToOpacity(
-			Number(getBodyText(body, "backgroundOpacity") || Number.NaN),
-		),
+		backgroundOpacity: Number(getBodyText(body, "backgroundOpacity") || Number.NaN),
 		backgroundBlur: Number(getBodyText(body, "backgroundBlur") || Number.NaN),
 		backgroundScale:
 			100 + Number(getBodyText(body, "backgroundScale") || Number.NaN),
@@ -1109,11 +1091,11 @@ appearance.post("/", async (c) => {
 			50 + Number(getBodyText(body, "backgroundPositionX") || Number.NaN),
 		backgroundPositionY:
 			50 + Number(getBodyText(body, "backgroundPositionY") || Number.NaN),
-		heroCardOpacity: convertTransparencyToOpacity(unifiedCardTransparency),
+		heroCardOpacity: unifiedCardOpacity,
 		heroCardBlur: unifiedCardBlur,
-		postCardOpacity: convertTransparencyToOpacity(unifiedCardTransparency),
+		postCardOpacity: unifiedCardOpacity,
 		postCardBlur: unifiedCardBlur,
-		articlePanelOpacity: convertTransparencyToOpacity(articlePanelTransparency),
+		articlePanelOpacity,
 		articlePanelBlur,
 		headerSubtitle: getBodyText(body, "headerSubtitle"),
 		navLinks: buildLinkItemsFromBody(
