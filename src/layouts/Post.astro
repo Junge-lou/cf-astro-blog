@@ -186,6 +186,8 @@ const tocEntries = (toc ?? [])
 	.article-sidebar {
 		align-self: stretch;
 		display: grid;
+		align-content: start;
+		grid-auto-rows: max-content;
 		gap: 0.8rem;
 	}
 
@@ -467,6 +469,7 @@ const tocEntries = (toc ?? [])
 		}
 
 		.article-sidebar {
+			align-self: start;
 			position: static;
 			top: auto;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
