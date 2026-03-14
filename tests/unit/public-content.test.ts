@@ -176,6 +176,10 @@ describe("源码回归保护", () => {
 		);
 		assert.doesNotMatch(
 			postLayoutSource,
+			/\.article-toc\s*\{[^}]*overflow:\s*auto/u,
+		);
+		assert.doesNotMatch(
+			postLayoutSource,
 			/\.article-sidebar\s*\{[^}]*position:\s*sticky/u,
 		);
 		assert.ok(postLayoutSource.includes("orientation: portrait"));
