@@ -204,7 +204,11 @@ const hasToc = tocEntries.length > 0;
 
 	.article-sidebar-with-toc .article-profile {
 		position: sticky;
-		top: var(--article-sidebar-sticky-top);
+		top: calc(
+			var(--article-sidebar-sticky-top) -
+			var(--article-profile-height) -
+			var(--article-sidebar-gap)
+		);
 	}
 
 	.article-profile-avatar-frame {
@@ -290,11 +294,7 @@ const hasToc = tocEntries.length > 0;
 		gap: 0.9rem;
 		padding: 1rem;
 		position: sticky;
-		top: calc(
-			var(--article-sidebar-sticky-top) +
-			var(--article-profile-height) +
-			var(--article-sidebar-gap)
-		);
+		top: var(--article-sidebar-sticky-top);
 	}
 
 	.article-toc-head {

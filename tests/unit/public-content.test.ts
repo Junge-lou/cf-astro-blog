@@ -181,11 +181,16 @@ describe("源码回归保护", () => {
 			postLayoutSource,
 			/\.article-sidebar-with-toc\s+\.article-profile\s*\{[^}]*position:\s*sticky/u,
 		);
+		assert.ok(postLayoutSource.includes("var(--article-sidebar-sticky-top) -"));
+		assert.ok(postLayoutSource.includes("var(--article-profile-height)"));
 		assert.match(
 			postLayoutSource,
 			/\.article-toc\s*\{[^}]*position:\s*sticky/u,
 		);
-		assert.ok(postLayoutSource.includes("var(--article-profile-height)"));
+		assert.match(
+			postLayoutSource,
+			/\.article-toc\s*\{[^}]*top:\s*var\(--article-sidebar-sticky-top\)/u,
+		);
 		assert.doesNotMatch(
 			postLayoutSource,
 			/\.article-toc\s*\{[^}]*overflow:\s*auto/u,
