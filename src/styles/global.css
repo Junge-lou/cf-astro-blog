@@ -182,7 +182,15 @@ body {
 }
 
 body.site-shell-has-background-image {
-	background: var(--color-bg);
+	/*
+	 * 有背景图时 body 必须透明，不能保留不透明背景色。
+	 * 原因：.site-shell { isolation: isolate } 让 body 成为合成层边界，
+	 * body 自身的不透明 background-color 会盖住 .site-background（z-index:-2），
+	 * 导致子元素的 backdrop-filter 只能采样到纯色，无法看到背景图，模糊失效。
+	 * html { background-color: var(--color-bg) } 已提供兜底底色，不会露白。
+	 */
+	background: transparent;
+	isolation: auto;
 }
 
 body::before,
