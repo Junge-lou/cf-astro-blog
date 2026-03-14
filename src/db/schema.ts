@@ -141,6 +141,7 @@ export const webMentions = sqliteTable(
 export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	id: integer("id").primaryKey(),
 	backgroundImageKey: text("background_image_key"),
+	backgroundOpacity: integer("background_opacity").notNull().default(72),
 	backgroundBlur: integer("background_blur").notNull().default(24),
 	backgroundScale: integer("background_scale").notNull().default(112),
 	backgroundPositionX: integer("background_position_x").notNull().default(50),

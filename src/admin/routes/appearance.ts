@@ -1076,6 +1076,7 @@ appearance.post("/", async (c) => {
 
 	await saveSiteAppearance(db, {
 		backgroundImageKey: backgroundImageKey || null,
+		backgroundOpacity: Number(getBodyText(body, "backgroundOpacity") || Number.NaN),
 		backgroundBlur: Number(getBodyText(body, "backgroundBlur") || Number.NaN),
 		backgroundScale:
 			100 + Number(getBodyText(body, "backgroundScale") || Number.NaN),

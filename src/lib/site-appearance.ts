@@ -27,6 +27,7 @@ const DEFAULT_HERO_ACTIONS: SiteNavLink[] = [
 
 export interface SiteAppearance {
 	backgroundImageKey: string | null;
+	backgroundOpacity: number;
 	backgroundBlur: number;
 	backgroundScale: number;
 	backgroundPositionX: number;
@@ -102,6 +103,7 @@ export type AiSettingsInput = {
 
 export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 	backgroundImageKey: null,
+	backgroundOpacity: 72,
 	backgroundBlur: 24,
 	backgroundScale: 112,
 	backgroundPositionX: 50,
@@ -492,6 +494,12 @@ export function normalizeSiteAppearanceInput(
 		backgroundImageKey: input.backgroundImageKey
 			? sanitizeMediaKey(input.backgroundImageKey)
 			: null,
+		backgroundOpacity: clampInteger(
+			input.backgroundOpacity,
+			20,
+			100,
+			DEFAULT_SITE_APPEARANCE.backgroundOpacity,
+		),
 		backgroundBlur: clampInteger(
 			input.backgroundBlur,
 			0,
@@ -657,6 +665,7 @@ export async function getSiteAppearance(db: Database): Promise<SiteAppearance> {
 	const [row] = await db
 		.select({
 			backgroundImageKey: siteAppearanceSettings.backgroundImageKey,
+			backgroundOpacity: siteAppearanceSettings.backgroundOpacity,
 			backgroundBlur: siteAppearanceSettings.backgroundBlur,
 			backgroundScale: siteAppearanceSettings.backgroundScale,
 			backgroundPositionX: siteAppearanceSettings.backgroundPositionX,
@@ -784,6 +793,7 @@ export async function saveSiteAppearance(
 		.values({
 			id: 1,
 			backgroundImageKey: normalized.backgroundImageKey,
+			backgroundOpacity: normalized.backgroundOpacity,
 			backgroundBlur: normalized.backgroundBlur,
 			backgroundScale: normalized.backgroundScale,
 			backgroundPositionX: normalized.backgroundPositionX,
@@ -827,6 +837,7 @@ export async function saveSiteAppearance(
 			target: siteAppearanceSettings.id,
 			set: {
 				backgroundImageKey: normalized.backgroundImageKey,
+				backgroundOpacity: normalized.backgroundOpacity,
 				backgroundBlur: normalized.backgroundBlur,
 				backgroundScale: normalized.backgroundScale,
 				backgroundPositionX: normalized.backgroundPositionX,

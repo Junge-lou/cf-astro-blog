@@ -33,7 +33,7 @@ const backgroundImageUrl = buildBackgroundImageUrl(
 	siteAppearance.backgroundImageKey,
 );
 const backgroundImageStyle = backgroundImageUrl
-	? `--bg-focus-x: ${siteAppearance.backgroundPositionX}; --bg-focus-y: ${siteAppearance.backgroundPositionY}; --bg-blur: ${siteAppearance.backgroundBlur}px; --bg-scale: ${siteAppearance.backgroundScale / 100};`
+	? `--bg-focus-x: ${siteAppearance.backgroundPositionX}; --bg-focus-y: ${siteAppearance.backgroundPositionY}; --bg-blur: ${siteAppearance.backgroundBlur}px; --bg-scale: ${siteAppearance.backgroundScale / 100}; --bg-opacity: ${siteAppearance.backgroundOpacity / 100};`
 	: "";
 const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --hero-card-blur: ${siteAppearance.heroCardBlur}px; --post-card-opacity: ${siteAppearance.postCardOpacity}; --post-card-blur: ${siteAppearance.postCardBlur}px; --article-panel-opacity: ${siteAppearance.articlePanelOpacity}; --article-panel-blur: ${siteAppearance.articlePanelBlur}px;`;
 ---
