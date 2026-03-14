@@ -105,16 +105,17 @@ describe("后台界面风格保护", () => {
 		);
 	});
 
-	test("文章编辑页与列表页不再提供首页置顶相关字段", async () => {
+	test("文章编辑页支持首页置顶开关与置顶顺序输入", async () => {
 		const [editorSource, listSource] = await Promise.all([
 			readFile("src/admin/views/posts/editor.ts", "utf8"),
 			readFile("src/admin/views/posts/list.ts", "utf8"),
 		]);
 
-		assert.doesNotMatch(editorSource, /name="isPinned"/u);
-		assert.doesNotMatch(editorSource, /name="pinnedOrder"/u);
-		assert.doesNotMatch(editorSource, /首页置顶文章/u);
-		assert.doesNotMatch(listSource, /置顶 #/u);
+		assert.match(editorSource, /name="isPinned"/u);
+		assert.match(editorSource, /name="pinnedOrder"/u);
+		assert.match(editorSource, /首页置顶文章/u);
+		assert.match(listSource, /置顶/u);
+		assert.match(listSource, /置顶 #/u);
 	});
 
 	test("文章编辑页提供 Markdown 实时预览区域", async () => {

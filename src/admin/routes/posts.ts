@@ -43,6 +43,8 @@ interface ParsedPostInput {
 	publishAt: string | null;
 	featuredImageKey: string | null;
 	featuredImageAlt: string | null;
+	isPinned: boolean;
+	pinnedOrder: number;
 	metaTitle: string | null;
 	metaDescription: string | null;
 	metaKeywords: string | null;
@@ -154,6 +156,28 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 		return { error: "封面图片键名不合法" } as const;
 	}
 
+	const isPinnedRaw = String(body.isPinned ?? "")
+		.trim()
+		.toLowerCase();
+	const isPinned =
+		isPinnedRaw === "1" || isPinnedRaw === "true" || isPinnedRaw === "on";
+	const pinnedOrderRaw = String(body.pinnedOrder ?? "").trim();
+	let pinnedOrder = 100;
+	if (pinnedOrderRaw) {
+		const parsedPinnedOrder = Number(pinnedOrderRaw);
+		if (
+			!Number.isInteger(parsedPinnedOrder) ||
+			parsedPinnedOrder < 1 ||
+			parsedPinnedOrder > 9999
+		) {
+			return { error: "置顶顺序需填写 1-9999 的整数" } as const;
+		}
+		pinnedOrder = parsedPinnedOrder;
+	}
+	if (!isPinned) {
+		pinnedOrder = 100;
+	}
+
 	const newTagNamesRaw = sanitizePlainText(body.newTagNames, 400, {
 		allowNewlines: true,
 	});
@@ -173,6 +197,8 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 			publishAt,
 			featuredImageKey,
 			featuredImageAlt: sanitizePlainText(body.featuredImageAlt, 200) || null,
+			isPinned,
+			pinnedOrder,
 			metaTitle: sanitizePlainText(body.metaTitle, 200) || null,
 			metaDescription: sanitizePlainText(body.metaDescription, 160) || null,
 			metaKeywords: sanitizePlainText(body.metaKeywords, 200) || null,
@@ -416,6 +442,8 @@ posts.get("/", async (c) => {
 				title: blogPosts.title,
 				slug: blogPosts.slug,
 				status: blogPosts.status,
+				isPinned: blogPosts.isPinned,
+				pinnedOrder: blogPosts.pinnedOrder,
 				publishedAt: blogPosts.publishedAt,
 				viewCount: blogPosts.viewCount,
 				createdAt: blogPosts.createdAt,
@@ -423,7 +451,11 @@ posts.get("/", async (c) => {
 			})
 			.from(blogPosts)
 			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-			.orderBy(desc(blogPosts.createdAt));
+			.orderBy(
+				desc(blogPosts.isPinned),
+				asc(blogPosts.pinnedOrder),
+				desc(blogPosts.createdAt),
+			);
 		const [categories, tags] = await Promise.all([
 			getCategoryRows(db),
 			getTagRows(db),
@@ -517,6 +549,8 @@ posts.post("/", async (c) => {
 			publishedAt,
 			featuredImageKey: postInput.featuredImageKey,
 			featuredImageAlt: postInput.featuredImageAlt,
+			isPinned: postInput.isPinned,
+			pinnedOrder: postInput.pinnedOrder,
 			metaTitle: postInput.metaTitle,
 			metaDescription: postInput.metaDescription,
 			metaKeywords: postInput.metaKeywords,
@@ -746,6 +780,8 @@ posts.post("/:id", async (c) => {
 			publishedAt,
 			featuredImageKey: postInput.featuredImageKey,
 			featuredImageAlt: postInput.featuredImageAlt,
+			isPinned: postInput.isPinned,
+			pinnedOrder: postInput.pinnedOrder,
 			metaTitle: postInput.metaTitle,
 			metaDescription: postInput.metaDescription,
 			metaKeywords: postInput.metaKeywords,

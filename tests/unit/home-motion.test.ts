@@ -22,26 +22,20 @@ describe("首页灵动交互保护", () => {
 		assert.match(homePageSource, /hero-aura-primary/u);
 	});
 
-	test("首页最近更新列表不再按置顶状态拆分查询", async () => {
+	test("首页会单独渲染置顶文章板块并将最近更新与置顶分离", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
-		assert.doesNotMatch(homePageSource, /pinnedPosts/u);
-		assert.doesNotMatch(homePageSource, /eq\(blogPosts\.isPinned, true\)/u);
-		assert.doesNotMatch(homePageSource, /eq\(blogPosts\.isPinned, false\)/u);
+		assert.match(homePageSource, /置顶文章/u);
+		assert.match(homePageSource, /eq\(blogPosts\.isPinned, true\)/u);
+		assert.match(homePageSource, /eq\(blogPosts\.isPinned, false\)/u);
 		assert.match(homePageSource, /recentSectionSubheading/u);
 	});
 
-	test("首页文案不再展示后台置顶配置提示", async () => {
+	test("首页仅在存在置顶文章时渲染置顶栏目", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
-		assert.doesNotMatch(
-			homePageSource,
-			/可在后台编辑文章时勾选“首页置顶”，并用顺序值控制展示先后。/u,
-		);
-		assert.doesNotMatch(
-			homePageSource,
-			/置顶文章固定展示在上方，本区仅显示非置顶的最近发布内容。/u,
-		);
+		assert.match(homePageSource, /pinnedPosts\.length > 0/u);
+		assert.match(homePageSource, /pinnedPosts\.length > 0 && \(/u);
 	});
 
 	test("右侧信息卡毛玻璃会跟随主题在深浅底之间切换", async () => {
