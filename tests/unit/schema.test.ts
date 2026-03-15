@@ -108,6 +108,8 @@ describe("数据库结构", () => {
 		assert.ok(columns.includes("sessionId"));
 		assert.ok(columns.includes("eventType"));
 		assert.ok(columns.includes("pageUrl"));
+		assert.ok(columns.includes("ipAddress"));
+		assert.ok(columns.includes("userAgent"));
 		assert.ok(columns.includes("eventData"));
 		assert.ok(columns.includes("scrollDepth"));
 	});

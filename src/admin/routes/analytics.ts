@@ -32,6 +32,8 @@ type RecentSessionRow = {
 type RecentEventRow = {
 	eventType: string;
 	pageUrl: string | null;
+	ipAddress: string | null;
+	userAgent: string | null;
 	timestamp: string;
 };
 
@@ -78,6 +80,8 @@ type FullEventRow = {
 	eventName: string | null;
 	pageUrl: string | null;
 	pageTitle: string | null;
+	ipAddress: string | null;
+	userAgent: string | null;
 	eventData: string | null;
 	scrollDepth: number | null;
 	timeOnPageSeconds: number | null;
@@ -285,6 +289,8 @@ analytics.get("/", async (c) => {
 			.select({
 				eventType: analyticsEvents.eventType,
 				pageUrl: analyticsEvents.pageUrl,
+				ipAddress: analyticsEvents.ipAddress,
+				userAgent: analyticsEvents.userAgent,
 				timestamp: analyticsEvents.timestamp,
 			})
 			.from(analyticsEvents)
@@ -455,9 +461,9 @@ analytics.get("/", async (c) => {
 		${
 			stats.recentEvents.length > 0
 				? `<div class="table-card"><table class="data-table">
-				<thead><tr><th>类型</th><th>页面</th><th>时间</th></tr></thead>
+				<thead><tr><th>类型</th><th>页面</th><th>IP</th><th>UA</th><th>时间</th></tr></thead>
 				<tbody>
-					${stats.recentEvents.map((e) => `<tr><td>${escapeHtml(e.eventType)}</td><td class="table-cell-break">${escapeHtml(e.pageUrl || "-")}</td><td>${renderLocalTimeCell(e.timestamp)}</td></tr>`).join("")}
+					${stats.recentEvents.map((e) => `<tr><td>${escapeHtml(e.eventType)}</td><td class="table-cell-break">${escapeHtml(e.pageUrl || "-")}</td><td>${escapeHtml(e.ipAddress || "-")}</td><td class="table-cell-break">${escapeHtml(e.userAgent || "-")}</td><td>${renderLocalTimeCell(e.timestamp)}</td></tr>`).join("")}
 				</tbody>
 			</table></div>
 			${renderPagination({
@@ -512,6 +518,8 @@ analytics.get("/export", async (c) => {
 			eventName: analyticsEvents.eventName,
 			pageUrl: analyticsEvents.pageUrl,
 			pageTitle: analyticsEvents.pageTitle,
+			ipAddress: analyticsEvents.ipAddress,
+			userAgent: analyticsEvents.userAgent,
 			eventData: analyticsEvents.eventData,
 			scrollDepth: analyticsEvents.scrollDepth,
 			timeOnPageSeconds: analyticsEvents.timeOnPageSeconds,

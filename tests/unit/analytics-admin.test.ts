@@ -19,6 +19,9 @@ describe("访问统计后台能力保护", () => {
 		assert.match(analyticsRouteSource, /下载全部明细（JSONL）/u);
 		assert.match(analyticsRouteSource, /MCP 审计专栏/u);
 		assert.match(analyticsRouteSource, /mcpLogs/u);
+		assert.match(analyticsRouteSource, /analyticsEvents\.ipAddress/u);
+		assert.match(analyticsRouteSource, /analyticsEvents\.userAgent/u);
+		assert.match(analyticsRouteSource, /<th>IP<\/th><th>UA<\/th>/u);
 		assert.match(analyticsRouteSource, /analytics\.get\("\/export"/u);
 		assert.match(analyticsRouteSource, /application\/x-ndjson/u);
 		assert.match(analyticsRouteSource, /attachment; filename=/u);
@@ -71,6 +74,17 @@ describe("访问统计后台能力保护", () => {
 		assert.match(migrationSource, /analytics_events_page_url_idx/u);
 		assert.match(migrationSource, /analytics_events_session_id_idx/u);
 		assert.match(migrationSource, /analytics_sessions_last_seen_idx/u);
+	});
+
+	test("统计事件表迁移补充 IP 与 UA 字段", async () => {
+		const migrationSource = await readFile(
+			"drizzle/0018_analytics_events_ip_ua.sql",
+			"utf8",
+		);
+
+		assert.match(migrationSource, /analytics_events/u);
+		assert.match(migrationSource, /ip_address/u);
+		assert.match(migrationSource, /user_agent/u);
 	});
 
 	test("MCP 审计表提供查询索引迁移", async () => {

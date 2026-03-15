@@ -256,6 +256,8 @@ export const analyticsEvents = sqliteTable("analytics_events", {
 	eventName: text("event_name"),
 	pageUrl: text("page_url"),
 	pageTitle: text("page_title"),
+	ipAddress: text("ip_address"),
+	userAgent: text("user_agent"),
 	eventData: text("event_data"),
 	scrollDepth: integer("scroll_depth"),
 	timeOnPageSeconds: integer("time_on_page_seconds"),

@@ -220,9 +220,11 @@ INSERT INTO analytics_events (
 	event_type,
 	page_url,
 	page_title,
+	ip_address,
+	user_agent,
 	event_data,
 	timestamp
-) VALUES (?, ?, ?, ?, ?, datetime('now'))
+) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
 `;
 
 publicAnalyticsRoutes.post("/track", async (c) => {
@@ -296,6 +298,8 @@ publicAnalyticsRoutes.post("/track", async (c) => {
 				EVENT_TYPE,
 				payload.pageUrl,
 				payload.pageTitle,
+				ipAddress,
+				userAgent || null,
 				eventData,
 			)
 			.run();

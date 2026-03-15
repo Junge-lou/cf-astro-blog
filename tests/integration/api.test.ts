@@ -283,6 +283,7 @@ describe("后台接口", () => {
 					"content-type": "application/json",
 					origin: "http://localhost",
 					"CF-Connecting-IP": "203.0.113.10",
+					"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)",
 				},
 				body: JSON.stringify({
 					sessionId: "sid_test_1234567890abcd",
@@ -311,6 +312,11 @@ describe("后台接口", () => {
 		assert.ok(sessionUpsert);
 		assert.ok(eventInsert);
 		assert.equal(sessionUpsert?.params[1], "203.0.113.10");
+		assert.equal(eventInsert?.params[4], "203.0.113.10");
+		assert.equal(
+			eventInsert?.params[5],
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)",
+		);
 	});
 
 	test("POST /analytics/track 会拒绝无效事件数据", async () => {
@@ -347,6 +353,8 @@ describe("后台接口", () => {
 				headers: {
 					"content-type": "application/json",
 					origin: "http://localhost",
+					"CF-Connecting-IP": "198.51.100.22",
+					"user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
 				},
 				body: JSON.stringify({
 					sessionId: "sid_test_1234567890abcd",
@@ -367,6 +375,14 @@ describe("后台接口", () => {
 		);
 		assert.ok(
 			calls.some((entry) => /insert into analytics_events/iu.test(entry.sql)),
+		);
+		const eventInsert = calls.find((entry) =>
+			/insert into analytics_events/iu.test(entry.sql),
+		);
+		assert.equal(eventInsert?.params[4], "198.51.100.22");
+		assert.equal(
+			eventInsert?.params[5],
+			"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
 		);
 	});
 
