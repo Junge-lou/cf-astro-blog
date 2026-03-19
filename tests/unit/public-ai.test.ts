@@ -21,6 +21,10 @@ describe("公开 AI 接口防护", () => {
 		assert.match(source, /PWD=/u);
 		assert.match(source, /COMMAND=/u);
 		assert.match(source, /normalizeTerminalCwd/u);
+		assert.match(source, /normalizeTerminalHistory/u);
+		assert.match(source, /MAX_TERMINAL_BODY_LENGTH/u);
+		assert.match(source, /MAX_TERMINAL_HISTORY_MESSAGE_LENGTH/u);
+		assert.match(source, /history/u);
 	});
 
 	test("主应用会挂载公开 AI 路由", async () => {

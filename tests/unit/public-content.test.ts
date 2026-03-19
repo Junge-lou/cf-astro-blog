@@ -117,6 +117,10 @@ describe("源码回归保护", () => {
 		assert.match(terminalScriptSource, /TERMINAL_CLEAR/u);
 		assert.match(terminalScriptSource, /guest@404:\$\{cwd\}\$/u);
 		assert.match(terminalScriptSource, /cwd,/u);
+		assert.match(terminalScriptSource, /history:\s*terminalState\.history/u);
+		assert.match(terminalScriptSource, /TERMINAL_STORAGE_KEY/u);
+		assert.match(terminalScriptSource, /window\.localStorage/u);
+		assert.match(terminalScriptSource, /buildTerminalHistoryMessage/u);
 		assert.match(terminalScriptSource, /normalizeTerminalPath/u);
 		assert.match(terminalScriptSource, /astro:page-load/u);
 	});

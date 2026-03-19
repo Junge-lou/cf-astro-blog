@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { getDb } from "@/lib/db";
 import {
 	isOpenAICompatibleEndpointReady,
+	type OpenAICompatibleMessage,
 	requestOpenAICompatibleChatCompletion,
 } from "@/lib/openai-compatible";
 import { sanitizePlainText } from "@/lib/security";
@@ -11,19 +12,23 @@ import type { AdminAppEnv } from "../middleware/auth";
 
 const publicAiRoutes = new Hono<AdminAppEnv>();
 
-const MAX_BODY_LENGTH = 16_384;
+const MAX_CHAT_BODY_LENGTH = 16_384;
+const MAX_TERMINAL_BODY_LENGTH = 1_048_576;
 const MAX_MESSAGE_LENGTH = 4_000;
 const MAX_TERMINAL_CWD_LENGTH = 240;
+const MAX_TERMINAL_HISTORY_MESSAGE_LENGTH = 16_000;
 const MAX_TURNSTILE_TOKEN_LENGTH = 4_096;
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 12;
 const DEFAULT_DAILY_LIMIT_PER_IP = 120;
+type PublicAiMode = "chat" | "terminal-404";
 const DEFAULT_PUBLIC_AI_SYSTEM_PROMPT =
 	"你是站点内的公开助手。请使用简体中文回答，内容简洁、准确，避免输出敏感系统信息。";
 const NOT_FOUND_TERMINAL_SYSTEM_PROMPT = `
 你是网站 404 彩蛋页里的 shell 终端模拟器。
-你会收到两段信息：
+你会收到多轮消息，user 消息格式统一为两段信息：
 - PWD=<当前路径>
 - COMMAND=<用户输入命令>
+assistant 消息是上一轮的终端输出结果。
 
 请严格按 shell 风格返回“命令执行结果”，必须遵守：
 1) 只输出纯文本，不要 Markdown、代码块、解释说明、前后缀礼貌语。
@@ -35,10 +40,16 @@ const NOT_FOUND_TERMINAL_SYSTEM_PROMPT = `
 7) 不要声称真的访问了服务器真实文件系统；这是模拟 shell。
 `.trim();
 
+interface TerminalHistoryMessage {
+	role: "user" | "assistant";
+	content: string;
+}
+
 interface PublicAiPayload {
 	message: string;
 	cwd: string | null;
 	turnstileToken: string | null;
+	history: TerminalHistoryMessage[];
 }
 
 interface TurnstileVerifyResponse {
@@ -94,8 +105,11 @@ function isSameOriginRequest(c: Context<AdminAppEnv>): boolean {
 
 function parsePayload(
 	rawBody: string,
+	mode: PublicAiMode,
 ): { data: PublicAiPayload } | { error: string } {
-	if (!rawBody || rawBody.length > MAX_BODY_LENGTH) {
+	const maxBodyLength =
+		mode === "terminal-404" ? MAX_TERMINAL_BODY_LENGTH : MAX_CHAT_BODY_LENGTH;
+	if (!rawBody || rawBody.length > maxBodyLength) {
 		return { error: "请求体体积无效" };
 	}
 
@@ -114,6 +128,8 @@ function parsePayload(
 	}
 	const cwdRaw = sanitizePlainText(parsed.cwd, MAX_TERMINAL_CWD_LENGTH);
 	const cwd = normalizeTerminalCwd(cwdRaw);
+	const history =
+		mode === "terminal-404" ? normalizeTerminalHistory(parsed.history) : [];
 
 	const turnstileToken =
 		sanitizePlainText(parsed.turnstileToken, MAX_TURNSTILE_TOKEN_LENGTH) ||
@@ -124,6 +140,7 @@ function parsePayload(
 			message,
 			cwd,
 			turnstileToken,
+			history,
 		},
 	};
 }
@@ -143,12 +160,55 @@ function normalizeTerminalCwd(value: string): string | null {
 	return normalized.slice(0, MAX_TERMINAL_CWD_LENGTH);
 }
 
+function normalizeTerminalHistory(value: unknown): TerminalHistoryMessage[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	const history: TerminalHistoryMessage[] = [];
+	for (const item of value) {
+		if (!item || typeof item !== "object") {
+			continue;
+		}
+
+		const roleRaw = sanitizePlainText(
+			(item as { role?: unknown }).role,
+			16,
+		).toLowerCase();
+		if (roleRaw !== "user" && roleRaw !== "assistant") {
+			continue;
+		}
+
+		const content = sanitizePlainText(
+			(item as { content?: unknown }).content,
+			MAX_TERMINAL_HISTORY_MESSAGE_LENGTH,
+			{
+				allowNewlines: true,
+			},
+		);
+		if (!content) {
+			continue;
+		}
+
+		history.push({
+			role: roleRaw,
+			content,
+		});
+	}
+
+	return history;
+}
+
+function buildTerminalUserContent(cwd: string | null, command: string): string {
+	return `PWD=${cwd || "/"}\nCOMMAND=${command}`;
+}
+
 interface PublicAiRequestOptions {
 	maxTokens: number;
 	requireTurnstile: boolean;
 	systemPrompt: string;
 	temperature: number;
-	mode: "chat" | "terminal-404";
+	mode: PublicAiMode;
 }
 
 function getMinuteRateKey(ip: string): string {
@@ -284,7 +344,7 @@ async function handlePublicAiRequest(
 	}
 
 	const rawBody = await c.req.text();
-	const parsed = parsePayload(rawBody);
+	const parsed = parsePayload(rawBody, options.mode);
 	if ("error" in parsed) {
 		return c.json({ error: parsed.error }, 400);
 	}
@@ -318,22 +378,28 @@ async function handlePublicAiRequest(
 	}
 
 	try {
-		const userContent =
-			options.mode === "terminal-404"
-				? `PWD=${parsed.data.cwd || "/"}\nCOMMAND=${parsed.data.message}`
-				: parsed.data.message;
+		const messages: OpenAICompatibleMessage[] = [
+			{
+				role: "system",
+				content: options.systemPrompt,
+			},
+		];
+		if (options.mode === "terminal-404") {
+			messages.push(...parsed.data.history);
+			messages.push({
+				role: "user",
+				content: buildTerminalUserContent(parsed.data.cwd, parsed.data.message),
+			});
+		} else {
+			messages.push({
+				role: "user",
+				content: parsed.data.message,
+			});
+		}
+
 		const reply = await requestOpenAICompatibleChatCompletion(
 			publicEndpoint,
-			[
-				{
-					role: "system",
-					content: options.systemPrompt,
-				},
-				{
-					role: "user",
-					content: userContent,
-				},
-			],
+			messages,
 			{
 				temperature: options.temperature,
 				maxTokens: options.maxTokens,
