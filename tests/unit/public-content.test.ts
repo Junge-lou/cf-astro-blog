@@ -213,6 +213,7 @@ describe("源码回归保护", () => {
 		assert.ok(postLayoutSource.includes("align-content: start;"));
 		assert.ok(postLayoutSource.includes("grid-auto-rows: max-content;"));
 		assert.ok(postLayoutSource.includes("--article-profile-height: 0px;"));
+		assert.ok(postLayoutSource.includes("--article-profile-shift: 0px;"));
 		assert.ok(postLayoutSource.includes("data-article-transparency-toggle"));
 		assert.ok(postLayoutSource.includes("article-transparency-toggle-compact"));
 		assert.ok(postLayoutSource.includes("/article-transparency-toggle.js"));
@@ -224,6 +225,9 @@ describe("源码回归保护", () => {
 		);
 		assert.ok(postLayoutSource.includes("var(--article-sidebar-sticky-top) -"));
 		assert.ok(postLayoutSource.includes("var(--article-profile-height)"));
+		assert.ok(
+			postLayoutSource.includes("translateY(var(--article-profile-shift))"),
+		);
 		assert.match(
 			postLayoutSource,
 			/\.article-toc\s*\{[^}]*position:\s*sticky/u,
@@ -249,7 +253,10 @@ describe("源码回归保护", () => {
 		assert.ok(articleToggleScript.includes("querySelectorAll"));
 		assert.ok(articleToggleScript.includes("astro:page-load"));
 		assert.ok(sidebarStickyScript.includes("article-sidebar-with-toc"));
+		assert.ok(sidebarStickyScript.includes("article-toc"));
 		assert.ok(sidebarStickyScript.includes("--article-profile-height"));
+		assert.ok(sidebarStickyScript.includes("--article-profile-shift"));
+		assert.ok(sidebarStickyScript.includes('window.addEventListener("scroll"'));
 		assert.ok(sidebarStickyScript.includes("ResizeObserver"));
 		assert.ok(sidebarStickyScript.includes("astro:page-load"));
 	});

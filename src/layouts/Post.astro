@@ -189,6 +189,7 @@ const hasToc = tocEntries.length > 0;
 		--article-sidebar-sticky-top: 6.2rem;
 		--article-sidebar-gap: 0.8rem;
 		--article-profile-height: 0px;
+		--article-profile-shift: 0px;
 		align-self: stretch;
 		display: grid;
 		align-content: start;
@@ -209,6 +210,7 @@ const hasToc = tocEntries.length > 0;
 			var(--article-profile-height) -
 			var(--article-sidebar-gap)
 		);
+		transform: translateY(var(--article-profile-shift));
 	}
 
 	.article-profile-avatar-frame {

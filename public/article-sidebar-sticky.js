@@ -6,7 +6,33 @@
 
 	const SIDEBAR_SELECTOR = ".article-sidebar-with-toc";
 	const PROFILE_SELECTOR = ".article-profile";
+	const TOC_SELECTOR = ".article-toc";
 	let disposeCurrent = null;
+
+	const resolveLengthToPx = (rawValue) => {
+		const value = rawValue.trim();
+		if (!value) {
+			return 0;
+		}
+
+		const numeric = Number.parseFloat(value);
+		if (!Number.isFinite(numeric)) {
+			return 0;
+		}
+
+		if (value.endsWith("rem")) {
+			const rootFontSize = Number.parseFloat(
+				window.getComputedStyle(document.documentElement).fontSize,
+			);
+			return numeric * (Number.isFinite(rootFontSize) ? rootFontSize : 16);
+		}
+
+		if (value.endsWith("vh")) {
+			return (window.innerHeight * numeric) / 100;
+		}
+
+		return numeric;
+	};
 
 	const cleanup = () => {
 		if (typeof disposeCurrent === "function") {
@@ -28,35 +54,67 @@
 			return;
 		}
 
-		let frameId = 0;
-		const syncProfileHeight = () => {
-			if (frameId) {
-				window.cancelAnimationFrame(frameId);
+		const toc = sidebar.querySelector(TOC_SELECTOR);
+		if (!(toc instanceof HTMLElement)) {
+			return;
+		}
+
+		let profileFrameId = 0;
+		let shiftFrameId = 0;
+
+		const syncProfileShift = () => {
+			if (shiftFrameId) {
+				window.cancelAnimationFrame(shiftFrameId);
 			}
-			frameId = window.requestAnimationFrame(() => {
+			shiftFrameId = window.requestAnimationFrame(() => {
+				const stickyTopValue = window
+					.getComputedStyle(sidebar)
+					.getPropertyValue("--article-sidebar-sticky-top");
+				const stickyTopPx = resolveLengthToPx(stickyTopValue);
+				const tocTop = toc.getBoundingClientRect().top;
+				const profileShift = Math.min(0, Math.round(tocTop - stickyTopPx));
+				sidebar.style.setProperty("--article-profile-shift", `${profileShift}px`);
+			});
+		};
+
+		const syncProfileHeight = () => {
+			if (profileFrameId) {
+				window.cancelAnimationFrame(profileFrameId);
+			}
+			profileFrameId = window.requestAnimationFrame(() => {
 				const height = Math.ceil(profile.getBoundingClientRect().height);
 				sidebar.style.setProperty("--article-profile-height", `${height}px`);
+				syncProfileShift();
 			});
 		};
 
 		syncProfileHeight();
+		syncProfileShift();
 		window.addEventListener("resize", syncProfileHeight, { passive: true });
+		window.addEventListener("scroll", syncProfileShift, { passive: true });
 
 		let resizeObserver = null;
 		if ("ResizeObserver" in window) {
 			resizeObserver = new ResizeObserver(() => {
 				syncProfileHeight();
+				syncProfileShift();
 			});
 			resizeObserver.observe(profile);
+			resizeObserver.observe(toc);
 		}
 
 		disposeCurrent = () => {
 			window.removeEventListener("resize", syncProfileHeight);
-			if (frameId) {
-				window.cancelAnimationFrame(frameId);
+			window.removeEventListener("scroll", syncProfileShift);
+			if (profileFrameId) {
+				window.cancelAnimationFrame(profileFrameId);
+			}
+			if (shiftFrameId) {
+				window.cancelAnimationFrame(shiftFrameId);
 			}
 			resizeObserver?.disconnect();
 			sidebar.style.removeProperty("--article-profile-height");
+			sidebar.style.removeProperty("--article-profile-shift");
 		};
 	};
 
