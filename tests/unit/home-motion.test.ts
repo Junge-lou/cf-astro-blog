@@ -59,6 +59,8 @@ describe("首页灵动交互保护", () => {
 		assert.match(homeMotionSource, /--hero-pointer-x/u);
 		assert.match(homeMotionSource, /--tilt-rotate-x/u);
 		assert.match(homeMotionSource, /pointermove/u);
+		assert.match(homeMotionSource, /mousemove/u);
+		assert.match(homeMotionSource, /any-pointer:\s*fine/u);
 	});
 
 	test("首页首屏简介支持保留换行展示", async () => {

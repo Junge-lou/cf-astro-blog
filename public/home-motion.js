@@ -1,7 +1,7 @@
 (function () {
 	const HERO_SELECTOR = "[data-hero-depth]";
 	const TILT_SELECTOR = "[data-tilt-card]";
-	const FINE_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
+	const FINE_POINTER_QUERY = "(any-hover: hover) and (any-pointer: fine)";
 	const HERO_SMOOTHING = 0.16;
 	const TILT_SMOOTHING = 0.2;
 	const MOTION_EPSILON = 0.001;
@@ -11,6 +11,18 @@
 		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 	const prefersFinePointer = () => window.matchMedia(FINE_POINTER_QUERY).matches;
+
+	const isFinePointerEvent = (event) => {
+		if (
+			typeof PointerEvent !== "undefined" &&
+			event instanceof PointerEvent &&
+			event.pointerType
+		) {
+			return event.pointerType === "mouse" || event.pointerType === "pen";
+		}
+
+		return prefersFinePointer();
+	};
 
 	const stepValue = (current, target, factor) => {
 		const next = current + (target - current) * factor;
@@ -82,7 +94,7 @@
 		};
 
 		const handlePointerMove = (event) => {
-			if (!prefersFinePointer()) {
+			if (!isFinePointerEvent(event)) {
 				return;
 			}
 
@@ -110,6 +122,8 @@
 		updateScrollShift();
 		hero.addEventListener("pointermove", handlePointerMove);
 		hero.addEventListener("pointerleave", handlePointerLeave);
+		hero.addEventListener("mousemove", handlePointerMove);
+		hero.addEventListener("mouseleave", handlePointerLeave);
 		window.addEventListener("scroll", updateScrollShift, { passive: true });
 		window.addEventListener("resize", updateScrollShift, { passive: true });
 		requestRender();
@@ -121,6 +135,8 @@
 
 			hero.removeEventListener("pointermove", handlePointerMove);
 			hero.removeEventListener("pointerleave", handlePointerLeave);
+			hero.removeEventListener("mousemove", handlePointerMove);
+			hero.removeEventListener("mouseleave", handlePointerLeave);
 			window.removeEventListener("scroll", updateScrollShift);
 			window.removeEventListener("resize", updateScrollShift);
 			resetHeroState(hero);
@@ -197,7 +213,7 @@
 		};
 
 		const handlePointerMove = (event) => {
-			if (!prefersFinePointer()) {
+			if (!isFinePointerEvent(event)) {
 				return;
 			}
 
@@ -228,6 +244,8 @@
 		resetTiltState(card);
 		card.addEventListener("pointermove", handlePointerMove);
 		card.addEventListener("pointerleave", handlePointerLeave);
+		card.addEventListener("mousemove", handlePointerMove);
+		card.addEventListener("mouseleave", handlePointerLeave);
 		requestRender();
 
 		disposers.push(() => {
@@ -237,6 +255,8 @@
 
 			card.removeEventListener("pointermove", handlePointerMove);
 			card.removeEventListener("pointerleave", handlePointerLeave);
+			card.removeEventListener("mousemove", handlePointerMove);
+			card.removeEventListener("mouseleave", handlePointerLeave);
 			resetTiltState(card);
 		});
 	};
