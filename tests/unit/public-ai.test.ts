@@ -27,6 +27,8 @@ describe("公开 AI 接口防护", () => {
 		assert.match(source, /MAX_TERMINAL_BODY_LENGTH/u);
 		assert.match(source, /MAX_TERMINAL_HISTORY_MESSAGE_LENGTH/u);
 		assert.match(source, /history/u);
+		assert.match(source, /不得误判为无效：help、whoami、pwd、ls、uname、clear、cls/u);
+		assert.match(source, /若命令为 clear 或 cls，只返回：TERMINAL_CLEAR/u);
 	});
 
 	test("主应用会挂载公开 AI 路由", async () => {
