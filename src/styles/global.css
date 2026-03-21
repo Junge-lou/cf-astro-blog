@@ -761,6 +761,14 @@ html[data-admin-preview="true"] .site-main {
 	-webkit-backdrop-filter: blur(10px) saturate(120%);
 }
 
+.prose blockquote > :first-child {
+	margin-top: 0;
+}
+
+.prose blockquote > :last-child {
+	margin-bottom: 0;
+}
+
 .prose p {
 	font-family: var(--font-serif-body);
 	font-weight: 400;

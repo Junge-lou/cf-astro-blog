@@ -142,6 +142,14 @@ describe("后台界面风格保护", () => {
 		assert.match(adminScriptSource, /initEditorDraft/u);
 		assert.match(layoutSource, /markdown-preview-body/u);
 		assert.match(layoutSource, /markdown-preview-spoiler/u);
+		assert.match(
+			layoutSource,
+			/markdown-preview-body blockquote > :first-child/u,
+		);
+		assert.match(
+			layoutSource,
+			/markdown-preview-body blockquote > :last-child/u,
+		);
 		assert.match(layoutSource, /draft-toolbar/u);
 	});
 

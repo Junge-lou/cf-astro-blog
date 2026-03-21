@@ -894,6 +894,14 @@ export const adminSharedStyles = `
 			border-radius: 0 12px 12px 0;
 		}
 
+		.markdown-preview-body blockquote > :first-child {
+			margin-top: 0;
+		}
+
+		.markdown-preview-body blockquote > :last-child {
+			margin-bottom: 0;
+		}
+
 		.markdown-preview-body details {
 			margin: 0.2rem 0 0.9rem;
 			border-radius: 12px;

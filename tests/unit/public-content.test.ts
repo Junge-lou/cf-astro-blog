@@ -359,6 +359,8 @@ describe("源码回归保护", () => {
 		assert.ok(globalStyleSource.includes("body {"));
 		assert.ok(globalStyleSource.includes(".prose p {"));
 		assert.ok(globalStyleSource.includes(".prose blockquote {"));
+		assert.ok(globalStyleSource.includes(".prose blockquote > :first-child {"));
+		assert.ok(globalStyleSource.includes(".prose blockquote > :last-child {"));
 		assert.ok(globalStyleSource.includes(".prose em {"));
 		assert.ok(globalStyleSource.includes(".prose strong {"));
 	});
