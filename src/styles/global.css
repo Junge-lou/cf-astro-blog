@@ -536,26 +536,15 @@ html[data-theme-switching] * {
 	view-transition-name: none !important;
 }
 
-/* 导航栏单独分配 VTN（优先级高于上方通配符规则，类选择器 0-2-1 > 通配符 0-1-1）。
- * 问题：::view-transition-new(root) 是离屏合成截图层，层内 .site-nav::before 的
- * backdrop-filter 无法穿透合成层背景去模糊真实页面，导致横幅导航栏瞬间呈现纯色闪烁。
- * 修复：赋予独立 VTN 后，浏览器对 .site-nav 进行显式截图（新旧各一张），
- * 截图时 backdrop-filter 在真实页面环境中正确渲染并烘焙进图片，不再产生纯色闪烁。 */
-html[data-theme-switching] .site-nav {
-	view-transition-name: nav-shell !important;
-}
-
-/* 导航栏无需位置/尺寸动画（主题切换前后 nav 几何不变），
- * 使用与涟漪扩散同频的交叉淡化（620ms），视觉上平滑过渡新旧主题配色。 */
-::view-transition-group(nav-shell) {
-	animation: none;
-}
-
-::view-transition-old(nav-shell),
-::view-transition-new(nav-shell) {
-	animation-duration: 620ms;
-	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	mix-blend-mode: normal;
+/* 主题切换涟漪期间，横幅（非胶囊）模式下临时停用导航栏背景的 backdrop-filter。
+ * 根因：data-theme-switching 在 startViewTransition 之前打上，新旧两张截图都套用这条规则。
+ * ::view-transition-new(root) 内的 backdrop-filter 不模糊真实页面，而是模糊相邻的旧截图，
+ * 颜色不匹配，叠加半透明底色后视觉上呈现纯色块。
+ * 停用 backdrop-filter 后，两张截图均为半透明纯色，涟漪扩散时颜色过渡自然，无纯色闪烁。
+ * 胶囊模式（data-nav-condensed）尺寸小、周边内容色差不敏感，维持原有行为无需处理。 */
+html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
 }
 
 ::view-transition-group(search-entry) {
