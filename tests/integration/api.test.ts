@@ -266,9 +266,10 @@ describe("后台接口", () => {
 		assert.equal(res.status, 200);
 
 		const html = await res.text();
-		assert.match(html, /站点管理入口/u);
+		assert.match(html, /欢迎回来/u);
 		assert.match(html, /返回首页/u);
 		assert.match(html, /\/api\/auth\/github/u);
+		assert.doesNotMatch(html, /站点管理入口/u);
 		assert.ok(!html.includes('name="username"'));
 		assert.ok(!html.includes('name="password"'));
 	});

@@ -25,9 +25,10 @@ describe("后台界面风格保护", () => {
 
 		assert.match(html, /class="entry-shell"/u);
 		assert.match(html, /返回首页/u);
-		assert.match(html, /站点管理入口/u);
-		assert.match(html, /GitHub OAuth/u);
+		assert.match(html, /欢迎回来/u);
+		assert.match(html, /GitHub/u);
 		assert.match(html, /\/api\/auth\/github/u);
+		assert.doesNotMatch(html, /站点管理入口/u);
 		assert.ok(!html.includes("允许访问账号"));
 	});
 
