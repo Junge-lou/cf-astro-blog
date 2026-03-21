@@ -29,6 +29,12 @@ describe("公开 AI 接口防护", () => {
 		assert.match(source, /history/u);
 		assert.match(source, /不得误判为无效：help、whoami、pwd、ls、uname、clear、cls/u);
 		assert.match(source, /若命令为 clear 或 cls，只返回：TERMINAL_CLEAR/u);
+		assert.match(source, /输入：guest@404:~\$ pwd/u);
+		assert.match(source, /输入：guest@404:~\$ ls/u);
+		assert.match(source, /输入：guest@404:\/12345\$ ls/u);
+		assert.match(source, /输入：guest@404:\/12345\$ uname -a/u);
+		assert.match(source, /输入：guest@404:\/12345\$ whoami/u);
+		assert.match(source, /输入：guest@404:\/12345\$ unknowncmd/u);
 	});
 
 	test("主应用会挂载公开 AI 路由", async () => {
