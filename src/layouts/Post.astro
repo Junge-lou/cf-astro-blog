@@ -164,9 +164,9 @@ const hasToc = tocEntries.length > 0;
 					<div class="prose article-prose">
 						<slot />
 					</div>
-					<div class="article-comments-slot">
-						<CommentsPanel />
-					</div>
+				</div>
+				<div class="article-comments-card glass-panel">
+					<CommentsPanel />
 				</div>
 			</div>
 		</article>
@@ -504,12 +504,15 @@ const hasToc = tocEntries.length > 0;
 		margin-inline: auto;
 	}
 
-	.article-comments-slot {
-		margin: clamp(1.6rem, 1.1rem + 1.2vw, 2.3rem) auto 0;
-		padding-top: clamp(1rem, 0.8rem + 0.5vw, 1.4rem);
-		border-top: 1px solid rgba(255, 255, 255, 0.12);
-		max-width: var(--max-width-prose);
-		width: 100%;
+	/* 评论卡片内 CommentsPanel 融入外层 glass-panel，去掉自带的边框、背景和圆角 */
+	:global(.article-comments-card .comments-panel) {
+		border: none;
+		background: transparent;
+		border-radius: 0;
+		overflow: visible;
+	}
+	:global(html.article-opaque-mode .article-comments-card .comments-panel) {
+		background: transparent;
 	}
 
 	@media (max-width: 1024px) {
