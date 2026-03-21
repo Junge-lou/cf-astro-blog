@@ -19,6 +19,7 @@
 	];
 	let isNavCondensed = root.hasAttribute("data-nav-condensed");
 	let isRouteTransitioning = false;
+	let isThemeTransitioning = false;
 	let syncFrame = 0;
 	let pendingForceSync = false;
 
@@ -206,6 +207,108 @@
 		window.requestAnimationFrame(unlockNavSync);
 	});
 
+	const prefersReducedMotion = () =>
+		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+	const getThemeToggleCenter = (toggle) => {
+		const rect = toggle.getBoundingClientRect();
+		return {
+			x: rect.left + rect.width / 2,
+			y: rect.top + rect.height / 2,
+		};
+	};
+
+	const clampToViewport = (value, max) =>
+		Math.min(Math.max(value, 0), Math.max(max, 0));
+
+	const getThemeTransitionOrigin = (event, toggle) => {
+		const isPointerTriggered = event.detail > 0;
+
+		if (isPointerTriggered) {
+			return {
+				x: clampToViewport(event.clientX, window.innerWidth),
+				y: clampToViewport(event.clientY, window.innerHeight),
+			};
+		}
+
+		return getThemeToggleCenter(toggle);
+	};
+
+	const getThemeRippleRadius = (x, y) => {
+		const width = window.innerWidth;
+		const height = window.innerHeight;
+		const maxHorizontal = Math.max(x, width - x);
+		const maxVertical = Math.max(y, height - y);
+		return Math.hypot(maxHorizontal, maxVertical);
+	};
+
+	const applyThemePreference = (nextTheme) => {
+		root.setAttribute("data-theme", nextTheme);
+		localStorage.setItem("theme", nextTheme);
+	};
+
+	const resolveNextTheme = () => {
+		const current = root.getAttribute("data-theme");
+		const prefersDark = window.matchMedia(
+			"(prefers-color-scheme: dark)",
+		).matches;
+
+		return current === "dark" || (!current && prefersDark) ? "light" : "dark";
+	};
+
+	const runThemeTransition = (nextTheme, origin) => {
+		const canUseViewTransition =
+			typeof document.startViewTransition === "function" &&
+			typeof document.documentElement.animate === "function";
+
+		if (!canUseViewTransition || prefersReducedMotion()) {
+			applyThemePreference(nextTheme);
+			return Promise.resolve();
+		}
+
+		root.setAttribute("data-theme-switching", "ripple");
+
+		let transition;
+		try {
+			transition = document.startViewTransition(() => {
+				applyThemePreference(nextTheme);
+			});
+		} catch {
+			root.removeAttribute("data-theme-switching");
+			applyThemePreference(nextTheme);
+			return Promise.resolve();
+		}
+
+		const rippleMotion = transition.ready
+			.then(() => {
+				const radius = getThemeRippleRadius(origin.x, origin.y);
+				const clipPath = [
+					`circle(0px at ${origin.x}px ${origin.y}px)`,
+					`circle(${radius}px at ${origin.x}px ${origin.y}px)`,
+				];
+
+				const animation = document.documentElement.animate(
+					{
+						clipPath,
+					},
+					{
+						duration: 620,
+						easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+						pseudoElement: "::view-transition-new(root)",
+					},
+				);
+
+				return animation.finished.catch(() => undefined);
+			})
+			.catch(() => undefined);
+
+		return Promise.allSettled([transition.finished, rippleMotion]).finally(
+			() => {
+				root.removeAttribute("data-theme-switching");
+			},
+		);
+	};
+
 	document.addEventListener("click", (event) => {
 		if (!(event.target instanceof Element)) {
 			return;
@@ -216,15 +319,16 @@
 			return;
 		}
 
-		const current = root.getAttribute("data-theme");
-		const prefersDark = window.matchMedia(
-			"(prefers-color-scheme: dark)",
-		).matches;
+		if (isThemeTransitioning) {
+			return;
+		}
 
-		const next =
-			current === "dark" || (!current && prefersDark) ? "light" : "dark";
+		isThemeTransitioning = true;
+		const next = resolveNextTheme();
+		const origin = getThemeTransitionOrigin(event, toggle);
 
-		root.setAttribute("data-theme", next);
-		localStorage.setItem("theme", next);
+		void runThemeTransition(next, origin).finally(() => {
+			isThemeTransitioning = false;
+		});
 	});
 })();

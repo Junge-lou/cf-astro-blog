@@ -512,6 +512,12 @@ html[data-admin-preview="true"] .site-main {
 	animation: vt-slide-from-right 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+html[data-theme-switching]::view-transition-old(root),
+html[data-theme-switching]::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
 ::view-transition-group(search-entry) {
 	animation-duration: 300ms;
 	animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);

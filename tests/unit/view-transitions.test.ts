@@ -39,8 +39,21 @@ describe("页面过渡与跨页状态保护", () => {
 			themeScriptSource,
 			/syncRootAttributeToDocument\("data-theme"/u,
 		);
+		assert.match(themeScriptSource, /startViewTransition/u);
+		assert.match(themeScriptSource, /data-theme-switching/u);
 		assert.match(themeScriptSource, /pathname === "\/search"/u);
 		assert.match(themeScriptSource, /pathname === "\/"/u);
+	});
+
+	test("主题切换会覆盖默认 root 过渡并使用从按钮扩散的波纹裁剪", async () => {
+		const globalStylesSource = await readFile("src/styles/global.css", "utf8");
+
+		assert.match(globalStylesSource, /html\[data-theme-switching\]/u);
+		assert.match(
+			globalStylesSource,
+			/html\[data-theme-switching\]::view-transition-new\(root\)/u,
+		);
+		assert.match(globalStylesSource, /mix-blend-mode:\s*normal/u);
 	});
 
 	test("首页与搜索页会共享搜索入口过渡，而归档页不会介入这条链路", async () => {

@@ -96,6 +96,9 @@ describe("源码回归保护", () => {
 
 		assert.ok(!toggleSource.includes("<script"));
 		assert.match(themeScriptSource, /closest\("\.theme-toggle"\)/u);
+		assert.match(themeScriptSource, /startViewTransition/u);
+		assert.match(themeScriptSource, /data-theme-switching/u);
+		assert.match(themeScriptSource, /clipPath/u);
 		assert.match(mediaRouteSource, /buildProtectedAssetHeaders/u);
 	});
 
