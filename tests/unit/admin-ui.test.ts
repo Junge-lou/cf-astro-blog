@@ -5,14 +5,14 @@ import { adminLayout } from "../../src/admin/views/layout";
 import { loginPage } from "../../src/admin/views/login";
 
 describe("后台界面风格保护", () => {
-	test("后台布局会渲染主页同风格的浮层骨架和当前导航态", () => {
+	test("后台布局会渲染浮层骨架和当前导航态", () => {
 		const html = adminLayout("文章", "<h1>文章</h1>", {
 			csrfToken: "csrf-token",
 		});
 
 		assert.match(html, /class="admin-shell"/u);
 		assert.match(html, /class="sidebar-panel"/u);
-		assert.match(html, /主页同款视觉/u);
+		assert.doesNotMatch(html, /主页同款视觉/u);
 		assert.match(html, /class="admin-toolbar"/u);
 		assert.match(html, /href="\/api\/admin\/posts" class="active"/u);
 		assert.match(html, /href="\/api\/admin\/mentions"/u);
@@ -204,6 +204,32 @@ describe("后台界面风格保护", () => {
 		assert.match(appearanceSource, /\/api\/admin\/media\/upload-async/u);
 		assert.match(adminScriptSource, /\[data-hero-image-uploader='true'\]/u);
 		assert.match(adminScriptSource, /首屏图片上传成功/u);
+	});
+
+	test("外观页背景图支持预览并与键名输入联动", async () => {
+		const [appearanceSource, adminScriptSource] = await Promise.all([
+			readFile("src/admin/routes/appearance.ts", "utf8"),
+			readFile("public/admin.js", "utf8"),
+		]);
+
+		assert.match(
+			appearanceSource,
+			/data-appearance-background-key-input="true"/u,
+		);
+		assert.match(
+			appearanceSource,
+			/data-appearance-background-preview="true"/u,
+		);
+		assert.match(adminScriptSource, /resolveAppearanceBackgroundPreviewUrl/u);
+		assert.match(adminScriptSource, /setAppearanceBackgroundPreviewValue/u);
+		assert.match(
+			adminScriptSource,
+			/\[data-appearance-background-key-input='true'\]/u,
+		);
+		assert.match(
+			adminScriptSource,
+			/\[data-appearance-background-preview='true'\]/u,
+		);
 	});
 
 	test("外观页右侧卡片图片支持拖拽上传并自动回填路径", async () => {

@@ -1971,6 +1971,9 @@ const appearanceUploadDropzone = document.querySelector(
 	"[data-appearance-upload-dropzone]",
 );
 const uploadInput = document.querySelector("[data-appearance-upload-input]");
+const appearanceBackgroundKeyInput = document.querySelector(
+	"[data-appearance-background-key-input='true']",
+);
 const appearanceControls = {
 	backgroundTransparency: document.querySelector(
 		'[data-appearance-control="backgroundTransparency"]',
@@ -2000,6 +2003,70 @@ const appearanceControls = {
 		'[data-appearance-control="articlePanelBlur"]',
 	),
 };
+
+function resolveAppearanceBackgroundPreviewUrl(rawValue) {
+	const value = String(rawValue ?? "").trim();
+	if (!value) {
+		return "";
+	}
+
+	if (
+		value.startsWith("http://") ||
+		value.startsWith("https://") ||
+		value.startsWith("/")
+	) {
+		return value;
+	}
+
+	return `/media/${value.replace(/^\/+/u, "")}`;
+}
+
+function ensureAppearanceBackgroundPreviewImage() {
+	if (!(appearanceUploadDropzone instanceof HTMLElement)) {
+		return null;
+	}
+
+	const existing = appearanceUploadDropzone.querySelector(
+		"[data-appearance-background-preview='true']",
+	);
+	if (existing instanceof HTMLImageElement) {
+		return existing;
+	}
+
+	const image = document.createElement("img");
+	image.className = "cover-preview-image";
+	image.alt = "背景图预览";
+	image.setAttribute("data-appearance-background-preview", "true");
+	appearanceUploadDropzone.innerHTML = "";
+	appearanceUploadDropzone.appendChild(image);
+	return image;
+}
+
+function setAppearanceBackgroundEmptyState() {
+	if (!(appearanceUploadDropzone instanceof HTMLElement)) {
+		return;
+	}
+
+	appearanceUploadDropzone.innerHTML = `
+		<div class="appearance-upload-copy" data-appearance-background-empty="true">
+			<strong>拖拽图片到这里</strong>
+			<span>或点击选择文件，自动上传并设为当前背景</span>
+		</div>
+	`;
+}
+
+function setAppearanceBackgroundPreviewValue(rawValue) {
+	const previewUrl = resolveAppearanceBackgroundPreviewUrl(rawValue);
+	if (!previewUrl) {
+		setAppearanceBackgroundEmptyState();
+		return;
+	}
+
+	const image = ensureAppearanceBackgroundPreviewImage();
+	if (image instanceof HTMLImageElement) {
+		image.src = previewUrl;
+	}
+}
 
 function updateAppearanceDisplay(name, value) {
 	const target = document.querySelector(`[data-appearance-display="${name}"]`);
@@ -2101,6 +2168,14 @@ uploadInput?.addEventListener("change", () => {
 	handleAppearanceUploadSelection(uploadInput.files[0]);
 });
 
+appearanceBackgroundKeyInput?.addEventListener("input", () => {
+	if (!(appearanceBackgroundKeyInput instanceof HTMLInputElement)) {
+		return;
+	}
+
+	setAppearanceBackgroundPreviewValue(appearanceBackgroundKeyInput.value);
+});
+
 appearanceUploadDropzone?.addEventListener("click", () => {
 	if (uploadInput instanceof HTMLInputElement) {
 		uploadInput.click();
@@ -2154,6 +2229,10 @@ appearanceUploadDropzone?.addEventListener("drop", (event) => {
 
 for (const control of Object.values(appearanceControls)) {
 	control?.addEventListener("input", updateAppearancePreview);
+}
+
+if (appearanceBackgroundKeyInput instanceof HTMLInputElement) {
+	setAppearanceBackgroundPreviewValue(appearanceBackgroundKeyInput.value);
 }
 
 updateAppearancePreview();

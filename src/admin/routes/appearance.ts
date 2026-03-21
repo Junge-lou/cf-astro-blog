@@ -494,14 +494,19 @@ function renderAppearancePage(options: {
 						<div
 							class="appearance-upload-dropzone"
 							data-appearance-upload-dropzone
+							data-appearance-background-dropzone="true"
 							role="button"
 							tabindex="0"
 							aria-label="拖拽文件或点击上传背景图"
 						>
-							<div class="appearance-upload-copy">
-								<strong>拖拽图片到这里</strong>
-								<span>或点击选择文件，自动上传并设为当前背景</span>
-							</div>
+							${
+								settings.backgroundImageKey
+									? `<img src="/media/${escapeAttribute(settings.backgroundImageKey)}" alt="背景图预览" class="cover-preview-image" data-appearance-background-preview="true" />`
+									: `<div class="appearance-upload-copy" data-appearance-background-empty="true">
+											<strong>拖拽图片到这里</strong>
+											<span>或点击选择文件，自动上传并设为当前背景</span>
+										</div>`
+							}
 						</div>
 						<input
 							type="file"
@@ -519,6 +524,7 @@ function renderAppearancePage(options: {
 							class="form-input appearance-key-input"
 							value="${escapeAttribute(settings.backgroundImageKey ?? "")}"
 							placeholder="appearance/background/2026-03-07/xxxx.webp"
+							data-appearance-background-key-input="true"
 						/>
 					</div>
 					<p class="appearance-copy">上传和移除只影响“当前引用”，不会删除媒体库里的原始文件。</p>
