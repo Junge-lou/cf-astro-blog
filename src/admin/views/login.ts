@@ -42,8 +42,12 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			--font-sans:
 				"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB",
 				"Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			--glow-a: rgba(126, 171, 255, 0.32);
+			--glow-b: rgba(100, 200, 255, 0.22);
+			--glass-opacity: 0.13;
 		}
 
+		/* JS 设置 data-theme 的精确覆盖 */
 		[data-theme="dark"] {
 			--color-bg: #040d17;
 			--color-text: #eef4ff;
@@ -54,6 +58,27 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			--color-accent-hover: #88c0ff;
 			--card-surface-rgb: 24, 36, 54;
 			--card-sheen-rgb: 142, 178, 224;
+			--glow-a: rgba(48, 100, 220, 0.42);
+			--glow-b: rgba(20, 60, 140, 0.34);
+			--glass-opacity: 0.16;
+		}
+
+		/* 系统深色模式兜底（未访问博客/无 localStorage 时）*/
+		@media (prefers-color-scheme: dark) {
+			:root:not([data-theme="light"]) {
+				--color-bg: #040d17;
+				--color-text: #eef4ff;
+				--color-text-secondary: #cad4e6;
+				--color-text-muted: #93a1bc;
+				--color-border: rgba(147, 161, 188, 0.14);
+				--color-accent: #57a6ff;
+				--color-accent-hover: #88c0ff;
+				--card-surface-rgb: 24, 36, 54;
+				--card-sheen-rgb: 142, 178, 224;
+				--glow-a: rgba(48, 100, 220, 0.42);
+				--glow-b: rgba(20, 60, 140, 0.34);
+				--glass-opacity: 0.16;
+			}
 		}
 
 		*,
@@ -68,6 +93,12 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			min-height: 100vh;
 		}
 
+		@keyframes float-glow {
+			0%, 100% { transform: translateY(0) scale(1); }
+			33% { transform: translateY(-2rem) scale(1.05); }
+			66% { transform: translateY(1.2rem) scale(0.96); }
+		}
+
 		body {
 			display: grid;
 			place-items: center;
@@ -75,46 +106,59 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			font-family: var(--font-sans);
 			color: var(--color-text);
 			background:
-				radial-gradient(ellipse at 18% 8%, rgba(126, 192, 255, 0.18), transparent 30%),
-				radial-gradient(ellipse at 80% 6%, rgba(168, 210, 255, 0.14), transparent 28%),
-				radial-gradient(ellipse at 50% 96%, rgba(88, 192, 255, 0.09), transparent 30%),
-				linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 32%),
+				radial-gradient(circle at 14% 10%, rgba(126, 192, 255, 0.14), transparent 24%),
+				radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.24), transparent 20%),
+				radial-gradient(circle at 48% 100%, rgba(88, 192, 255, 0.08), transparent 26%),
+				linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 30%),
 				var(--color-bg);
-			transition: background 300ms ease, color 240ms ease;
 		}
 
+		/* 深色背景渐变（JS 设置 data-theme 时生效）*/
 		[data-theme="dark"] body {
 			background:
-				radial-gradient(ellipse at 18% 8%, rgba(30, 80, 160, 0.22), transparent 34%),
-				radial-gradient(ellipse at 80% 6%, rgba(10, 40, 90, 0.18), transparent 30%),
-				radial-gradient(ellipse at 50% 96%, rgba(20, 60, 130, 0.14), transparent 32%),
+				radial-gradient(circle at 14% 10%, rgba(30, 80, 200, 0.22), transparent 28%),
+				radial-gradient(circle at 84% 12%, rgba(10, 40, 100, 0.18), transparent 24%),
+				radial-gradient(circle at 48% 100%, rgba(20, 60, 160, 0.16), transparent 30%),
 				var(--color-bg);
+		}
+
+		/* 系统深色模式兜底（未访问博客 / 无 localStorage 时）*/
+		@media (prefers-color-scheme: dark) {
+			:root:not([data-theme="light"]) body {
+				background:
+					radial-gradient(circle at 14% 10%, rgba(30, 80, 200, 0.22), transparent 28%),
+					radial-gradient(circle at 84% 12%, rgba(10, 40, 100, 0.18), transparent 24%),
+					radial-gradient(circle at 48% 100%, rgba(20, 60, 160, 0.16), transparent 30%),
+					var(--color-bg);
+			}
 		}
 
 		body::before,
 		body::after {
 			content: "";
 			position: fixed;
-			width: 28rem;
-			height: 28rem;
+			inset: auto;
+			width: 24rem;
+			height: 24rem;
 			border-radius: 50%;
-			filter: blur(80px);
+			filter: blur(70px);
+			opacity: 0.24;
 			pointer-events: none;
 			z-index: -1;
+			animation: float-glow 16s ease-in-out infinite;
 		}
 
 		body::before {
-			top: -8rem;
-			left: -8rem;
-			background: rgba(126, 171, 255, 0.18);
-			opacity: 0.7;
+			top: -6rem;
+			left: -6rem;
+			background: var(--glow-a);
 		}
 
 		body::after {
-			right: -10rem;
-			bottom: 6rem;
-			background: rgba(100, 200, 255, 0.12);
-			opacity: 0.5;
+			right: -8rem;
+			bottom: 8rem;
+			background: var(--glow-b);
+			animation-delay: -6s;
 		}
 
 		.entry-shell {
@@ -174,9 +218,9 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			position: absolute;
 			inset: 0;
 			border-radius: inherit;
-			background: rgba(var(--card-surface-rgb), 0.52);
-			backdrop-filter: blur(24px) saturate(150%);
-			-webkit-backdrop-filter: blur(24px) saturate(150%);
+			background: rgba(var(--card-surface-rgb), var(--glass-opacity, 0.13));
+			backdrop-filter: blur(22px) saturate(148%);
+			-webkit-backdrop-filter: blur(22px) saturate(148%);
 			pointer-events: none;
 			z-index: 0;
 		}
