@@ -54,7 +54,25 @@ const missingPath = Astro.url.pathname || "/";
 		padding: clamp(1rem, 0.8rem + 1vw, 1.6rem);
 		margin-bottom: 1.25rem;
 		border: 1px solid rgba(96, 165, 250, 0.25);
-		background: rgba(8, 12, 24, 0.72);
+		/*
+		 * 深色终端表面（参考 code-window，始终保持深色外观）。
+		 * 透明度跟随后台「卡片透明度」控制，模糊跟随「卡片模糊」控制，
+		 * 与 friends / search 等页面的 glass-panel 保持一致。
+		 */
+		--card-surface-rgb: 8, 12, 24;
+		--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);
+		--glass-panel-blur: var(--hero-card-blur, 18px);
+	}
+
+	/* 浅色主题：深色表面在高透明度下对白色文字对比度不足，保证最低 72% */
+	:root[data-theme="light"] .not-found-terminal {
+		--glass-panel-opacity: max(calc(var(--hero-card-opacity, 14) / 100), 0.72);
+	}
+
+	@media (prefers-color-scheme: light) {
+		:root:not([data-theme="dark"]) .not-found-terminal {
+			--glass-panel-opacity: max(calc(var(--hero-card-opacity, 14) / 100), 0.72);
+		}
 	}
 
 	.terminal-header {
