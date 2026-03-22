@@ -9,6 +9,9 @@ interface LoginPageOptions {
 export function loginPage(options: LoginPageOptions = {}): string {
 	const { error, oauthEnabled = false, backgroundImageUrl } = options;
 	const hasBackgroundImage = Boolean(backgroundImageUrl);
+	const escapedBackgroundImageUrl = backgroundImageUrl
+		? escapeAttribute(backgroundImageUrl)
+		: "";
 
 	return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -438,8 +441,8 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		}
 </style>
 </head>
-<body${hasBackgroundImage ? ' class="has-bg-image"' : ''}>
-	${hasBackgroundImage ? `<div class="bg-image-layer" aria-hidden="true"><img src="${escapeAttribute(backgroundImageUrl!)}" alt="" loading="eager" decoding="async" /></div>` : ''}
+<body${hasBackgroundImage ? ' class="has-bg-image"' : ""}>
+	${hasBackgroundImage ? `<div class="bg-image-layer" aria-hidden="true"><img src="${escapedBackgroundImageUrl}" alt="" loading="eager" decoding="async" /></div>` : ""}
 	<main class="entry-shell">
 		<header class="entry-header">
 			<a href="/" class="entry-brand" aria-label="返回 EricTerminal's Blog 首页">

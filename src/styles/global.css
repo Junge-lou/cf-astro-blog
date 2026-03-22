@@ -533,6 +533,7 @@ html[data-theme-switching]::view-transition-new(root) {
  * 导致文字在动画瞬间盖住 z-index: 30 的导航栏。
  * 重置为 none 后，这些元素回归到 root 截图中，涟漪裁剪路径动画正常运作。 */
 html[data-theme-switching] * {
+	/* biome-ignore lint/complexity/noImportantStyles: 主题切换时必须强制覆盖浏览器为具名过渡注入的样式，避免导航栏被更高层级的快照文字盖住。 */
 	view-transition-name: none !important;
 }
 
@@ -543,7 +544,9 @@ html[data-theme-switching] * {
  * 停用 backdrop-filter 后，两张截图均为半透明纯色，涟漪扩散时颜色过渡自然，无纯色闪烁。
  * 胶囊模式（data-nav-condensed）尺寸小、周边内容色差不敏感，维持原有行为无需处理。 */
 html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
+	/* biome-ignore lint/complexity/noImportantStyles: 主题切换截图层期间必须强制关闭 backdrop-filter，避免导航背景出现纯色闪烁。 */
 	backdrop-filter: none !important;
+	/* biome-ignore lint/complexity/noImportantStyles: WebKit 前缀版本同样需要强制覆盖，保证 Safari 行为一致。 */
 	-webkit-backdrop-filter: none !important;
 }
 
