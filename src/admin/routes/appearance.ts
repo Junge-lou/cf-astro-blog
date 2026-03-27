@@ -298,6 +298,17 @@ function renderAppearancePage(options: {
 					transform var(--transition);
 			}
 
+			.appearance-upload-dropzone[data-appearance-background-dropzone="true"] {
+				aspect-ratio: auto;
+				min-height: 180px;
+			}
+
+			.appearance-upload-dropzone[data-appearance-background-dropzone="true"] .cover-preview-image[data-appearance-background-preview="true"] {
+				display: block;
+				width: 100%;
+				height: auto;
+			}
+
 			.appearance-upload-dropzone:hover,
 			.appearance-upload-dropzone.is-dragover {
 				border-color: rgba(10, 132, 255, 0.65);
