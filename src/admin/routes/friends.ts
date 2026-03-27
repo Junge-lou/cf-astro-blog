@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { friendLinks } from "@/db/schema";
+import { friendLinks, siteAppearanceSettings } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import {
 	escapeAttribute,
@@ -95,6 +95,8 @@ function resolveAlert(
 			return { type: "success", message: "友链记录已删除" };
 		case "created":
 			return { type: "success", message: "友链已添加，可立即在列表中管理" };
+		case "settings-updated":
+			return { type: "success", message: "友链申请公示已更新" };
 		case "invalid-id":
 			return { type: "error", message: "友链 ID 不合法" };
 		case "invalid-status":
@@ -328,12 +330,35 @@ function renderCreateForm(csrfToken: string): string {
 	`;
 }
 
+function renderFriendApplyNoticeForm(
+	csrfToken: string,
+	friendApplyNotice: string,
+): string {
+	return `
+		<section class="appearance-panel review-card">
+			<h2 style="margin-bottom: 0.35rem;">申请页公示</h2>
+			<p class="form-help" style="margin-bottom: 0.9rem;">仅在「/friends/apply」申请页面展示，不会出现在友链列表页。</p>
+			<form method="post" action="/api/admin/friends/settings">
+				<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+				<div class="form-group" style="margin-bottom: 0.85rem;">
+					<label for="friendApplyNotice">申请须知（可选）</label>
+					<textarea id="friendApplyNotice" name="friendApplyNotice" class="form-textarea" maxlength="1200" rows="6" placeholder="例如：\n1. 请先在你的网站添加本站友链。\n2. 申请时请附上可联系到你的方式。">${escapeHtml(friendApplyNotice)}</textarea>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">保存公示</button>
+				</div>
+			</form>
+		</section>
+	`;
+}
+
 function renderFriendsPage(options: {
 	rows: FriendLinkRow[];
 	csrfToken: string;
+	friendApplyNotice: string;
 	alert?: { type: "success" | "error"; message: string };
 }) {
-	const { rows, csrfToken, alert } = options;
+	const { rows, csrfToken, friendApplyNotice, alert } = options;
 	const pendingCount = rows.filter((item) => item.status === "pending").length;
 
 	return adminLayout(
@@ -345,6 +370,7 @@ function renderFriendsPage(options: {
 			<div class="page-actions">
 				<a href="#friend-create-form" class="btn btn-primary">添加友链</a>
 			</div>
+			${renderFriendApplyNoticeForm(csrfToken, friendApplyNotice)}
 			${renderCreateForm(csrfToken)}
 
 			<section>
@@ -364,18 +390,59 @@ friendsRoutes.get("/", async (c) => {
 	const db = getDb(c.env.DB);
 	const status = c.req.query("status") || null;
 
-	const rows = await db
-		.select()
-		.from(friendLinks)
-		.orderBy(desc(friendLinks.createdAt));
+	const [rows, settingsRow] = await Promise.all([
+		db.select().from(friendLinks).orderBy(desc(friendLinks.createdAt)),
+		db
+			.select({
+				friendApplyNotice: siteAppearanceSettings.friendApplyNotice,
+			})
+			.from(siteAppearanceSettings)
+			.where(eq(siteAppearanceSettings.id, 1))
+			.limit(1)
+			.then((records) => records[0] ?? null),
+	]);
 
 	return c.html(
 		renderFriendsPage({
 			rows,
 			csrfToken: session.csrfToken,
+			friendApplyNotice: settingsRow?.friendApplyNotice ?? "",
 			alert: resolveAlert(status),
 		}),
 	);
+});
+
+friendsRoutes.post("/settings", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.redirect("/api/admin/friends?status=csrf-failed");
+	}
+
+	const friendApplyNotice = sanitizePlainText(
+		getBodyText(body, "friendApplyNotice"),
+		1200,
+		{ allowNewlines: true },
+	);
+	const now = new Date().toISOString();
+	const db = getDb(c.env.DB);
+
+	await db
+		.insert(siteAppearanceSettings)
+		.values({
+			id: 1,
+			friendApplyNotice,
+			updatedAt: now,
+		})
+		.onConflictDoUpdate({
+			target: siteAppearanceSettings.id,
+			set: {
+				friendApplyNotice,
+				updatedAt: now,
+			},
+		});
+
+	return c.redirect("/api/admin/friends?status=settings-updated");
 });
 
 friendsRoutes.post("/create", async (c) => {

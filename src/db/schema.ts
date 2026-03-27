@@ -209,6 +209,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	articleSidebarBadge: text("article_sidebar_badge")
 		.notNull()
 		.default("文章作者"),
+	friendApplyNotice: text("friend_apply_notice").notNull().default(""),
 	aiInternalEnabled: integer("ai_internal_enabled", { mode: "boolean" })
 		.notNull()
 		.default(false),

@@ -177,6 +177,7 @@ describe("数据库结构", () => {
 		assert.ok(columns.includes("heroSignalChip1"));
 		assert.ok(columns.includes("heroSignalChip2"));
 		assert.ok(columns.includes("heroSignalChip3"));
+		assert.ok(columns.includes("friendApplyNotice"));
 		assert.ok(columns.includes("aiInternalEnabled"));
 		assert.ok(columns.includes("aiInternalBaseUrl"));
 		assert.ok(columns.includes("aiInternalApiKey"));

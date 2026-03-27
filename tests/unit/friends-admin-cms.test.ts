@@ -10,6 +10,9 @@ describe("后台友链直录能力", () => {
 			source,
 			/href="#friend-create-form" class="btn btn-primary">添加友链/u,
 		);
+		assert.match(source, /action="\/api\/admin\/friends\/settings"/u);
+		assert.match(source, /name="friendApplyNotice"/u);
+		assert.match(source, /仅在「\/friends\/apply」申请页面展示/u);
 		assert.match(source, /id="friend-create-form"/u);
 		assert.match(source, /action="\/api\/admin\/friends\/create"/u);
 		assert.match(source, /name="createName"/u);
@@ -32,8 +35,11 @@ describe("后台友链直录能力", () => {
 		const source = await readFile("src/admin/routes/friends.ts", "utf8");
 
 		assert.match(source, /friendsRoutes\.post\("\/create"/u);
+		assert.match(source, /friendsRoutes\.post\("\/settings"/u);
 		assert.match(source, /parseFriendCreateInput/u);
 		assert.match(source, /sanitizeCanonicalUrl/u);
+		assert.match(source, /friendApplyNotice/u);
+		assert.match(source, /siteAppearanceSettings/u);
 		assert.match(
 			source,
 			/if \(!name \|\| !siteUrl \|\| !contact \|\| !status\)/u,
@@ -41,5 +47,6 @@ describe("后台友链直录能力", () => {
 		assert.match(source, /status=create-invalid/u);
 		assert.match(source, /status=create-duplicate/u);
 		assert.match(source, /status=created/u);
+		assert.match(source, /status=settings-updated/u);
 	});
 });

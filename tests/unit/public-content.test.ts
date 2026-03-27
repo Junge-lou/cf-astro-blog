@@ -202,6 +202,11 @@ describe("源码回归保护", () => {
 			),
 		);
 		assert.ok(applyPageSource.includes('class="cf-turnstile"'));
+		assert.ok(applyPageSource.includes("申请须知"));
+		assert.ok(
+			applyPageSource.includes("siteAppearanceSettings.friendApplyNotice"),
+		);
+		assert.ok(applyPageSource.includes("white-space: pre-line;"));
 	});
 
 	test("友链申请接口会校验 Turnstile token", async () => {

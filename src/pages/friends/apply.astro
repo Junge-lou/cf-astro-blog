@@ -1,10 +1,29 @@
 ---
 import { env } from "cloudflare:workers";
+import { eq } from "drizzle-orm";
+import { siteAppearanceSettings } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
+import { getDb } from "@/lib/db";
 
 const applyStatus = Astro.url.searchParams.get("apply") || "";
 const turnstileSiteKey = String(env.TURNSTILE_SITE_KEY || "").trim();
 const turnstileEnabled = turnstileSiteKey.length > 0;
+let friendApplyNotice = "";
+
+try {
+	const db = getDb(env.DB);
+	const [settingsRow] = await db
+		.select({
+			friendApplyNotice: siteAppearanceSettings.friendApplyNotice,
+		})
+		.from(siteAppearanceSettings)
+		.where(eq(siteAppearanceSettings.id, 1))
+		.limit(1);
+
+	friendApplyNotice = settingsRow?.friendApplyNotice ?? "";
+} catch {
+	friendApplyNotice = "";
+}
 
 function getApplyMessage(status: string) {
 	switch (status) {
@@ -43,6 +62,15 @@ const applyMessage = getApplyMessage(applyStatus);
 		<p class="page-intro">填写站点资料后提交，默认进入待审核。通过后会出现在友链页。</p>
 		<a href="/friends" class="button button-secondary">返回友链列表</a>
 	</section>
+
+	{
+		friendApplyNotice ? (
+			<section class="friends-apply-notice glass-panel">
+				<h2>申请须知</h2>
+				<p>{friendApplyNotice}</p>
+			</section>
+		) : null
+	}
 
 	<section class="friends-apply-box glass-panel">
 		{applyMessage ? (
@@ -104,12 +132,24 @@ const applyMessage = getApplyMessage(applyStatus);
 
 <style>
 	.friends-apply-hero,
+	.friends-apply-notice,
 	.friends-apply-box {
 		--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);
 		--glass-panel-blur: var(--hero-card-blur, 18px);
 		display: grid;
 		gap: 1rem;
 		padding: clamp(1.3rem, 1rem + 1.6vw, 2.1rem);
+	}
+
+	.friends-apply-notice h2 {
+		margin: 0;
+		font-size: 1.05rem;
+	}
+
+	.friends-apply-notice p {
+		margin: 0;
+		white-space: pre-line;
+		color: var(--color-text-muted);
 	}
 
 	.friends-apply-form {
