@@ -34,15 +34,17 @@ describe("公开 AI 接口防护", () => {
 		);
 		assert.match(
 			source,
-			/不得误判为无效：help、whoami、pwd、ls、uname、clear、cls/u,
+			/你必须只返回一个 JSON 对象/u,
 		);
-		assert.match(source, /若命令为 clear 或 cls，只返回：TERMINAL_CLEAR/u);
-		assert.match(source, /输入：guest@404:~\$ pwd/u);
-		assert.match(source, /输入：guest@404:~\$ ls/u);
-		assert.match(source, /输入：guest@404:\/12345\$ ls/u);
-		assert.match(source, /输入：guest@404:\/12345\$ uname -a/u);
-		assert.match(source, /输入：guest@404:\/12345\$ whoami/u);
-		assert.match(source, /输入：guest@404:\/12345\$ unknowncmd/u);
+		assert.match(source, /"nextCwd": "\/规范路径"/u);
+		assert.match(source, /clear\/cls：clear=true/u);
+		assert.match(source, /zsh: no such file or directory/u);
+		assert.match(source, /isTerminalCdCommand/u);
+		assert.match(source, /parseTerminalAiResponsePayload/u);
+		assert.match(
+			source,
+			/publicAiRoutes\.post\("\/terminal-404"[\s\S]*jsonMode:\s*true/u,
+		);
 	});
 
 	test("主应用会挂载公开 AI 路由", async () => {

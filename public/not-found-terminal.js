@@ -16,40 +16,6 @@ function normalizeTerminalPath(pathname) {
 	return normalized;
 }
 
-function resolveTerminalCdPath(currentCwd, target) {
-	const trimmed = String(target ?? "").trim();
-
-	if (!trimmed || trimmed === "~") {
-		return "/home/guest";
-	}
-
-	let base;
-	if (trimmed.startsWith("~/")) {
-		base = `/home/guest/${trimmed.slice(2)}`;
-	} else if (trimmed.startsWith("/")) {
-		base = trimmed;
-	} else {
-		base = `${currentCwd}/${trimmed}`;
-	}
-
-	// 解析 . 和 .. 路径段
-	const parts = base.split("/").filter((p) => p.length > 0);
-	const resolved = [];
-	for (const part of parts) {
-		if (part === ".") {
-			continue;
-		}
-		if (part === "..") {
-			resolved.pop();
-		} else {
-			resolved.push(part);
-		}
-	}
-
-	const path = `/${resolved.join("/")}`;
-	return path.length > 180 ? `${path.slice(0, 177)}...` : path;
-}
-
 function normalizeTerminalLineType(type) {
 	const normalized = String(type ?? "").trim().toLowerCase();
 	return TERMINAL_LINE_TYPES.has(normalized) ? normalized : "output";
@@ -351,28 +317,6 @@ function initNotFoundTerminal() {
 			return;
 		}
 
-		// 本地处理 cd，无需调用 AI
-		const cdMatch = command.match(/^cd(?:\s+(.+))?$/);
-		if (cdMatch !== null) {
-			terminalState.history.push({
-				role: "user",
-				content: buildTerminalHistoryMessage(cwd, command),
-			});
-			terminalState.history.push({
-				role: "assistant",
-				content: "",
-			});
-			cwd = resolveTerminalCdPath(cwd, cdMatch[1]);
-			promptPrefix = `guest@404:${cwd}$`;
-			terminalState.currentCwd = cwd;
-			if (promptNode instanceof HTMLElement) {
-				promptNode.textContent = promptPrefix;
-			}
-			writeTerminalSession(terminalState);
-			inputNode.focus();
-			return;
-		}
-
 		setPendingState(true);
 		appendTerminalLine(logNode, "...正在连接外接 AI 终端...", "system");
 
@@ -405,26 +349,56 @@ function initNotFoundTerminal() {
 			}
 
 			const reply = String(payload?.reply ?? "").trim();
-			const outputText = reply || "(无输出)";
+			const terminalPayload =
+				payload?.terminal && typeof payload.terminal === "object"
+					? payload.terminal
+					: null;
+			const nextCwdRaw =
+				terminalPayload && typeof terminalPayload.nextCwd === "string"
+					? terminalPayload.nextCwd
+					: "";
+			const nextCwd = nextCwdRaw ? normalizeTerminalPath(nextCwdRaw) : "";
+			const clearByPayload = Boolean(terminalPayload?.clear);
+			const isCdCommand = /^cd(?:\s+.+)?$/iu.test(command);
+			const commandCwd = cwd;
+
+			if (nextCwd && nextCwd !== commandCwd) {
+				cwd = nextCwd;
+				promptPrefix = `guest@404:${cwd}$`;
+				terminalState.currentCwd = cwd;
+				if (promptNode instanceof HTMLElement) {
+					promptNode.textContent = promptPrefix;
+				}
+			}
+
+			const outputText = reply
+				? reply
+				: isCdCommand
+					? ""
+					: "(无输出)";
 			terminalState.history.push({
 				role: "user",
-				content: buildTerminalHistoryMessage(cwd, command),
+				content: buildTerminalHistoryMessage(commandCwd, command),
 			});
 			terminalState.history.push({
 				role: "assistant",
 				content: outputText,
 			});
 
-			if (reply === "TERMINAL_CLEAR") {
+			if (clearByPayload || reply === "TERMINAL_CLEAR") {
 				logNode.innerHTML = "";
 				terminalState.entries = [];
 				terminalState.history = [];
 				appendTerminalLineWithState(logNode, terminalState, "终端已清屏。", "system");
+				terminalState.currentCwd = cwd;
 				writeTerminalSession(terminalState);
 				return;
 			}
 
-			appendTerminalBlockWithState(logNode, terminalState, outputText, "output");
+			if (outputText) {
+				appendTerminalBlockWithState(logNode, terminalState, outputText, "output");
+			}
+			terminalState.currentCwd = cwd;
 			writeTerminalSession(terminalState);
 		} catch (error) {
 			logNode.lastElementChild?.remove();
