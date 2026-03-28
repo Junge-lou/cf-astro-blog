@@ -17,6 +17,9 @@ const AVATAR_PROXY_ALLOWED_CONTENT_TYPES = new Set([
 	"image/webp",
 	"image/avif",
 	"image/gif",
+	"image/svg+xml",
+	"image/x-icon",
+	"image/vnd.microsoft.icon",
 ]);
 
 interface FriendLinkApplicationInput {
@@ -388,7 +391,7 @@ friendLinksRoutes.get("/avatar", async (c) => {
 			);
 			if (!isAllowedAvatarContentType(contentType)) {
 				return c.text(
-					"头像资源类型不支持，仅允许 JPG、PNG、WEBP、AVIF、GIF",
+					"头像资源类型不支持，仅允许 JPG、PNG、WEBP、AVIF、GIF、SVG、ICO",
 					415,
 				);
 			}

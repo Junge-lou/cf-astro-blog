@@ -450,13 +450,14 @@ describe("后台接口", () => {
 		}
 	});
 
-	test("GET /friend-links/avatar 会拒绝 SVG 头像资源", async () => {
+	test("GET /friend-links/avatar 允许 SVG 头像资源", async () => {
 		const originalFetch = globalThis.fetch;
 		const sourceUrl = "https://avatar.example.com/avatar.svg";
+		const svgBody = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
 
 		globalThis.fetch = async (input) => {
 			if (String(input) === sourceUrl) {
-				return new Response('<svg xmlns="http://www.w3.org/2000/svg"></svg>', {
+				return new Response(svgBody, {
 					status: 200,
 					headers: {
 						"content-type": "image/svg+xml",
@@ -477,8 +478,9 @@ describe("后台接口", () => {
 				} as unknown as Env,
 			);
 
-			assert.equal(res.status, 415);
-			assert.match(await res.text(), /仅允许 JPG、PNG、WEBP、AVIF、GIF/u);
+			assert.equal(res.status, 200);
+			assert.equal(res.headers.get("content-type"), "image/svg+xml");
+			assert.equal(await res.text(), svgBody);
 		} finally {
 			globalThis.fetch = originalFetch;
 		}

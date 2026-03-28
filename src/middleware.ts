@@ -93,10 +93,13 @@ function applySecurityHeaders(
 		// Astro ClientRouter (View Transitions) 客户端导航时不会刷新文档级 CSP，
 		// 任何页面都可能成为 Pagefind WASM 的宿主文档。
 		// WebAssembly.instantiate(bytes) 必须有此指令，否则 WASM 编译被 CSP 拦截。
+		// 同时 ClientRouter 在页面切换时会执行内联脚本片段，未放行时会在控制台持续报错。
 		const scriptSources = [
 			"'self'",
+			"'unsafe-inline'",
 			"https://giscus.app",
 			"https://challenges.cloudflare.com",
+			"https://static.cloudflareinsights.com",
 			"'wasm-unsafe-eval'",
 		];
 		response.headers.set(
@@ -110,8 +113,8 @@ function applySecurityHeaders(
 				`script-src ${scriptSources.join(" ")}`,
 				"style-src 'self' 'unsafe-inline' https://giscus.app",
 				"img-src 'self' data: https://assets.ericterminal.com",
-				"font-src 'self'",
-				"connect-src 'self' https://giscus.app https://challenges.cloudflare.com",
+				"font-src 'self' data: https:",
+				"connect-src 'self' https://giscus.app https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
 				"frame-src 'self' https://giscus.app https://challenges.cloudflare.com",
 			].join("; "),
 		);
