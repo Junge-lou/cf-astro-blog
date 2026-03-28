@@ -4,6 +4,7 @@ import { desc } from "drizzle-orm";
 import { blogPosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { getPublicPostVisibilityCondition } from "@/lib/public-content";
+import { encodeRouteParam } from "@/lib/security";
 import { siteConfig } from "@/lib/types";
 
 export const GET: APIRoute = async () => {
@@ -45,7 +46,7 @@ export const GET: APIRoute = async () => {
 		...posts.map(
 			(post) => `
 	<url>
-		<loc>${siteConfig.url}/blog/${post.slug}</loc>
+		<loc>${siteConfig.url}/blog/${encodeRouteParam(post.slug)}</loc>
 		<lastmod>${post.updatedAt}</lastmod>
 		<priority>0.7</priority>
 	</url>`,

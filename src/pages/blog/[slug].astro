@@ -6,7 +6,12 @@ import Post from "@/layouts/Post.astro";
 import { getDb } from "@/lib/db";
 import { estimateArticleReadStats } from "@/lib/format";
 import { getPublicPostBySlugCondition } from "@/lib/public-content";
-import { renderSafeMarkdownWithToc, sanitizePlainText } from "@/lib/security";
+import {
+	decodeRouteParam,
+	renderSafeMarkdownWithToc,
+	sanitizePlainText,
+	sanitizeSlug,
+} from "@/lib/security";
 import {
 	DEFAULT_SITE_APPEARANCE,
 	getSiteAppearance,
@@ -72,7 +77,8 @@ async function shouldCountPostViewOnce(options: {
 	return true;
 }
 
-const { slug } = Astro.params;
+const rawSlug = Astro.params.slug ?? "";
+const slug = sanitizeSlug(decodeRouteParam(rawSlug));
 
 if (!slug) {
 	return Astro.redirect("/blog");

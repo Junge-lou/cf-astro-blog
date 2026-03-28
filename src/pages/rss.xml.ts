@@ -4,6 +4,7 @@ import { desc } from "drizzle-orm";
 import { blogPosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { getPublicPostVisibilityCondition } from "@/lib/public-content";
+import { encodeRouteParam } from "@/lib/security";
 import {
 	DEFAULT_SITE_APPEARANCE,
 	getSiteAppearance,
@@ -87,7 +88,7 @@ export const GET: APIRoute = async () => {
 	const now = new Date().toUTCString();
 	const items = posts
 		.map((post) => {
-			const url = `${siteConfig.url}/blog/${post.slug}`;
+			const url = `${siteConfig.url}/blog/${encodeRouteParam(post.slug)}`;
 			const pubDate =
 				toRssDate(post.publishedAt) || toRssDate(post.updatedAt) || now;
 

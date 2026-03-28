@@ -711,16 +711,24 @@ function updatePostBackgroundControlPreview() {
 }
 
 function buildSlugValue(value) {
-	return value
+	return String(value ?? "")
+		.trim()
 		.toLowerCase()
-		.normalize("NFKD")
-		.replaceAll(/[\u0300-\u036f]/g, "")
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/^-|-$/g, "");
+		.normalize("NFKC")
+		.replaceAll(/[^\p{Letter}\p{Number}]+/gu, "-")
+		.replaceAll(/-+/g, "-")
+		.replaceAll(/^-+|-+$/g, "");
 }
 
 function normalizePostMediaScope(value) {
-	const normalized = buildSlugValue(String(value ?? "").trim());
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.normalize("NFKD")
+		.replaceAll(/[\u0300-\u036f]/g, "")
+		.replaceAll(/[^a-z0-9]+/g, "-")
+		.replaceAll(/-+/g, "-")
+		.replaceAll(/^-+|-+$/g, "");
 	if (!normalized) {
 		return "";
 	}

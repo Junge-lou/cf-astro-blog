@@ -17,6 +17,7 @@ import { getDb } from "@/lib/db";
 import { timingSafeEqualText } from "@/lib/password";
 import {
 	buildUrlSlug,
+	encodeRouteParam,
 	sanitizeCanonicalUrl,
 	sanitizeMediaKey,
 	sanitizePlainText,
@@ -867,7 +868,7 @@ function buildPostReadPayload(
 		canonicalUrl: row.canonicalUrl,
 		createdAt: row.createdAt,
 		updatedAt: row.updatedAt,
-		url: `/blog/${row.slug}`,
+		url: `/blog/${encodeRouteParam(row.slug)}`,
 	};
 }
 
@@ -1108,7 +1109,7 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 		slug,
 		status: input.status,
 		authorName: input.authorName,
-		url: `/blog/${slug}`,
+		url: `/blog/${encodeRouteParam(slug)}`,
 		publishedAt,
 		publishAt,
 	};

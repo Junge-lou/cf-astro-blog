@@ -3,6 +3,9 @@ import { marked, type Tokens } from "marked";
 const POST_STATUS_VALUES = ["draft", "published", "scheduled"] as const;
 const SAFE_HTTP_URL_PROTOCOLS = new Set(["http:", "https:"]);
 const SAFE_URL_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
+const SLUG_SEGMENT_PATTERN = /[^\p{Letter}\p{Number}]+/gu;
+const SLUG_VALID_PATTERN =
+	/^[\p{Letter}\p{Number}]+(?:-[\p{Letter}\p{Number}]+)*$/u;
 
 export type PostStatus = (typeof POST_STATUS_VALUES)[number];
 
@@ -36,11 +39,15 @@ export function decodeRouteParam(value: string): string {
 }
 
 export function sanitizeSlug(value: unknown): string | null {
-	const normalized = String(value ?? "")
+	const normalized = decodeRouteParam(String(value ?? ""))
 		.trim()
-		.toLowerCase();
+		.toLowerCase()
+		.normalize("NFKC")
+		.replaceAll(/\s+/gu, "-")
+		.replaceAll(/-+/g, "-")
+		.replaceAll(/^-+|-+$/g, "");
 
-	if (!normalized || !/^[a-z0-9-]+$/.test(normalized)) {
+	if (!normalized || !SLUG_VALID_PATTERN.test(normalized)) {
 		return null;
 	}
 
@@ -55,20 +62,20 @@ export function buildUrlSlug(
 		sanitizeSlug(options?.fallbackPrefix || "post") || "post";
 	const maxLength = Math.max(8, options?.maxLength ?? 120);
 	const normalized = String(value ?? "")
-		.normalize("NFKD")
-		.replaceAll(/[\u0300-\u036f]/g, "")
 		.toLowerCase()
-		.replaceAll(/[^a-z0-9]+/g, "-")
+		.normalize("NFKC")
+		.replaceAll(SLUG_SEGMENT_PATTERN, "-")
+		.replaceAll(/-+/g, "-")
 		.replaceAll(/^-+|-+$/g, "");
+	const safeSlug = sanitizeSlug(normalized);
 
-	if (!normalized) {
+	if (!safeSlug) {
 		const fallback = `${fallbackPrefix}-${crypto.randomUUID().slice(0, 8)}`;
 		return fallback.slice(0, maxLength);
 	}
 
-	return (
-		normalized.slice(0, maxLength).replaceAll(/-+$/g, "") || fallbackPrefix
-	);
+	const truncated = [...safeSlug].slice(0, maxLength).join("");
+	return truncated.replaceAll(/-+$/g, "") || fallbackPrefix;
 }
 
 export function sanitizePostStatus(value: unknown): PostStatus | null {

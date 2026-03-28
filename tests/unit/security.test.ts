@@ -11,6 +11,7 @@ import {
 	renderSafeMarkdown,
 	renderSafeMarkdownWithToc,
 	sanitizeCanonicalUrl,
+	sanitizeSlug,
 } from "../../src/lib/security";
 
 describe("安全工具", () => {
@@ -141,16 +142,27 @@ describe("安全工具", () => {
 	test("buildUrlSlug 会把标题转成 URL 友好的路径", () => {
 		assert.equal(buildUrlSlug("Hello Astro Blog"), "hello-astro-blog");
 		assert.equal(buildUrlSlug("Cloudflare + D1 + R2"), "cloudflare-d1-r2");
+		assert.equal(
+			buildUrlSlug("在 UCG Fiber 上优雅地使用 SoftBank 10G"),
+			"在-ucg-fiber-上优雅地使用-softbank-10g",
+		);
 	});
 
 	test("buildUrlSlug 遇到无法转写的字符时会回退到前缀随机路径", () => {
-		const slug = buildUrlSlug("中文标题", { fallbackPrefix: "post" });
+		const slug = buildUrlSlug("🙂🙂", { fallbackPrefix: "post" });
 		assert.match(slug, /^post-[0-9a-f]{8}$/u);
 	});
 
 	test("buildUrlSlug 支持长度限制", () => {
 		const slug = buildUrlSlug("a".repeat(140), { maxLength: 24 });
 		assert.equal(slug.length, 24);
+	});
+
+	test("sanitizeSlug 支持解析 URL 编码后的中文路径", () => {
+		assert.equal(
+			sanitizeSlug("%E5%9C%A8-ucg-fiber-%E4%B8%8A"),
+			"在-ucg-fiber-上",
+		);
 	});
 
 	test("sanitizeCanonicalUrl 仅允许 http 与 https 协议", () => {

@@ -1,6 +1,7 @@
 ---
 import "@/styles/post-card.css";
 import { formatDate } from "@/lib/format";
+import { encodeRouteParam } from "@/lib/security";
 import { siteConfig } from "@/lib/types";
 
 interface Props {
@@ -72,11 +73,12 @@ if (safeLatinWordCount > 0) {
 const articleLengthLabel =
 	countLabelParts.length > 0 ? countLabelParts.join(" / ") : "0 字";
 const articleReadingTimeLabel = `约 ${safeEstimatedReadingMinutes.toLocaleString("zh-CN")} 分钟`;
+const encodedSlug = encodeRouteParam(slug);
 ---
 
 <article class={cardClassName}>
 	{hasCover && (
-		<a href={`/blog/${slug}`} class="post-card-cover">
+		<a href={`/blog/${encodedSlug}`} class="post-card-cover">
 			<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
 		</a>
 	)}
@@ -96,7 +98,7 @@ const articleReadingTimeLabel = `约 ${safeEstimatedReadingMinutes.toLocaleStrin
 				<span class="pill">{articleLengthLabel}</span>
 				<span class="pill">{articleReadingTimeLabel}</span>
 			</div>
-			<a href={`/blog/${slug}`} class="post-card-link">
+			<a href={`/blog/${encodedSlug}`} class="post-card-link">
 				<h2 class="post-card-title" transition:name={`title-${slug}`}>{title}</h2>
 			</a>
 		</div>
@@ -107,7 +109,7 @@ const articleReadingTimeLabel = `约 ${safeEstimatedReadingMinutes.toLocaleStrin
 		)}
 		<div class="post-card-meta">
 			<span>{authorName || siteConfig.author}</span>
-			<a href={`/blog/${slug}`} class="post-card-readmore">继续阅读</a>
+			<a href={`/blog/${encodedSlug}`} class="post-card-readmore">继续阅读</a>
 		</div>
 	</div>
 </article>
