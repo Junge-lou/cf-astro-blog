@@ -21,17 +21,17 @@ export interface CommentConfig {
 }
 
 export const siteConfig: SiteConfig = {
-	name: "Eric-Terminal 的博客",
-	url: "https://blog.ericterminal.com",
-	description: "记录 Cloudflare、前端工程、系统设计与长期有效的技术经验。",
-	author: "Eric",
+	name: "Kiwi 的博客",
+	url: "https://cf-astro-blog.momo-chatme.workers.dev",
+	description: "记录 生活",
+	author: "KIWI",
 	language: "zh-CN",
 	comments: {
 		provider: "giscus",
-		repo: "Eric-Terminal/cf-astro-blog",
-		repoId: "R_kgDORhlfAw",
+		repo: "Junge-lou/cf-astro-blog",
+		repoId: "R_kgDOSQlLhw",
 		category: "Announcements",
-		categoryId: "DIC_kwDORhlfA84C39BM",
+		categoryId: "DIC_kwDOSQlLh84C8CRN",
 		mapping: "pathname",
 		strict: false,
 		reactionsEnabled: true,
@@ -39,6 +39,7 @@ export const siteConfig: SiteConfig = {
 		lang: "zh-CN",
 	},
 };
+
 
 export interface PaginationParams {
 	page: number;
