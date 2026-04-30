@@ -37,7 +37,7 @@
 	"vars": {
 		"SITE_NAME": "My Blog",
 		"SITE_URL": "https://cf-astro-blog.momo-chatme.workers.dev",
-		// "TURNSTILE_SITE_KEY": "0x4AAAAAACnxh79QQawnz9UI"
+		"TURNSTILE_SITE_KEY": "0x4AAAAAADGRzftTk8S6JtHj"
 	}
 	// 机密变量可通过 `wrangler secret put` 或本地 `.dev.vars` 配置
 	// JWT_SECRET 
