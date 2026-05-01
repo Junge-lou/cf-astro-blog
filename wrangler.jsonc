@@ -22,12 +22,12 @@
 			"migrations_dir": "drizzle"
 		},
 	],
-	// "r2_buckets": [
-	// 	{
-	// 		"binding": "MEDIA_BUCKET",
-	// 		"bucket_name": "blog-media"
-	// 	}
-	// ],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "blog-media"
+		}
+	],
 	"kv_namespaces": [
 		{
 			"binding": "SESSION",
@@ -38,7 +38,8 @@
 		"SITE_NAME": "My Blog",
 		"SITE_URL": "https://astro-blog.momo-chatme.workers.dev",
 		"TURNSTILE_SITE_KEY": "0x4AAAAAADGRzftTk8S6JtHj"
-	}
+	},
+
 	// 机密变量可通过 `wrangler secret put` 或本地 `.dev.vars` 配置
 	// JWT_SECRET 
 	// ADMIN_USERNAME 
