@@ -1,7 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": "@astrojs/cloudflare/entrypoints/server",
-	"name": "cf-astro-blog",
+	"name": "astro-blog",
 	"compatibility_date": "2026-02-10",
 	"compatibility_flags": [
 		"nodejs_compat",
@@ -36,7 +36,7 @@
 	],
 	"vars": {
 		"SITE_NAME": "My Blog",
-		"SITE_URL": "https://cf-astro-blog.momo-chatme.workers.dev",
+		"SITE_URL": "https://astro-blog.momo-chatme.workers.dev",
 		"TURNSTILE_SITE_KEY": "0x4AAAAAADGRzftTk8S6JtHj"
 	}
 	// 机密变量可通过 `wrangler secret put` 或本地 `.dev.vars` 配置
