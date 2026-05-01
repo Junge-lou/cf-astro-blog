@@ -777,12 +777,17 @@ export async function getSiteAppearance(db: Database): Promise<SiteAppearance> {
 		return _siteAppearancePending;
 	}
 
-	_siteAppearancePending = fetchSiteAppearance(db).then((value) => {
-		_siteAppearanceCache = { value, expiresAt: Date.now() + SITE_APPEARANCE_CACHE_TTL_MS };
-		return value;
-	}).finally(() => {
-		_siteAppearancePending = null;
-	});
+	_siteAppearancePending = fetchSiteAppearance(db)
+		.then((value) => {
+			_siteAppearanceCache = {
+				value,
+				expiresAt: Date.now() + SITE_APPEARANCE_CACHE_TTL_MS,
+			};
+			return value;
+		})
+		.finally(() => {
+			_siteAppearancePending = null;
+		});
 
 	return _siteAppearancePending;
 }
