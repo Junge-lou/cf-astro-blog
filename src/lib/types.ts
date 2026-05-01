@@ -22,7 +22,7 @@ export interface CommentConfig {
 
 export const siteConfig: SiteConfig = {
 	name: "Kiwi 的博客",
-	url: "https://astro-blog.momo-chatme.workers.dev",
+	url: "https://ffaff.fun",
 	description: "记录 生活",
 	author: "KIWI",
 	language: "zh-CN",
