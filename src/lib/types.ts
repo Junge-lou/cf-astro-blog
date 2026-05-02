@@ -49,7 +49,7 @@ export const siteConfig: SiteConfig = {
 		reactionsEnabled: true,
 		inputPosition: "top",
 		lang: "zh-CN",
-		scriptUrl: "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.1.0/dist/momo-comment.min.js",
+		scriptUrl: "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.2.1/dist/momo-comment.min.js",
 		apiUrl: "https://comments.ffaff.fun",
 		
 
