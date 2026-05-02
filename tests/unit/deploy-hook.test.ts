@@ -96,7 +96,7 @@ describe("部署钩子", () => {
 		const triggered = await triggerDeployHook(
 			createEnv({
 				AUTO_DEPLOY_WEBHOOK_URL:
-					"https://api.github.com/repos/Eric-Terminal/cf-astro-blog/dispatches",
+					"https://api.github.com/repos/Junge-lou/cf-astro-blog/dispatches",
 				AUTO_DEPLOY_WEBHOOK_SECRET: "ghp_test_token",
 				AUTO_DEPLOY_GITHUB_EVENT_TYPE: "rebuild-search-index",
 			}),

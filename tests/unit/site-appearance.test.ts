@@ -117,7 +117,7 @@ describe("站点外观设置", () => {
 	test("normalizeSiteAppearanceInput 支持文章页左侧栏头像与简介", () => {
 		const normalized = normalizeSiteAppearanceInput({
 			articleSidebarAvatarPath: "appearance/profile/avatar.webp",
-			articleSidebarName: "Eric-Terminal",
+			articleSidebarName: "Junge-lou",
 			articleSidebarBadge: "站点作者",
 			articleSidebarBio: "这里放作者简介，用于文章页左侧信息栏展示。",
 		});
@@ -126,7 +126,7 @@ describe("站点外观设置", () => {
 			normalized.articleSidebarAvatarPath,
 			"/media/appearance/profile/avatar.webp",
 		);
-		assert.equal(normalized.articleSidebarName, "Eric-Terminal");
+		assert.equal(normalized.articleSidebarName, "Junge-lou");
 		assert.equal(normalized.articleSidebarBadge, "站点作者");
 		assert.equal(
 			normalized.articleSidebarBio,

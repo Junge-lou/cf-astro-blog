@@ -3,8 +3,8 @@ import { describe, test } from "node:test";
 import { app } from "../../src/admin/app";
 
 const mockEnv = {
-	ADMIN_USERNAME: "Eric-Terminal",
-	ADMIN_GITHUB_LOGIN: "Eric-Terminal",
+	ADMIN_USERNAME: "Junge-lou",
+	ADMIN_GITHUB_LOGIN: "Junge-lou",
 	GITHUB_OAUTH_CLIENT_ID: "client-id",
 	GITHUB_OAUTH_CLIENT_SECRET: "client-secret",
 	GITHUB_OAUTH_REDIRECT_URI: "",
