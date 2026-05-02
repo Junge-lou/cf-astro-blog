@@ -7,7 +7,12 @@ export interface SiteConfig {
 	comments: CommentConfig;
 }
 
-export interface CommentConfig {
+export interface CommentConfigBase {
+	provider: "giscus" | "momo";
+	lang: string;
+}
+
+export interface GiscusCommentConfig extends CommentConfigBase {
 	provider: "giscus";
 	repo: string;
 	repoId: string;
@@ -17,8 +22,15 @@ export interface CommentConfig {
 	strict: boolean;
 	reactionsEnabled: boolean;
 	inputPosition: "top" | "bottom";
-	lang: string;
 }
+
+export interface MomoCommentConfig extends CommentConfigBase {
+	provider: "momo";
+	scriptUrl: string;
+	apiUrl: string;
+}
+
+export type CommentConfig = GiscusCommentConfig | MomoCommentConfig;
 
 export const siteConfig: SiteConfig = {
 	name: "Kiwi 的博客",
@@ -37,6 +49,10 @@ export const siteConfig: SiteConfig = {
 		reactionsEnabled: true,
 		inputPosition: "top",
 		lang: "zh-CN",
+		scriptUrl: "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.1.x/dist/momo-comment.min.js",
+		apiUrl: "https://momo-backend-worker.momo-chatme.workers.dev",
+		
+
 	},
 };
 
