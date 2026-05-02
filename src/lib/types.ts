@@ -39,7 +39,7 @@ export const siteConfig: SiteConfig = {
 	author: "KIWI",
 	language: "zh-CN",
 	comments: {
-		provider: "giscus",
+		provider: "momo",
 		repo: "Junge-lou/cf-astro-blog",
 		repoId: "R_kgDOSQlLhw",
 		category: "Announcements",
