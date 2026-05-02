@@ -39,7 +39,7 @@ export const siteConfig: SiteConfig = {
 	author: "KIWI",
 	language: "zh-CN",
 	comments: {
-		provider: "momo",
+		provider: "giscus",
 		repo: "Junge-lou/cf-astro-blog",
 		repoId: "R_kgDOSQlLhw",
 		category: "Announcements",
@@ -49,7 +49,7 @@ export const siteConfig: SiteConfig = {
 		reactionsEnabled: true,
 		inputPosition: "top",
 		lang: "zh-CN",
-		scriptUrl: "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.1.x/dist/momo-comment.min.js",
+		scriptUrl: "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.1.0/dist/momo-comment.min.js",
 		apiUrl: "https://momo-backend-worker.momo-chatme.workers.dev",
 		
 

@@ -79,7 +79,7 @@
 			return;
 		}
 
-		const scriptUrl = panel.dataset.commentsScriptUrl || "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.1.x/dist/momo-comment.min.js";
+		const scriptUrl = panel.dataset.commentsScriptUrl || "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.1.0/dist/momo-comment.min.js";
 		const apiUrl = panel.dataset.commentsApiUrl;
 		const title = panel.dataset.commentsTitle;
 		const slugId = panel.dataset.commentsSlugId;
