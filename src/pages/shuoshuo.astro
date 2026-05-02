@@ -1,0 +1,96 @@
+---
+import { env } from "cloudflare:workers";
+import { desc, eq } from "drizzle-orm";
+import Base from "@/layouts/Base.astro";
+import { getDb } from "@/lib/db";
+import { formatDate } from "@/lib/format";
+import { shuoshuoPosts } from "@/db/schema";
+
+interface ShuoshuoRow {
+	content: string;
+	createdAt: string;
+}
+
+let shuoshuoList: ShuoshuoRow[] = [];
+
+try {
+	const db = getDb(env.DB);
+	shuoshuoList = await db
+		.select({ content: shuoshuoPosts.content, createdAt: shuoshuoPosts.createdAt })
+		.from(shuoshuoPosts)
+		.where(eq(shuoshuoPosts.status, "published"))
+		.orderBy(desc(shuoshuoPosts.createdAt))
+		.limit(20);
+} catch {
+	// D1 未绑定时保持空列表
+}
+---
+
+<Base title="说说" description="日常说说，轻量记录生活与想法。">
+	<section class="shuoshuo-hero glass-panel">
+		<div class="shuoshuo-hero-copy">
+			<span class="section-kicker">日常记录</span>
+			<h1 class="page-title">说说</h1>
+			<p class="page-intro">
+				这里展示最近的日常说说，适合用来记录短句、灵感和生活瞬间。
+			</p>
+		</div>
+	</section>
+
+	{shuoshuoList.length > 0 ? (
+		<div class="shuoshuo-grid">
+			{shuoshuoList.map((item) => (
+				<article class="shuoshuo-card glass-panel">
+					<p class="shuoshuo-card-content">{item.content}</p>
+					<time class="shuoshuo-card-time">{formatDate(item.createdAt)}</time>
+				</article>
+			))}
+		</div>
+	) : (
+		<div class="empty-state glass-panel">
+			<p>还没有说说内容。你可以先登录后台发布第一条日常更新。</p>
+		</div>
+	)}
+</Base>
+
+<style>
+	.shuoshuo-hero {
+		padding: clamp(1.5rem, 1rem + 2vw, 2.2rem);
+		display: grid;
+		gap: 1rem;
+	}
+
+	.shuoshuo-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+		gap: 1rem;
+	}
+
+	.shuoshuo-card {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 1.4rem;
+		border-radius: 1.5rem;
+		background: rgba(255, 255, 255, 0.7);
+		backdrop-filter: blur(18px);
+	}
+
+	.shuoshuo-card-content {
+		white-space: pre-wrap;
+		line-height: 1.8;
+		color: var(--text-secondary, #2f3c4f);
+	}
+
+	.shuoshuo-card-time {
+		font-size: 0.95rem;
+		color: var(--text-muted, #697381);
+		margin-top: auto;
+	}
+
+	@media (max-width: 720px) {
+		.shuoshuo-card {
+			padding: 1.2rem;
+		}
+	}
+</style>

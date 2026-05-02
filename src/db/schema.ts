@@ -94,6 +94,16 @@ export const blogPostTags = sqliteTable(
 	(table) => [primaryKey({ columns: [table.postId, table.tagId] })],
 );
 
+// ─── 说说记录 ─────────────────────────────────────────────────────────────────
+
+export const shuoshuoPosts = sqliteTable("shuoshuo_posts", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	content: text("content").notNull(),
+	status: text("status").notNull().default("published"),
+	createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+	updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+});
+
 // ─── 友链申请与展示 ───────────────────────────────────────────────────────────
 
 export const friendLinks = sqliteTable(
@@ -322,6 +332,9 @@ export type NewBlogTag = typeof blogTags.$inferInsert;
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type NewBlogPost = typeof blogPosts.$inferInsert;
+
+export type ShuoshuoPost = typeof shuoshuoPosts.$inferSelect;
+export type NewShuoshuoPost = typeof shuoshuoPosts.$inferInsert;
 
 export type FriendLink = typeof friendLinks.$inferSelect;
 export type NewFriendLink = typeof friendLinks.$inferInsert;

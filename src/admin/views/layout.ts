@@ -8,6 +8,7 @@ type AdminNavKey =
 	| "dashboard"
 	| "appearance"
 	| "posts"
+	| "shuoshuo"
 	| "friends"
 	| "mentions"
 	| "media"
@@ -17,6 +18,7 @@ const navItems: Array<{ key: AdminNavKey; label: string; href: string }> = [
 	{ key: "dashboard", label: "控制台", href: "/api/admin" },
 	{ key: "appearance", label: "外观", href: "/api/admin/appearance" },
 	{ key: "posts", label: "文章", href: "/api/admin/posts" },
+	{ key: "shuoshuo", label: "说说", href: "/api/admin/shuoshuo" },
 	{ key: "friends", label: "友链", href: "/api/admin/friends" },
 	{ key: "mentions", label: "提及", href: "/api/admin/mentions" },
 	{ key: "media", label: "媒体", href: "/api/admin/media" },
