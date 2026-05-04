@@ -120,9 +120,9 @@ function applySecurityHeaders(
 				"form-action 'self'",
 				`script-src ${scriptSources.join(" ")}`,
 				"style-src 'self' 'unsafe-inline' https://giscus.app",
-				"img-src 'self' data: https://assets.ericterminal.com",
+				"img-src 'self' data:  https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io",
 				"font-src 'self' data: https:",
-				"connect-src 'self' https://giscus.app https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
+				"connect-src 'self' https://giscus.app https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun",
 				"frame-src 'self' https://giscus.app https://challenges.cloudflare.com",
 			].join("; "),
 		);

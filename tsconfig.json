@@ -5,7 +5,8 @@
 		"paths": {
 			"@/*": ["src/*"]
 		},
-		"types": ["@cloudflare/workers-types", "node"]
+		"types": ["@cloudflare/workers-types", "node"],
+		"ignoreDeprecations": "6.0"
 	},
 	"include": ["src", "tests", "env.d.ts"],
 	"exclude": ["node_modules", "dist", ".astro"]
