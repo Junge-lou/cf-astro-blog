@@ -26,7 +26,6 @@ export interface GiscusCommentConfig extends CommentConfigBase {
 
 export interface MomoCommentConfig extends CommentConfigBase {
 	provider: "momo";
-	scriptUrl: string;
 	apiUrl: string;
 }
 
@@ -40,19 +39,8 @@ export const siteConfig: SiteConfig = {
 	language: "zh-CN",
 	comments: {
 		provider: "momo",
-		repo: "Junge-lou/cf-astro-blog",
-		repoId: "R_kgDOSQlLhw",
-		category: "Announcements",
-		categoryId: "DIC_kwDOSQlLh84C8CRN",
-		mapping: "pathname",
-		strict: false,
-		reactionsEnabled: true,
-		inputPosition: "top",
 		lang: "zh-CN",
-		scriptUrl: "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.2.1/dist/momo-comment.min.js",
 		apiUrl: "https://comments.ffaff.fun",
-		
-
 	},
 };
 

@@ -79,7 +79,6 @@
 			return;
 		}
 
-		const scriptUrl = panel.dataset.commentsScriptUrl || "https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.2.1/dist/momo-comment.min.js";
 		const apiUrl = panel.dataset.commentsApiUrl;
 		const title = panel.dataset.commentsTitle;
 		const slugId = panel.dataset.commentsSlugId;
@@ -91,7 +90,7 @@
 		host.innerHTML = "<div id=\"momo-comment\"></div>";
 
 		const script = document.createElement("script");
-		script.src = scriptUrl;
+		script.src = "/momo-comment.min.js";
 		script.async = true;
 		script.onload = () => {
 			if (window.momo?.init) {

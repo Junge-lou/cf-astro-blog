@@ -18,7 +18,7 @@ const isGiscusReady =
 	);
 const isMomoReady =
 	commentsConfig.provider === "momo" &&
-	Boolean(commentsConfig.scriptUrl && commentsConfig.apiUrl);
+	Boolean(commentsConfig.apiUrl);
 const isCommentConfigReady = isGiscusReady || isMomoReady;
 const commentNote =
 	commentsConfig.provider === "momo"
@@ -45,9 +45,6 @@ const momoSlugId = `blog/${slug}`;
 	}
 	data-comments-input-position={commentsConfig.provider === "giscus" ? commentsConfig.inputPosition : undefined}
 	data-comments-lang={commentsConfig.lang}
-	data-comments-script-url={
-		commentsConfig.provider === "momo" ? commentsConfig.scriptUrl : undefined
-	}
 	data-comments-api-url={
 		commentsConfig.provider === "momo" ? commentsConfig.apiUrl : undefined
 	}

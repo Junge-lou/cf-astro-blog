@@ -26,13 +26,12 @@ describe("评论组件保护", () => {
 		assert.match(commentsScriptSource, /astro:page-load/u);
 	});
 
-	test("站点配置会预留 giscus 仓库配置", async () => {
+	test("站点配置会预留 momo 评论配置", async () => {
 		const typesSource = await readFile("src/lib/types.ts", "utf8");
 
 		assert.match(typesSource, /comments:/u);
-		assert.match(typesSource, /repo:\s*"Junge-lou\/cf-astro-blog"/u);
-		assert.match(typesSource, /repoId:\s*"R_kgDORhlfAw"/u);
-		assert.match(typesSource, /category:\s*"Announcements"/u);
-		assert.match(typesSource, /categoryId:\s*"DIC_kwDORhlfA84C39BM"/u);
+		assert.match(typesSource, /provider:\s*"momo"/u);
+		assert.match(typesSource, /lang:\s*"zh-CN"/u);
+		assert.match(typesSource, /apiUrl:\s*"https:\/\/comments\.ffaff\.fun"/u);
 	});
 });
