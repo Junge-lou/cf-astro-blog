@@ -97,19 +97,19 @@ function createMcpPostMockD1() {
 						raw: async () => {
 							calls.push({ sql, params });
 							if (
-								/insert into\s+"?blog_posts"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_posts["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return [[9527]];
 							}
 							if (
-								/insert into\s+"?blog_categories"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_categories["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return [[nextCategoryId++]];
 							}
 							if (
-								/insert into\s+"?blog_tags"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_tags["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return [[nextTagId++]];
@@ -119,19 +119,19 @@ function createMcpPostMockD1() {
 						all: async () => {
 							calls.push({ sql, params });
 							if (
-								/insert into\s+"?blog_posts"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_posts["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return { results: [{ id: 9527 }] };
 							}
 							if (
-								/insert into\s+"?blog_categories"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_categories["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return { results: [{ id: nextCategoryId++ }] };
 							}
 							if (
-								/insert into\s+"?blog_tags"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_tags["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return { results: [{ id: nextTagId++ }] };
@@ -141,19 +141,19 @@ function createMcpPostMockD1() {
 						first: async () => {
 							calls.push({ sql, params });
 							if (
-								/insert into\s+"?blog_posts"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_posts["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return { id: 9527 };
 							}
 							if (
-								/insert into\s+"?blog_categories"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_categories["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return { id: nextCategoryId++ };
 							}
 							if (
-								/insert into\s+"?blog_tags"?/iu.test(sql) &&
+								/insert into\s+["`]?blog_tags["`]?/iu.test(sql) &&
 								/returning/iu.test(sql)
 							) {
 								return { id: nextTagId++ };
@@ -714,7 +714,7 @@ describe("后台接口", () => {
 		assert.equal(await res.text(), "Not Found");
 
 		const auditInsertCall = calls.find((entry) =>
-			/insert into\s+"?mcp_audit_logs"?/iu.test(entry.sql),
+			/insert into\s+["`]?mcp_audit_logs["`]?/iu.test(entry.sql),
 		);
 		assert.ok(auditInsertCall);
 		assert.ok(auditInsertCall?.params.includes("token_invalid"));
@@ -877,14 +877,14 @@ describe("后台接口", () => {
 		);
 
 		const insertCall = calls.find((entry) =>
-			/insert into\s+"?blog_posts"?/iu.test(entry.sql),
+			/insert into\s+["`]?blog_posts["`]?/iu.test(entry.sql),
 		);
 		assert.ok(insertCall);
 		assert.ok(insertCall?.params.includes("无会话兼容模式测试"));
 
 		const auditInsertCall = calls.find(
 			(entry) =>
-				/insert into\s+"?mcp_audit_logs"?/iu.test(entry.sql) &&
+				/insert into\s+["`]?mcp_audit_logs["`]?/iu.test(entry.sql) &&
 				entry.params.includes("无会话兼容模式处理成功"),
 		);
 		assert.ok(auditInsertCall);
@@ -1014,7 +1014,7 @@ describe("后台接口", () => {
 				name: "create_post",
 				arguments: {
 					title: "MCP 发布测试",
-					content: "# 标题\\n\\n这是一段测试内容",
+					content: "# 标题\n\n这是一段测试内容",
 					authorName: "AI-Agent",
 				},
 			},
@@ -1062,14 +1062,14 @@ describe("后台接口", () => {
 		);
 
 		const insertCall = calls.find((entry) =>
-			/insert into\s+"?blog_posts"?/iu.test(entry.sql),
+			/insert into\s+["`]?blog_posts["`]?/iu.test(entry.sql),
 		);
 		assert.ok(insertCall);
 		assert.ok(insertCall?.params.includes("AI-Agent"));
 		assert.ok(insertCall?.params.includes("published"));
 
 		const auditInsertCalls = calls.filter((entry) =>
-			/insert into\s+"?mcp_audit_logs"?/iu.test(entry.sql),
+			/insert into\s+["`]?mcp_audit_logs["`]?/iu.test(entry.sql),
 		);
 		assert.ok(auditInsertCalls.length >= 2);
 		const toolAuditCall = auditInsertCalls.find((entry) =>
@@ -1167,7 +1167,7 @@ describe("后台接口", () => {
 		assert.notEqual(payload?.result?.isError, true);
 
 		const postInsertCall = calls.find((entry) =>
-			/insert into\s+"?blog_posts"?/iu.test(entry.sql),
+			/insert into\s+["`]?blog_posts["`]?/iu.test(entry.sql),
 		);
 		assert.ok(postInsertCall);
 		assert.ok(
@@ -1179,18 +1179,18 @@ describe("后台接口", () => {
 		assert.ok(postInsertCall?.params.includes("关键词A, 关键词B"));
 
 		const categoryInsertCall = calls.find((entry) =>
-			/insert into\s+"?blog_categories"?/iu.test(entry.sql),
+			/insert into\s+["`]?blog_categories["`]?/iu.test(entry.sql),
 		);
 		assert.ok(categoryInsertCall);
 		assert.ok(categoryInsertCall?.params.includes("工程实践"));
 
 		const tagInsertCalls = calls.filter((entry) =>
-			/insert into\s+"?blog_tags"?/iu.test(entry.sql),
+			/insert into\s+["`]?blog_tags["`]?/iu.test(entry.sql),
 		);
 		assert.ok(tagInsertCalls.length >= 2);
 
 		const relationInsertCall = calls.find((entry) =>
-			/insert into\s+"?blog_post_tags"?/iu.test(entry.sql),
+			/insert into\s+["`]?blog_post_tags["`]?/iu.test(entry.sql),
 		);
 		assert.ok(relationInsertCall);
 	});
@@ -1437,7 +1437,7 @@ describe("后台接口", () => {
 	test("POST /webmention 成功时会写入待审核记录并返回 202", async () => {
 		const { db, calls } = createWebMentionMockD1();
 		const sourceUrl = "https://example.org/posts/webmention-demo";
-		const targetUrl = "https://blog.ericterminal.com/search";
+		const targetUrl = "https://ffaff.fun/search";
 		const originalFetch = globalThis.fetch;
 
 		globalThis.fetch = async (input) => {
@@ -1474,7 +1474,7 @@ describe("后台接口", () => {
 			assert.match(await res.text(), /等待审核/u);
 			assert.ok(
 				calls.some((entry) =>
-					/insert into\s+"?web_mentions"?/iu.test(entry.sql),
+					/insert into\s+["`]?web_mentions["`]?/iu.test(entry.sql),
 				),
 			);
 		} finally {
@@ -1485,7 +1485,7 @@ describe("后台接口", () => {
 	test("POST /webmention 会拒绝跳转到本地地址的 source", async () => {
 		const { db, calls } = createWebMentionMockD1();
 		const sourceUrl = "https://example.org/posts/redirect-local";
-		const targetUrl = "https://blog.ericterminal.com/search";
+		const targetUrl = "https://ffaff.fun/search";
 		const originalFetch = globalThis.fetch;
 
 		globalThis.fetch = async (input) => {
@@ -1521,7 +1521,7 @@ describe("后台接口", () => {
 			assert.match(await res.text(), /本地或内网主机地址/u);
 			assert.ok(
 				!calls.some((entry) =>
-					/insert into\s+"?web_mentions"?/iu.test(entry.sql),
+					/insert into\s+["`]?web_mentions["`]?/iu.test(entry.sql),
 				),
 			);
 		} finally {
@@ -1532,7 +1532,7 @@ describe("后台接口", () => {
 	test("POST /webmention 会拒绝体积过大的 source 页面", async () => {
 		const { db, calls } = createWebMentionMockD1();
 		const sourceUrl = "https://example.org/posts/huge";
-		const targetUrl = "https://blog.ericterminal.com/search";
+		const targetUrl = "https://ffaff.fun/search";
 		const originalFetch = globalThis.fetch;
 		const hugeHtml = `<html><body>${"a".repeat(1024 * 1024 + 128)}</body></html>`;
 
@@ -1567,7 +1567,7 @@ describe("后台接口", () => {
 			assert.match(await res.text(), /体积过大/u);
 			assert.ok(
 				!calls.some((entry) =>
-					/insert into\s+"?web_mentions"?/iu.test(entry.sql),
+					/insert into\s+["`]?web_mentions["`]?/iu.test(entry.sql),
 				),
 			);
 		} finally {
