@@ -154,7 +154,7 @@ describe("站点外观设置", () => {
 	test("normalizeAiSettingsInput 支持 OpenAI 兼容接口配置", () => {
 		const normalized = normalizeAiSettingsInput({
 			aiInternalEnabled: "1",
-			aiInternalBaseUrl: "https://api.openai.com/v1/",
+			aiInternalBaseUrl: "https://api.deepseek.com/",
 			aiInternalApiKey: "sk-internal",
 			aiInternalModel: "gpt-4.1-mini",
 			aiPublicEnabled: "true",
@@ -164,7 +164,7 @@ describe("站点外观设置", () => {
 		});
 
 		assert.equal(normalized.internal.enabled, true);
-		assert.equal(normalized.internal.baseUrl, "https://api.openai.com/v1");
+		assert.equal(normalized.internal.baseUrl, "https://api.deepseek.com");
 		assert.equal(normalized.internal.apiKey, "sk-internal");
 		assert.equal(normalized.internal.model, "gpt-4.1-mini");
 		assert.equal(normalized.public.enabled, true);
@@ -190,9 +190,9 @@ describe("站点外观设置", () => {
 			{
 				internal: {
 					enabled: true,
-					baseUrl: "https://api.openai.com/v1",
+					baseUrl: "https://api.deepseek.com",
 					apiKey: "sk-web-internal",
-					model: "gpt-4o-mini",
+					model: "deepseek-v4-flash",
 				},
 				public: {
 					enabled: true,

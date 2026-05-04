@@ -11,9 +11,9 @@ const originalFetch = globalThis.fetch;
 
 const endpoint: OpenAICompatibleEndpointConfig = {
 	enabled: true,
-	baseUrl: "https://api.openai.com/v1",
+	baseUrl: "https://api.deepseek.com",
 	apiKey: "sk-test",
-	model: "gpt-4o-mini",
+	model: "deepseek-v4-flash",
 };
 
 afterEach(() => {
@@ -24,10 +24,10 @@ describe("OpenAI 兼容接口", () => {
 	test("normalizeOpenAICompatibleBaseUrl 会规范化地址并移除尾斜杠", () => {
 		assert.equal(
 			normalizeOpenAICompatibleBaseUrl(
-				"https://api.openai.com/v1/",
+				"https://api.deepseek.com/",
 				"https://fallback.example.com/v1",
 			),
-			"https://api.openai.com/v1",
+			"https://api.deepseek.com",
 		);
 		assert.equal(
 			normalizeOpenAICompatibleBaseUrl(
@@ -79,13 +79,13 @@ describe("OpenAI 兼容接口", () => {
 
 		assert.equal(content, '{"ok":true}');
 		assert.equal(requests.length, 1);
-		assert.equal(requests[0].url, "https://api.openai.com/v1/chat/completions");
+		assert.equal(requests[0].url, "https://api.deepseek.com/chat/completions");
 		assert.equal(requests[0].init?.method, "POST");
 		const headers = new Headers(requests[0].init?.headers);
 		assert.equal(headers.get("authorization"), "Bearer sk-test");
 
 		const payload = JSON.parse(String(requests[0].init?.body));
-		assert.equal(payload.model, "gpt-4o-mini");
+		assert.equal(payload.model, "deepseek-v4-flash");
 		assert.equal(payload.messages.length, 2);
 		assert.deepEqual(payload.response_format, { type: "json_object" });
 	});

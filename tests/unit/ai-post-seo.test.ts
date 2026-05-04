@@ -11,9 +11,9 @@ const originalFetch = globalThis.fetch;
 
 const endpoint: OpenAICompatibleEndpointConfig = {
 	enabled: true,
-	baseUrl: "https://api.openai.com/v1",
+	baseUrl: "https://api.deepseek.com",
 	apiKey: "sk-internal",
-	model: "gpt-4o-mini",
+	model: "deepseek-v4-flash",
 };
 
 afterEach(() => {

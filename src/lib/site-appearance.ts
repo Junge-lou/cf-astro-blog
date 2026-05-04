@@ -155,15 +155,15 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 export const DEFAULT_AI_SETTINGS: AiSettings = {
 	internal: {
 		enabled: false,
-		baseUrl: "https://api.openai.com/v1",
+		baseUrl: "https://api.deepseek.com",
 		apiKey: "",
-		model: "gpt-4o-mini",
+		model: "deepseek-v4-flash",
 	},
 	public: {
 		enabled: false,
-		baseUrl: "https://api.openai.com/v1",
+		baseUrl: "https://api.deepseek.com",
 		apiKey: "",
-		model: "gpt-4o-mini",
+		model: "deepseek-v4-flash",
 	},
 };
 
