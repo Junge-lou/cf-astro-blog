@@ -932,7 +932,7 @@ function renderAppearancePage(options: {
 									class="form-input"
 									value="${escapeAttribute(aiSettings.internal.baseUrl)}"
 									maxlength="240"
-									placeholder="https://api.openai.com/v1"
+									placeholder="https://api.deepseek.com"
 								/>
 							</div>
 							<div class="form-group">
@@ -943,7 +943,7 @@ function renderAppearancePage(options: {
 									class="form-input"
 									value="${escapeAttribute(aiSettings.internal.model)}"
 									maxlength="120"
-									placeholder="gpt-4o-mini"
+									placeholder="deepseek-v4-flash"
 								/>
 							</div>
 						</div>
@@ -984,7 +984,7 @@ function renderAppearancePage(options: {
 									class="form-input"
 									value="${escapeAttribute(aiSettings.public.baseUrl)}"
 									maxlength="240"
-									placeholder="https://api.openai.com/v1"
+									placeholder="https://api.deepseek.com"
 								/>
 							</div>
 							<div class="form-group">
@@ -995,7 +995,7 @@ function renderAppearancePage(options: {
 									class="form-input"
 									value="${escapeAttribute(aiSettings.public.model)}"
 									maxlength="120"
-									placeholder="gpt-4o-mini"
+									placeholder="deepseek-v4-flash"
 								/>
 							</div>
 						</div>

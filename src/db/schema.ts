@@ -225,17 +225,17 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 		.default(false),
 	aiInternalBaseUrl: text("ai_internal_base_url")
 		.notNull()
-		.default("https://api.openai.com/v1"),
+		.default("https://api.deepseek.com"),
 	aiInternalApiKey: text("ai_internal_api_key").notNull().default(""),
-	aiInternalModel: text("ai_internal_model").notNull().default("gpt-4o-mini"),
+	aiInternalModel: text("ai_internal_model").notNull().default("deepseek-v4-flash"),
 	aiPublicEnabled: integer("ai_public_enabled", { mode: "boolean" })
 		.notNull()
 		.default(false),
 	aiPublicBaseUrl: text("ai_public_base_url")
 		.notNull()
-		.default("https://api.openai.com/v1"),
+		.default("https://api.deepseek.com"),
 	aiPublicApiKey: text("ai_public_api_key").notNull().default(""),
-	aiPublicModel: text("ai_public_model").notNull().default("gpt-4o-mini"),
+	aiPublicModel: text("ai_public_model").notNull().default("deepseek-v4-flash"),
 	mcpEnabled: integer("mcp_enabled", { mode: "boolean" })
 		.notNull()
 		.default(true),
