@@ -1341,10 +1341,11 @@ function initEditorDraft() {
 
 	if (!draft || !draft.values) {
 		syncDraftActionButtons({
-			showToolbar: false,
+			showToolbar: true,
 			showRestore: false,
 			showClear: false,
 		});
+		setDraftUiStatus("本地草稿已启用，输入内容后会自动保存");
 		return;
 	}
 
