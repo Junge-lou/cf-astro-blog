@@ -447,7 +447,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		<header class="entry-header">
 			<a href="/" class="entry-brand" aria-label="返回 Junge-lou's Blog 首页">
 				<img
-					src="![](https://typora-piclists.oss-cn-shenzhen.aliyuncs.com/img/20260509203423557.png)"
+					src="https://typora-piclists.oss-cn-shenzhen.aliyuncs.com/img/20260509203423557.png"
 					alt=""
 					class="entry-brand-logo"
 				/>
