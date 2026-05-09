@@ -5,75 +5,6 @@
 	const HOST_SELECTOR = "[data-comments-host]";
 	let disposeComments = () => {};
 
-	const resolveGiscusTheme = () => {
-		const currentTheme = document.documentElement.getAttribute("data-theme");
-
-		if (currentTheme === "dark") {
-			return "dark";
-		}
-
-		if (currentTheme === "light") {
-			return "light";
-		}
-
-		return window.matchMedia("(prefers-color-scheme: dark)").matches
-			? "dark"
-			: "light";
-	};
-
-	const syncGiscusTheme = () => {
-		const iframe = document.querySelector("iframe.giscus-frame");
-
-		if (!(iframe instanceof HTMLIFrameElement)) {
-			return;
-		}
-
-		iframe.contentWindow?.postMessage(
-			{
-				giscus: {
-					setConfig: {
-						theme: resolveGiscusTheme(),
-					},
-				},
-			},
-			"https://giscus.app",
-		);
-	};
-
-	const injectGiscus = (panel, host) => {
-		if (panel.dataset.commentsLoaded === "true") {
-			syncGiscusTheme();
-			return;
-		}
-
-		const script = document.createElement("script");
-		script.src = "https://giscus.app/client.js";
-		script.async = true;
-		script.crossOrigin = "anonymous";
-		script.setAttribute("data-repo", panel.dataset.commentsRepo || "");
-		script.setAttribute("data-repo-id", panel.dataset.commentsRepoId || "");
-		script.setAttribute("data-category", panel.dataset.commentsCategory || "");
-		script.setAttribute(
-			"data-category-id",
-			panel.dataset.commentsCategoryId || "",
-		);
-		script.setAttribute("data-mapping", panel.dataset.commentsMapping || "pathname");
-		script.setAttribute("data-strict", panel.dataset.commentsStrict || "0");
-		script.setAttribute(
-			"data-reactions-enabled",
-			panel.dataset.commentsReactionsEnabled || "1",
-		);
-		script.setAttribute(
-			"data-input-position",
-			panel.dataset.commentsInputPosition || "top",
-		);
-		script.setAttribute("data-lang", panel.dataset.commentsLang || "zh-CN");
-		script.setAttribute("data-theme", resolveGiscusTheme());
-		host.innerHTML = "";
-		host.appendChild(script);
-		panel.dataset.commentsLoaded = "true";
-	};
-
 	const injectMomo = (panel, host) => {
 		if (panel.dataset.commentsLoaded === "true") {
 			return;
@@ -146,26 +77,15 @@
 			setExpandedState(panel, isOpen);
 
 			if (isOpen && isReady) {
-				if (panel.dataset.commentsProvider === "momo") {
-					injectMomo(panel, host);
-				} else {
-					injectGiscus(panel, host);
-				}
+				injectMomo(panel, host);
 			}
 		};
-
-		const themeObserver = new MutationObserver(() => syncGiscusTheme());
-		themeObserver.observe(document.documentElement, {
-			attributes: true,
-			attributeFilter: ["data-theme"],
-		});
 
 		setExpandedState(panel, false);
 		toggle.addEventListener("click", handleToggle);
 
 		disposeComments = () => {
 			toggle.removeEventListener("click", handleToggle);
-			themeObserver.disconnect();
 		};
 	};
 

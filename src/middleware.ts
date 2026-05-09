@@ -105,8 +105,7 @@ function applySecurityHeaders(
 		const scriptSources = [
 			"'self'",
 			"'unsafe-inline'",
-			"https://giscus.app",
-			"https://challenges.cloudflare.com",
+						"https://challenges.cloudflare.com",
 			"https://static.cloudflareinsights.com",
 			"'wasm-unsafe-eval'",
 		];
@@ -119,11 +118,11 @@ function applySecurityHeaders(
 				"object-src 'none'",
 				"form-action 'self'",
 				`script-src ${scriptSources.join(" ")}`,
-				"style-src 'self' 'unsafe-inline' https://giscus.app",
+				"style-src 'self' 'unsafe-inline'",
 				"img-src 'self' data:  https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io",
 				"font-src 'self' data: https:",
-				"connect-src 'self' https://giscus.app https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun",
-				"frame-src 'self' https://giscus.app https://challenges.cloudflare.com",
+				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun",
+				"frame-src 'self' https://challenges.cloudflare.com",
 			].join("; "),
 		);
 	}

@@ -8,48 +8,19 @@ interface Props {
 
 const commentsConfig = siteConfig.comments;
 const { slug, title } = Astro.props as Props;
-const isGiscusReady =
-	commentsConfig.provider === "giscus" &&
-	Boolean(
-		commentsConfig.repo &&
-		commentsConfig.repoId &&
-		commentsConfig.category &&
-		commentsConfig.categoryId,
-	);
-const isMomoReady =
-	commentsConfig.provider === "momo" &&
-	Boolean(commentsConfig.apiUrl);
-const isCommentConfigReady = isGiscusReady || isMomoReady;
-const commentNote =
-	commentsConfig.provider === "momo"
-		? "评论会通过 momo 评论组件加载"
-		: "评论会通过 GitHub Discussions 加载";
+const isMomoReady = Boolean(commentsConfig.apiUrl);
 const momoSlugId = `blog/${slug}`;
 ---
 
 <section
 	class="comments-panel"
 	data-comments-panel
-	data-comments-ready={isCommentConfigReady ? "true" : "false"}
-	data-comments-provider={commentsConfig.provider}
-	data-comments-repo={commentsConfig.provider === "giscus" ? commentsConfig.repo : undefined}
-	data-comments-repo-id={commentsConfig.provider === "giscus" ? commentsConfig.repoId : undefined}
-	data-comments-category={commentsConfig.provider === "giscus" ? commentsConfig.category : undefined}
-	data-comments-category-id={commentsConfig.provider === "giscus" ? commentsConfig.categoryId : undefined}
-	data-comments-mapping={commentsConfig.provider === "giscus" ? commentsConfig.mapping : undefined}
-	data-comments-strict={
-		commentsConfig.provider === "giscus" && commentsConfig.strict ? "1" : "0"
-	}
-	data-comments-reactions-enabled={
-		commentsConfig.provider === "giscus" && commentsConfig.reactionsEnabled ? "1" : "0"
-	}
-	data-comments-input-position={commentsConfig.provider === "giscus" ? commentsConfig.inputPosition : undefined}
+	data-comments-ready={isMomoReady ? "true" : "false"}
+	data-comments-provider="momo"
 	data-comments-lang={commentsConfig.lang}
-	data-comments-api-url={
-		commentsConfig.provider === "momo" ? commentsConfig.apiUrl : undefined
-	}
-	data-comments-title={commentsConfig.provider === "momo" ? title : undefined}
-	data-comments-slug-id={commentsConfig.provider === "momo" ? momoSlugId : undefined}
+	data-comments-api-url={commentsConfig.apiUrl}
+	data-comments-title={title}
+	data-comments-slug-id={momoSlugId}
 >
 	<button
 		class="comments-toggle"
@@ -71,20 +42,17 @@ const momoSlugId = `blog/${slug}`;
 		hidden
 		data-comments-body
 	>
-		{isCommentConfigReady ? (
+		{isMomoReady ? (
 			<div class="comments-surface">
 				<div class="comments-note">
-					<p>{commentNote}</p>
+					<p>评论会通过 momo 评论组件加载</p>
 				</div>
 				<div class="comments-host" data-comments-host></div>
 			</div>
 		) : (
 			<div class="comments-empty-state">
 				<p>评论组件已经接好了</p>
-				<p>请配置正确的评论提供商和必要参数后再使用评论功能</p>
-				{commentsConfig.provider === "giscus" ? (
-					<p>当前仓库：{commentsConfig.repo}</p>
-				) : null}
+				<p>请配置正确的评论参数后再使用评论功能</p>
 			</div>
 		)}
 	</div>

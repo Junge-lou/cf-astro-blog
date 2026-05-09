@@ -17,21 +17,21 @@ describe("评论组件保护", () => {
 		assert.match(commentsComponentSource, /article-opaque-mode/u);
 	});
 
-	test("评论脚本会按展开时机懒加载 giscus 并同步主题", async () => {
+	test("评论脚本会按展开时机懒加载 momo 组件", async () => {
 		const commentsScriptSource = await readFile("public/comments.js", "utf8");
 
-		assert.match(commentsScriptSource, /giscus\.app\/client\.js/u);
+		assert.match(commentsScriptSource, /momo-comment\.min\.js/u);
 		assert.match(commentsScriptSource, /commentsLoaded/u);
-		assert.match(commentsScriptSource, /MutationObserver/u);
 		assert.match(commentsScriptSource, /astro:page-load/u);
 	});
 
-	test("站点配置会预留 momo 评论配置", async () => {
+	test("站点配置只保留 momo 评论配置", async () => {
 		const typesSource = await readFile("src/lib/types.ts", "utf8");
 
 		assert.match(typesSource, /comments:/u);
-		assert.match(typesSource, /provider:\s*"momo"/u);
 		assert.match(typesSource, /lang:\s*"zh-CN"/u);
 		assert.match(typesSource, /apiUrl:\s*"https:\/\/comments\.ffaff\.fun"/u);
+		assert.doesNotMatch(typesSource, /giscus/u);
+		assert.doesNotMatch(typesSource, /provider/u);
 	});
 });

@@ -1,3 +1,8 @@
+export interface CommentConfig {
+	lang: string;
+	apiUrl: string;
+}
+
 export interface SiteConfig {
 	name: string;
 	url: string;
@@ -7,30 +12,6 @@ export interface SiteConfig {
 	comments: CommentConfig;
 }
 
-export interface CommentConfigBase {
-	provider: "giscus" | "momo";
-	lang: string;
-}
-
-export interface GiscusCommentConfig extends CommentConfigBase {
-	provider: "giscus";
-	repo: string;
-	repoId: string;
-	category: string;
-	categoryId: string;
-	mapping: "pathname" | "url" | "title" | "og:title";
-	strict: boolean;
-	reactionsEnabled: boolean;
-	inputPosition: "top" | "bottom";
-}
-
-export interface MomoCommentConfig extends CommentConfigBase {
-	provider: "momo";
-	apiUrl: string;
-}
-
-export type CommentConfig = GiscusCommentConfig | MomoCommentConfig;
-
 export const siteConfig: SiteConfig = {
 	name: "Kiwi 的博客",
 	url: "https://ffaff.fun",
@@ -38,7 +19,6 @@ export const siteConfig: SiteConfig = {
 	author: "KIWI",
 	language: "zh-CN",
 	comments: {
-		provider: "momo",
 		lang: "zh-CN",
 		apiUrl: "https://comments.ffaff.fun",
 	},
