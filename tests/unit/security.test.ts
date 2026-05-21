@@ -173,4 +173,130 @@ describe("安全工具", () => {
 		assert.equal(sanitizeCanonicalUrl("mailto:admin@example.com"), null);
 		assert.equal(sanitizeCanonicalUrl("javascript:alert(1)"), null);
 	});
+
+	// ── Typora 语法支持 ────────────────────────────────────────────────────
+
+	test("renderSafeMarkdown 支持 Typora 高亮语法 ==text==", async () => {
+		const html = await renderSafeMarkdown("这是一段 ==重要内容== 文本。");
+
+		assert.match(
+			html,
+			/<mark class="prose-mark">重要内容<\/mark>/u,
+		);
+	});
+
+	test("renderSafeMarkdown 会转义高亮语法中的危险标签", async () => {
+		const html = await renderSafeMarkdown(
+			"==<img src=x onerror=alert(1)>==",
+		);
+
+		assert.ok(!html.includes("<img"));
+		assert.match(html, /&lt;img/u);
+	});
+
+	test("renderSafeMarkdown 支持 Typora 下划线语法 ++text++", async () => {
+		const html = await renderSafeMarkdown("这是 ++下划线文本++ 示例。");
+
+		assert.match(
+			html,
+			/<u class="prose-underline">下划线文本<\/u>/u,
+		);
+	});
+
+	test("renderSafeMarkdown 支持 Typora 下标语法 ~text~", async () => {
+		const html = await renderSafeMarkdown("H~2~O 是水的化学式。");
+
+		assert.match(html, /H<sub class="prose-sub">2<\/sub>O/u);
+	});
+
+	test("renderSafeMarkdown 不与 GFM 删除线 ~~text~~ 冲突", async () => {
+		const html = await renderSafeMarkdown("这是~~删除线~~，不是~下标~。");
+
+		assert.match(html, /<del>删除线<\/del>/u);
+		assert.match(html, /<sub class="prose-sub">下标<\/sub>/u);
+	});
+
+	test("renderSafeMarkdown 支持 Typora 上标语法 ^text^", async () => {
+		const html = await renderSafeMarkdown("面积单位：m^2^。");
+
+		assert.match(html, /m<sup class="prose-sup">2<\/sup>/u);
+	});
+
+	test("renderSafeMarkdown 支持 Typora emoji 语法 :emoji:", async () => {
+		const html = await renderSafeMarkdown("这是一条 :smile: 消息 :heart:。");
+
+		assert.ok(html.includes("😄"));
+		assert.ok(html.includes("❤️"));
+	});
+
+	test("renderSafeMarkdown 支持脚注语法 [^id]", async () => {
+		const html = await renderSafeMarkdown(
+			"这是一段带有脚注的文本[^1]。\n\n[^1]: 这是脚注的内容。",
+		);
+
+		assert.match(html, /<sup class="prose-footnote-ref"/u);
+		assert.match(html, /href="#fn-1"/u);
+		assert.match(html, /<section class="prose-footnotes">/u);
+		assert.match(html, /<li id="fn-1">/u);
+		assert.match(html, /这是脚注的内容/u);
+	});
+
+	test("renderSafeMarkdown 支持 [TOC] 标记（会被移除）", async () => {
+		const html = await renderSafeMarkdown(
+			"[TOC]\n\n# 标题\n\n正文内容",
+		);
+
+		assert.ok(!html.includes("[TOC]"));
+		assert.match(html, /<h1 id="标题">标题<\/h1>/u);
+		assert.match(html, /正文内容/u);
+	});
+
+	test("renderSafeMarkdown 支持数学公式 $...$", async () => {
+		const html = await renderSafeMarkdown("公式：$E = mc^2$");
+
+		assert.ok(html.includes("katex"));
+		assert.match(html, /E/u);
+		assert.match(html, /mc/u);
+	});
+
+	test("renderSafeMarkdown 支持独立数学公式 $$...$$", async () => {
+		const html = await renderSafeMarkdown("$$\n\\int_a^b f(x)\\,dx\n$$");
+
+		assert.ok(html.includes("katex-display"));
+		assert.ok(html.includes("\\int"));
+	});
+
+	test("renderSafeMarkdown 在 Typora 语法出错时不会崩溃", async () => {
+		// 同时使用多种 Typora 语法，确保不会因边缘情况崩溃
+		const html = await renderSafeMarkdown(
+			[
+				"# 综合测试",
+				"",
+				"这是一段 ==高亮== 和 ++下划线++ 的文本。",
+				"",
+				"H~2~O 和 m^2^。",
+				":smile: :heart:",
+				"",
+				"脚注示例[^life]：",
+				"",
+				"[^life]: 生命、宇宙以及一切。",
+				"",
+				"公式：$a^2 + b^2 = c^2$",
+				"",
+				"[details=\"提示\"]",
+				"这是折叠内容",
+				"[/details]",
+			].join("\n"),
+		);
+
+		assert.match(html, /<mark class="prose-mark">高亮<\/mark>/u);
+		assert.match(html, /<u class="prose-underline">下划线<\/u>/u);
+		assert.match(html, /<sub class="prose-sub">2<\/sub>/u);
+		assert.match(html, /<sup class="prose-sup">2<\/sup>/u);
+		assert.ok(html.includes("😄"));
+		assert.ok(html.includes("❤️"));
+		assert.match(html, /<section class="prose-footnotes">/u);
+		assert.ok(html.includes("katex"));
+		assert.match(html, /<details class="prose-details">/u);
+	});
 });

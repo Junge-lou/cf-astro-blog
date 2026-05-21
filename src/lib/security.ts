@@ -1,4 +1,6 @@
 import { marked, type Tokens } from "marked";
+import katex from "katex";
+import { emojify } from "node-emoji";
 
 const POST_STATUS_VALUES = ["draft", "published", "scheduled"] as const;
 const SAFE_HTTP_URL_PROTOCOLS = new Set(["http:", "https:"]);
@@ -219,6 +221,47 @@ interface SpoilerShortcodeBlock {
 	content: string;
 }
 
+interface MathBlock {
+	placeholder: string;
+	content: string;
+	display: boolean;
+}
+
+interface HighlightBlock {
+	placeholder: string;
+	content: string;
+}
+
+interface UnderlineBlock {
+	placeholder: string;
+	content: string;
+}
+
+interface SubscriptBlock {
+	placeholder: string;
+	content: string;
+}
+
+interface SuperscriptBlock {
+	placeholder: string;
+	content: string;
+}
+
+interface EmojiBlock {
+	placeholder: string;
+	content: string;
+}
+
+interface FootnoteRef {
+	placeholder: string;
+	id: string;
+}
+
+interface FootnoteDef {
+	id: string;
+	content: string;
+}
+
 export interface MarkdownTocItem {
 	id: string;
 	text: string;
@@ -302,6 +345,194 @@ function extractSpoilerShortcodes(markdown: string): {
 		markdown: markdownWithPlaceholders,
 		blocks,
 	};
+}
+
+function extractDisplayMath(markdown: string): {
+	markdown: string;
+	blocks: MathBlock[];
+} {
+	const pattern = /\$\$([\s\S]*?)\$\$/g;
+	let index = 0;
+	const blocks: MathBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const placeholder = `@@MATH_DISPLAY_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: String(content ?? "").trim(),
+			display: true,
+		});
+		index += 1;
+		return `\n\n${placeholder}\n\n`;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractInlineMath(markdown: string): {
+	markdown: string;
+	blocks: MathBlock[];
+} {
+	const pattern = /(?<!\$)\$([^$\n]+?)\$(?!\$)/g;
+	let index = 0;
+	const blocks: MathBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const placeholder = `@@MATH_INLINE_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: String(content ?? "").trim(),
+			display: false,
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractHighlight(markdown: string): {
+	markdown: string;
+	blocks: HighlightBlock[];
+} {
+	const pattern = /==([\s\S]*?)==/g;
+	let index = 0;
+	const blocks: HighlightBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const placeholder = `@@HIGHLIGHT_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: String(content ?? ""),
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractUnderline(markdown: string): {
+	markdown: string;
+	blocks: UnderlineBlock[];
+} {
+	const pattern = /\+\+([\s\S]*?)\+\+/g;
+	let index = 0;
+	const blocks: UnderlineBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const placeholder = `@@UNDERLINE_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: String(content ?? ""),
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractSubscript(markdown: string): {
+	markdown: string;
+	blocks: SubscriptBlock[];
+} {
+	// 单波浪线 ~text~ 作为下标，与 ~~strikethrough~~ 区分
+	const pattern = /(?<![~])~([^~\n]+)~(?!~)/g;
+	let index = 0;
+	const blocks: SubscriptBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const placeholder = `@@SUBSCRIPT_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: String(content ?? ""),
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractSuperscript(markdown: string): {
+	markdown: string;
+	blocks: SuperscriptBlock[];
+} {
+	const pattern = /\^([^^\n]+?)\^/g;
+	let index = 0;
+	const blocks: SuperscriptBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const placeholder = `@@SUPERSCRIPT_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: String(content ?? ""),
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractEmoji(markdown: string): {
+	markdown: string;
+	blocks: EmojiBlock[];
+} {
+	const pattern = /(:[a-zA-Z0-9_+\-]+:)/g;
+	let index = 0;
+	const blocks: EmojiBlock[] = [];
+
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, code) => {
+		const placeholder = `@@EMOJI_${index}@@`;
+		blocks.push({
+			placeholder,
+			content: code,
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, blocks };
+}
+
+function extractFootnotes(markdown: string): {
+	markdown: string;
+	refs: FootnoteRef[];
+	defs: FootnoteDef[];
+} {
+	let index = 0;
+	const refs: FootnoteRef[] = [];
+	const defs: FootnoteDef[] = [];
+
+	// 提取脚注定义 [^id]: content
+	const defPattern = /^\[\^([^\]]+)\]:\s+([\s\S]*?)(?=\n\n|\n\[\^|$)/gm;
+	const markdownWithoutDefs = markdown.replace(defPattern, (_match, id, content) => {
+		defs.push({
+			id: String(id ?? "").trim(),
+			content: String(content ?? "").trim(),
+		});
+		return "";
+	});
+
+	// 提取脚注引用 [^id]
+	const refPattern = /\[\^([^\]]+)\]/g;
+	const markdownWithPlaceholders = markdownWithoutDefs.replace(refPattern, (_match, id) => {
+		const placeholder = `@@FOOTNOTE_REF_${index}@@`;
+		refs.push({
+			placeholder,
+			id: String(id ?? "").trim(),
+		});
+		index += 1;
+		return placeholder;
+	});
+
+	return { markdown: markdownWithPlaceholders, refs, defs };
+}
+
+function removeTocMarkers(markdown: string): string {
+	return markdown.replaceAll(/^\[TOC\]\s*$/gim, "");
 }
 
 function escapeRegExp(value: string): string {
@@ -427,8 +658,34 @@ async function renderSafeMarkdownInternal(
 		return `<h${level} id="${escapeAttribute(headingId)}">${innerHtml}</h${level}>`;
 	};
 
-	const extracted = extractDetailsShortcodes(markdown);
-	const extractedSpoilers = extractSpoilerShortcodes(extracted.markdown);
+	// ── Typora 语法预处理管线 ──────────────────────────────────────────────
+	// 顺序：先处理 $$ 再处理 $（避免冲突），然后处理 Typora 扩展语法
+
+	// 1. 移除 [TOC] 标记（TOC 由外部独立生成）
+	const noToc = removeTocMarkers(markdown);
+
+	// 2. 数学公式（先 display math 再 inline math）
+	const extractedDisplayMath = extractDisplayMath(noToc);
+	const extractedInlineMath = extractInlineMath(extractedDisplayMath.markdown);
+
+	// 3. Typora 行内扩展语法
+	const extractedHighlight = extractHighlight(extractedInlineMath.markdown);
+	const extractedUnderline = extractUnderline(extractedHighlight.markdown);
+	// 下标（~text~）放在末尾，避免与 GFM ~~strikethrough~~ 冲突
+	const extractedSuperscript = extractSuperscript(extractedUnderline.markdown);
+	const extractedSubscript = extractSubscript(extractedSuperscript.markdown);
+
+	// 4. Emoji
+	const extractedEmoji = extractEmoji(extractedSubscript.markdown);
+
+	// 5. 脚注
+	const extractedFootnotes = extractFootnotes(extractedEmoji.markdown);
+
+	// 6. 现有的短代码语法
+	const extractedDetails = extractDetailsShortcodes(extractedFootnotes.markdown);
+	const extractedSpoilers = extractSpoilerShortcodes(extractedDetails.markdown);
+
+	// ── marked 渲染 ──────────────────────────────────────────────────────
 	const rendered = marked.parse(extractedSpoilers.markdown, {
 		gfm: true,
 		breaks: true,
@@ -436,13 +693,17 @@ async function renderSafeMarkdownInternal(
 	});
 	let html = typeof rendered === "string" ? rendered : await rendered;
 
+	// ── 占位符替换 ────────────────────────────────────────────────────────
+
+	// 替换 spoiler
 	for (const block of extractedSpoilers.blocks) {
 		const spoilerHtml = `<span class="prose-spoiler">${escapeHtml(block.content).replaceAll("\n", "<br>")}</span>`;
 		const placeholderPattern = escapeRegExp(block.placeholder);
 		html = html.replaceAll(new RegExp(placeholderPattern, "gu"), spoilerHtml);
 	}
 
-	for (const block of extracted.blocks) {
+	// 替换 details
+	for (const block of extractedDetails.blocks) {
 		const innerHtml = await renderSafeMarkdownInternal(
 			block.content,
 			depth + 1,
@@ -456,6 +717,113 @@ async function renderSafeMarkdownInternal(
 			detailsHtml,
 		);
 		html = html.replaceAll(new RegExp(placeholderPattern, "gu"), detailsHtml);
+	}
+
+	// 替换数学公式
+	for (const block of extractedDisplayMath.blocks) {
+		try {
+			const mathHtml = katex.renderToString(block.content, {
+				displayMode: true,
+				throwOnError: false,
+				trust: false,
+			});
+			html = html.replaceAll(escapeRegExp(block.placeholder), mathHtml);
+		} catch {
+			html = html.replaceAll(
+				escapeRegExp(block.placeholder),
+				escapeHtml(block.content),
+			);
+		}
+	}
+
+	for (const block of extractedInlineMath.blocks) {
+		try {
+			const mathHtml = katex.renderToString(block.content, {
+				displayMode: false,
+				throwOnError: false,
+				trust: false,
+			});
+			html = html.replaceAll(escapeRegExp(block.placeholder), mathHtml);
+		} catch {
+			html = html.replaceAll(
+				escapeRegExp(block.placeholder),
+				escapeHtml(block.content),
+			);
+		}
+	}
+
+	// 替换 highlight (==text== → <mark>)
+	for (const block of extractedHighlight.blocks) {
+		const markHtml = `<mark class="prose-mark">${escapeHtml(block.content)}</mark>`;
+		html = html.replaceAll(escapeRegExp(block.placeholder), markHtml);
+	}
+
+	// 替换 underline (++text++ → <u>)
+	for (const block of extractedUnderline.blocks) {
+		const uHtml = `<u class="prose-underline">${escapeHtml(block.content)}</u>`;
+		html = html.replaceAll(escapeRegExp(block.placeholder), uHtml);
+	}
+
+	// 替换 subscript (~text~ → <sub>)
+	for (const block of extractedSubscript.blocks) {
+		const subHtml = `<sub class="prose-sub">${escapeHtml(block.content)}</sub>`;
+		html = html.replaceAll(escapeRegExp(block.placeholder), subHtml);
+	}
+
+	// 替换 superscript (^text^ → <sup>)
+	for (const block of extractedSuperscript.blocks) {
+		const supHtml = `<sup class="prose-sup">${escapeHtml(block.content)}</sup>`;
+		html = html.replaceAll(escapeRegExp(block.placeholder), supHtml);
+	}
+
+	// 替换 emoji (:emoji: → 🎉)
+	for (const block of extractedEmoji.blocks) {
+		const emojiHtml = emojify(block.content);
+		html = html.replaceAll(
+			escapeRegExp(block.placeholder),
+			emojiHtml,
+		);
+	}
+
+	// 替换脚注引用并追加脚注列表
+	if (extractedFootnotes.refs.length > 0 || extractedFootnotes.defs.length > 0) {
+		const footnoteHtmlParts: string[] = [];
+
+		for (const ref of extractedFootnotes.refs) {
+			const defIndex = extractedFootnotes.defs.findIndex(
+				(d) => d.id === ref.id,
+			);
+			if (defIndex !== -1) {
+				const fnNum = defIndex + 1;
+				const fnLink = `<sup class="prose-footnote-ref" id="fnref-${escapeAttribute(ref.id)}"><a href="#fn-${escapeAttribute(ref.id)}">${fnNum}</a></sup>`;
+				html = html.replaceAll(escapeRegExp(ref.placeholder), fnLink);
+			} else {
+				html = html.replaceAll(
+					escapeRegExp(ref.placeholder),
+					`[${escapeHtml(ref.id)}]`,
+				);
+			}
+		}
+
+		if (extractedFootnotes.defs.length > 0) {
+			footnoteHtmlParts.push(
+				'<section class="prose-footnotes"><ol>',
+			);
+			for (const def of extractedFootnotes.defs) {
+				const renderedDef = await renderSafeMarkdownInternal(
+					def.content,
+					depth + 1,
+					state,
+				);
+				const fnNum = extractedFootnotes.defs.indexOf(def) + 1;
+				footnoteHtmlParts.push(
+					`<li id="fn-${escapeAttribute(def.id)}">${renderedDef} <a class="prose-footnote-backref" href="#fnref-${escapeAttribute(def.id)}" aria-label="返回">↩</a></li>`,
+				);
+			}
+			footnoteHtmlParts.push("</ol></section>");
+		}
+
+		html += footnoteHtmlParts.join("");
 	}
 
 	return html;

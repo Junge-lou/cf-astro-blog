@@ -43,12 +43,17 @@ function applySecurityHeaders(pathname: string, response: Response) {
 				"frame-ancestors 'none'",
 				"object-src 'none'",
 				"form-action 'self'",
+				// ✅ 视频：新增 video-src 支持 MP4 直链 + B站/腾讯视频
+    			"video-src 'self' https: data:",
+
+    // ✅ 媒体（音频）
+   				"media-src 'self' https: data:",
 				"script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
 				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data: https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com",
+				"img-src 'self' data: https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com",
 				"font-src 'self'",
 				"connect-src 'self' https://challenges.cloudflare.com",
-				"frame-src https://challenges.cloudflare.com",
+				"frame-src https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com",
 			].join("; "),
 		);
 		return;

@@ -6,6 +6,7 @@
 @import "@fontsource/space-grotesk/700.css";
 @import "lxgw-wenkai-webfont/lxgwwenkai-regular.css";
 @import "lxgw-wenkai-webfont/lxgwwenkai-bold.css";
+@import "katex/dist/katex.min.css";
 
 :root {
 	--color-bg: #edf3f8;
@@ -877,25 +878,94 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	background: rgba(10, 132, 255, 0.12);
 }
 
-.prose pre {
-	padding: 0.9rem 1rem 1rem;
-	border-radius: calc(var(--radius-card) - 2px);
-	background:
-		linear-gradient(
-			180deg,
-			rgba(255, 255, 255, 0.08) 0,
-			rgba(255, 255, 255, 0.03) 20%,
-			rgba(0, 0, 0, 0.16) 100%
-		),
-		var(--code-window-bg);
-	border: 1px solid var(--code-window-border);
-	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.08),
-		0 18px 38px -34px rgba(8, 18, 34, 0.82);
-	color: var(--code-window-text);
-	scrollbar-color: rgba(214, 229, 255, 0.34) rgba(255, 255, 255, 0.08);
-	overflow-x: auto;
+/* ── Typora 扩展语法 ──────────────────────────────────────────────────── */
+
+.prose mark.prose-mark {
+	background: linear-gradient(
+		120deg,
+		rgba(255, 213, 0, 0.25),
+		rgba(255, 183, 0, 0.32)
+	);
+	color: inherit;
+	padding: 0.08em 0.28em;
+	border-radius: 0.28em;
 }
+
+.prose u.prose-underline {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	text-decoration-color: var(--color-accent);
+	text-decoration-thickness: 2px;
+}
+
+.prose sub.prose-sub,
+.prose sup.prose-sup {
+	font-size: 0.75em;
+	line-height: 1;
+}
+
+.prose sup.prose-footnote-ref {
+	font-size: 0.75em;
+	line-height: 1;
+}
+
+.prose sup.prose-footnote-ref a {
+	color: var(--color-accent);
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.prose sup.prose-footnote-ref a:hover {
+	text-decoration: underline;
+}
+
+.prose .prose-footnotes {
+	margin-top: 2.5rem;
+	padding-top: 1.25rem;
+	border-top: 1px solid var(--color-border);
+	font-size: 0.88rem;
+	color: var(--color-text-muted);
+}
+
+.prose .prose-footnotes ol {
+	padding-left: 1.25rem;
+}
+
+.prose .prose-footnotes li {
+	margin-bottom: 0.6rem;
+}
+
+.prose .prose-footnotes li:target {
+	background: rgba(10, 132, 255, 0.08);
+	border-radius: var(--radius-inner);
+	padding: 0.3rem 0.6rem;
+}
+
+.prose .prose-footnote-backref {
+	color: var(--color-accent);
+	text-decoration: none;
+	font-size: 0.85em;
+	margin-left: 0.3em;
+}
+
+.prose .prose-footnote-backref:hover {
+	text-decoration: underline;
+}
+
+/* KaTeX 样式微调 */
+.prose .katex-display {
+	margin: 1.25rem 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding: 0.25rem 0;
+}
+
+.prose .katex {
+	font-size: 1.08em;
+	line-height: 1.4;
+}
+
+.prose pre {
 
 .prose .prose-code-block {
 	margin-bottom: 1.35rem;
