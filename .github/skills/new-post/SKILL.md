@@ -10,6 +10,9 @@ argument-hint: 'Provide the article title to generate frontmatter'
 - User says "create a new post" / "write an article" / "新建文章" / "新建博客" / "写文章" / "写博客"
 - User provides an article title and wants a `.md` file created in `content/posts/`
 - User wants proper YAML frontmatter matching the project's blog schema
+- User asks to add/check/fix frontmatter for existing `.md` files in `content/posts/`
+- User asks to migrate old-format frontmatter (with `pubDate`, `draft`, `pinTop`, `slugId`) to the standard 15-field format
+- User says "全部" when asked which files to add frontmatter to — meaning ALL files without valid frontmatter
 
 ## Procedure
 
@@ -99,6 +102,53 @@ Write the rest of your content here.
 Remind the user of the sync workflow:
 - **Local preview**: `npm run sync:posts:local` syncs `content/posts/*.md` → local D1, then `npm run dev`
 - **Deploy**: `npm run deploy` syncs to remote D1, builds, and deploys to Cloudflare
+
+## Validate Existing Frontmatter
+
+Use when: user asks to add frontmatter to existing `.md` files, check/fix frontmatter consistency across all posts, or migrate old-format frontmatter.
+
+### Procedure
+
+#### 1. Scan All Files
+Read the first 25 lines of every `.md` file in `content/posts/` to detect:
+- **No frontmatter** — file starts with `#` or content, not `---`
+- **Old format** — frontmatter contains fields like `pubDate`, `description`, `draft`, `pinTop`, `slugId`, `image`
+- **Missing fields** — frontmatter exists but lacks some of the 15 standard fields
+
+#### 2. Old Format → Standard Mapping
+
+| Old field | Standard field | Conversion rule |
+|-----------|---------------|----------------|
+| `title` | `title` | Keep as-is |
+| `pubDate` | `publishedAt` | Preserve value, wrap in quotes |
+| `description` | `excerpt` | Preserve value |
+| `category` | `category` | Keep as-is |
+| `image` | *(drop)* | No equivalent in new format |
+| `draft: false` | `status: published` | Invert boolean → status string |
+| `draft: true` | `status: draft` | Invert boolean → status string |
+| `pinTop` | *(drop)* | Use `isPinned: false, pinnedOrder: 100` instead |
+| `slugId` | `slug` | Extract last path segment (e.g. `momo/yuanli/photonic-bandgap` → `photonic-bandgap`) |
+| `tags` (list format) | `tags` (inline array) | Convert `- item` list to `[item1, item2]` inline format |
+
+#### 3. Add Missing Standard Fields
+If any of the 15 standard fields are missing, add them with defaults:
+- `publishedAt` → `''` (or migrate from old `pubDate`)
+- `excerpt` → `''` (or migrate from old `description`)
+- `authorName` → `Admin`
+- `category` → `''` (or keep existing)
+- `tags` → `[]` (or keep existing)
+- `metaTitle`, `metaDescription`, `metaKeywords`, `canonicalUrl`, `featuredImageKey` → `''`
+- `isPinned` → `false`
+- `pinnedOrder` → `100`
+
+#### 4. Verify After Changes
+Re-read each modified file to confirm frontmatter is parseable and contains all 15 fields.
+
+#### 5. Remind Sync
+After validation/fix, remind the user:
+```
+npm run sync:posts:local
+```
 
 ## Frontmatter Field Reference
 

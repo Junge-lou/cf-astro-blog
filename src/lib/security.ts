@@ -1,6 +1,7 @@
 import { marked, type Tokens } from "marked";
 import katex from "katex";
 import { emojify } from "node-emoji";
+import sanitizeHtml from "sanitize-html";
 
 const POST_STATUS_VALUES = ["draft", "published", "scheduled"] as const;
 const SAFE_HTTP_URL_PROTOCOLS = new Set(["http:", "https:"]);
@@ -271,6 +272,7 @@ export interface MarkdownTocItem {
 interface MarkdownRenderState {
 	toc: MarkdownTocItem[];
 	headingSlugCount: Map<string, number>;
+	footnoteDefs: { id: string; content: string }[];
 }
 
 function extractDetailsShortcodes(markdown: string): {
@@ -536,8 +538,9 @@ function removeTocMarkers(markdown: string): string {
 }
 
 // ── 允许的安全 HTML 标签白名单 ─────────────────────────────────────────────
-// 仅允许不影响页面安全且 Typora 常用的标签通过
-const SAFE_HTML_TAGS = new Set([
+// 使用 sanitize-html 库进行安全 HTML 清洗，替代原有的正则实现
+// 该库基于 htmlparser2 进行真正的 HTML 解析，能够正确处理各种边界情况
+const SAFE_HTML_TAGS = [
 	"video",
 	"audio",
 	"source",
@@ -563,9 +566,9 @@ const SAFE_HTML_TAGS = new Set([
 	"data",
 	"time",
 	"wbr",
-]);
+];
 
-const SAFE_HTML_ATTRS = new Set([
+const SAFE_ATTRS = [
 	"src",
 	"href",
 	"alt",
@@ -588,7 +591,7 @@ const SAFE_HTML_ATTRS = new Set([
 	"loading",
 	"decoding",
 	"crossorigin",
-	"data-",
+	"data-*",
 	"srcdoc",
 	"scrolling",
 	"marginwidth",
@@ -604,70 +607,28 @@ const SAFE_HTML_ATTRS = new Set([
 	"hidden",
 	"tabindex",
 	"role",
-	"aria-",
-]);
-
-function isSafeHtmlAttribute(name: string): boolean {
-	const lower = name.toLowerCase();
-	if (lower.startsWith("on")) {
-		return false;
-	}
-	for (const allowed of SAFE_HTML_ATTRS) {
-		if (allowed.endsWith("-")) {
-			if (lower.startsWith(allowed)) {
-				return true;
-			}
-		} else if (lower === allowed) {
-			return true;
-		}
-	}
-	return false;
-}
+	"aria-*",
+];
 
 function sanitizeHtmlTag(html: string): string {
-	// 只处理 <tag ...> 和 </tag> 形式的标签
-	return html.replaceAll(
-		/<\/?([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g,
-		(full: string, tagName: string, attrs: string) => {
-			const lowerTag = tagName.toLowerCase();
-			if (!SAFE_HTML_TAGS.has(lowerTag)) {
-				// 不安全的标签 → 转义全部
-				return escapeHtml(full);
-			}
-			// 安全标签 → 过滤属性
-			const safeAttrs = attrs.replaceAll(
-				/([a-zA-Z][a-zA-Z0-9-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g,
-				(
-					_attrFull: string,
-					attrName: string,
-					dq: string,
-					sq: string,
-					uq: string,
-				) => {
-					const value = escapeAttribute(dq ?? sq ?? uq ?? "");
-					if (isSafeHtmlAttribute(attrName)) {
-						return ` ${attrName}="${value}"`;
-					}
-					return "";
-				},
-			);
-			// 移除剩余的不安全布尔属性
-			const cleanAttrs = safeAttrs.replaceAll(
-				/\s+[a-zA-Z][a-zA-Z0-9-]*(?:\s*=\s*"?\s*)?(?=\s|\/?>)/g,
-				(m: string) => {
-					const name = m.trim().split("=")[0]?.toLowerCase() ?? "";
-					if (isSafeHtmlAttribute(name)) {
-						return m;
-					}
-					return "";
-				},
-			);
-			if (full.startsWith("</")) {
-				return `</${lowerTag}>`;
-			}
-			return `<${lowerTag}${cleanAttrs}>`.replace(/\s+>/g, ">");
+	return sanitizeHtml(html, {
+		allowedTags: SAFE_HTML_TAGS,
+		allowedAttributes: {
+			"*": SAFE_ATTRS,
 		},
-	);
+		// 协议白名单——阻止 javascript:, data:, vbscript: 等危险协议
+		allowedSchemes: ["http", "https", "mailto"],
+		allowedSchemesAppliedToAttributes: [
+			"src",
+			"href",
+			"poster",
+			"action",
+		],
+		// 不安全的标签转义为文本（而非丢弃），与原行为一致
+		disallowedTagsMode: "escape",
+		// 保持原行为：不对 style 属性值进行 CSS 解析清洗
+		parseStyleAttributes: false,
+	});
 }
 
 // ── Callouts（GitHub 风格的提示块）────────────────────────────────────────
@@ -784,9 +745,29 @@ export async function renderSafeMarkdownWithToc(markdown: string): Promise<{
 	const state: MarkdownRenderState = {
 		toc: [],
 		headingSlugCount: new Map<string, number>(),
+		footnoteDefs: [],
 	};
 
-	const html = await renderSafeMarkdownInternal(markdown, 0, state);
+	let html = await renderSafeMarkdownInternal(markdown, 0, state);
+
+	// 在所有递归渲染完成后，统一在末尾渲染脚注列表
+	if (state.footnoteDefs.length > 0) {
+		const footnoteHtmlParts: string[] = [
+			'<section class="prose-footnotes"><ol>',
+		];
+		for (const def of state.footnoteDefs) {
+			const renderedDef = await renderSafeMarkdownInternal(
+				def.content,
+				1,
+				state,
+			);
+			footnoteHtmlParts.push(
+				`<li id="fn-${escapeAttribute(def.id)}">${renderedDef} <a class="prose-footnote-backref" href="#fnref-${escapeAttribute(def.id)}" aria-label="返回">↩</a></li>`,
+			);
+		}
+		footnoteHtmlParts.push("</ol></section>");
+		html += footnoteHtmlParts.join("");
+	}
 
 	return {
 		html,
@@ -1019,44 +1000,30 @@ async function renderSafeMarkdownInternal(
 		);
 	}
 
-	// 替换脚注引用并追加脚注列表
-	if (extractedFootnotes.refs.length > 0 || extractedFootnotes.defs.length > 0) {
-		const footnoteHtmlParts: string[] = [];
-
-		for (const ref of extractedFootnotes.refs) {
-			const defIndex = extractedFootnotes.defs.findIndex(
-				(d) => d.id === ref.id,
+	// 替换脚注引用（仅替换引用标记，不在此处渲染脚注列表）
+	// 脚注定义会被收集到 state.footnoteDefs，由顶层统一渲染
+	for (const ref of extractedFootnotes.refs) {
+		const defIndex = extractedFootnotes.defs.findIndex(
+			(d) => d.id === ref.id,
+		);
+		if (defIndex !== -1) {
+			const fnNum = defIndex + 1;
+			const fnLink = `<sup class="prose-footnote-ref" id="fnref-${escapeAttribute(ref.id)}"><a href="#fn-${escapeAttribute(ref.id)}">${fnNum}</a></sup>`;
+			html = html.replaceAll(escapeRegExp(ref.placeholder), fnLink);
+		} else {
+			html = html.replaceAll(
+				escapeRegExp(ref.placeholder),
+				`[${escapeHtml(ref.id)}]`,
 			);
-			if (defIndex !== -1) {
-				const fnNum = defIndex + 1;
-				const fnLink = `<sup class="prose-footnote-ref" id="fnref-${escapeAttribute(ref.id)}"><a href="#fn-${escapeAttribute(ref.id)}">${fnNum}</a></sup>`;
-				html = html.replaceAll(escapeRegExp(ref.placeholder), fnLink);
-			} else {
-				html = html.replaceAll(
-					escapeRegExp(ref.placeholder),
-					`[${escapeHtml(ref.id)}]`,
-				);
-			}
 		}
+	}
 
-		if (extractedFootnotes.defs.length > 0) {
-			footnoteHtmlParts.push(
-				'<section class="prose-footnotes"><ol>',
-			);
-			for (const def of extractedFootnotes.defs) {
-				const renderedDef = await renderSafeMarkdownInternal(
-					def.content,
-					depth + 1,
-					state,
-				);
-				footnoteHtmlParts.push(
-					`<li id="fn-${escapeAttribute(def.id)}">${renderedDef} <a class="prose-footnote-backref" href="#fnref-${escapeAttribute(def.id)}" aria-label="返回">↩</a></li>`,
-				);
-			}
-			footnoteHtmlParts.push("</ol></section>");
+	// 收集脚注定义到 state，由顶层统一渲染
+	for (const def of extractedFootnotes.defs) {
+		const exists = state.footnoteDefs.some((d) => d.id === def.id);
+		if (!exists) {
+			state.footnoteDefs.push(def);
 		}
-
-		html += footnoteHtmlParts.join("");
 	}
 
 	// 替换 Callouts
@@ -1207,6 +1174,7 @@ function renderChat(code: string): string {
 function renderTimeline(code: string): string {
 	const lines = code.trim().split("\n");
 	let html = '<div class="prose-timeline">';
+	let hasOpenItem = false;
 
 	for (const line of lines) {
 		const trimmed = line.trim();
@@ -1215,6 +1183,11 @@ function renderTimeline(code: string): string {
 		// 时间节点: ## 时间标题
 		const timeMatch = trimmed.match(/^##\s+(.+)/);
 		if (timeMatch) {
+			// 在开启新节点前闭合上一个节点，避免嵌套
+			if (hasOpenItem) {
+				html += "</div></div>";
+			}
+			hasOpenItem = true;
 			html += `<div class="prose-timeline-item"><div class="prose-timeline-marker"></div><div class="prose-timeline-content"><div class="prose-timeline-title">${escapeHtml(timeMatch[1]!.trim())}</div>`;
 			continue;
 		}
@@ -1227,7 +1200,10 @@ function renderTimeline(code: string): string {
 		}
 	}
 
-	html += "</div></div></div>";
+	if (hasOpenItem) {
+		html += "</div></div>";
+	}
+	html += "</div>";
 	return html;
 }
 

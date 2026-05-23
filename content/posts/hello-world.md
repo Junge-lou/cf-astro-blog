@@ -2,12 +2,18 @@
 title: Hello, World!
 slug: hello-world
 status: draft
+publishedAt: ''
 excerpt: 这是一篇通过本地 Markdown 文件发布的示例文章。
 authorName: Admin
-tags:
-  - 示例
-  - 入门
+category: ''
+tags: [示例, 入门]
+metaTitle: ''
+metaDescription: ''
+metaKeywords: ''
+canonicalUrl: ''
+featuredImageKey: ''
 isPinned: false
+pinnedOrder: 100
 ---
 
 这是一篇通过 **本地 Markdown 文件** 发布到网站的示例文章。
@@ -22,7 +28,7 @@ isPinned: false
 ## Frontmatter 字段说明
 
 | 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
+| --- | --- | --- | --- |
 | `title` | string | 正文第一个 `# 标题` | 文章标题 |
 | `slug` | string | 从 title 自动生成 | URL 路径别名 |
 | `status` | `draft` / `published` / `scheduled` | `draft` | 发布状态 |
