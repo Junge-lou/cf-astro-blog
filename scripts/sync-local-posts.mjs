@@ -320,7 +320,9 @@ function sync() {
   console.log(`\n完成: ${inserted} 篇新建, ${updated} 篇更新, 共 ${posts.length} 篇`);
 }
 
-sync().catch((err) => {
+try {
+  sync();
+} catch (err) {
   console.error("同步失败:", err);
   process.exit(1);
-});
+}
