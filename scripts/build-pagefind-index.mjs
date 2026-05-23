@@ -245,7 +245,7 @@ async function runPagefind() {
 	await ensureDirectory(join(ROOT_DIR, "public"));
 
 	execFileSync(
-		"npx",
+		NPX,
 		[
 			"pagefind",
 			"--site",
