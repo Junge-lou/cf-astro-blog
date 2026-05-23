@@ -3,6 +3,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import process from "node:process";
 
+const NPX = process.platform === "win32" ? "npx.cmd" : "npx";
 const ROOT_DIR = process.cwd();
 const SOURCE_DIR = join(ROOT_DIR, ".pagefind-source");
 const OUTPUT_DIR = join(ROOT_DIR, "public", "pagefind");
@@ -99,7 +100,7 @@ function toIsoDate(value) {
 function runWranglerQuery(command, sourceMode) {
 	const modeFlag = sourceMode === "remote" ? "--remote" : "--local";
 	const stdout = execFileSync(
-		"npx",
+		NPX,
 		[
 			"wrangler",
 			"d1",

@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "astro dev",
 		"build": "npm run search:index:auto && astro build",
-		"preview": "npm run build && wrangler dev",
+		"preview": "npm run sync:posts:local && npm run build && wrangler dev",
 		"deploy": "npm run db:migrate:remote && npm run sync:posts && npm run search:index:remote && astro build && wrangler deploy",
 		"sync:posts": "node scripts/sync-local-posts.mjs --remote",
 		"sync:posts:local": "node scripts/sync-local-posts.mjs --local",

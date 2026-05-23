@@ -1,6 +1,9 @@
 name: 后台发布自动部署
 
 on:
+  push:
+    branches:
+      - main
   repository_dispatch:
     types:
       - rebuild-search-index
@@ -12,7 +15,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.client_payload.source == 'admin-posts' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.client_payload.source == 'admin-posts' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
