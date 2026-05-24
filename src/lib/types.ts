@@ -20,7 +20,11 @@ export const siteConfig: SiteConfig = {
 	language: "zh-CN",
 	comments: {
 		lang: "zh-CN",
-		apiUrl: "https://comments.ffaff.fun",
+		// 使用同源代理避免跨域 CORS 问题：
+		// momo 评论组件以 apiUrl 为基准发起 fetch(`${apiUrl}/api/comments?…`)，
+		// Astro catch‑all 路由 /api/[...route] 将其转发至 Hono 应用，
+		// 后者再反向代理到 comments.ffaff.fun 实际 API 服务器。
+		apiUrl: "https://ffaff.fun",
 	},
 };
 

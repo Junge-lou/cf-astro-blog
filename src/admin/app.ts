@@ -3,6 +3,7 @@ import type { AdminAppEnv } from "./middleware/auth";
 import { analyticsRoutes } from "./routes/analytics";
 import { appearanceRoutes } from "./routes/appearance";
 import { authRoutes } from "./routes/auth";
+import { commentsProxyRoutes } from "./routes/comments-proxy";
 import { dashboardRoutes } from "./routes/dashboard";
 import { friendLinksRoutes } from "./routes/friend-links";
 import { friendsRoutes } from "./routes/friends";
@@ -97,6 +98,7 @@ app.route("/admin/media", mediaRoutes);
 app.route("/admin/analytics", analyticsRoutes);
 app.route("/friend-links", friendLinksRoutes);
 app.route("/webmention", webmentionRoutes);
+app.route("/comments", commentsProxyRoutes);
 
 app.get("/health", (c) =>
 	c.json({ status: "ok", timestamp: new Date().toISOString() }),
