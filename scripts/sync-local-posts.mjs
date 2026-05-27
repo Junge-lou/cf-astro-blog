@@ -13,6 +13,16 @@ function resolveMode() {
   return arg === "--local" ? "local" : "remote";
 }
 
+function hasFlag(flag) {
+  return process.argv.includes(flag);
+}
+
+function clampInt(value, min, max, fallback) {
+  if (value === null || value === undefined) return fallback;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
+}
+
 function runD1(command, mode) {
   const modeFlag = mode === "remote" ? "--remote" : "--local";
   const stdout = execFileSync(
@@ -95,7 +105,9 @@ function collectPosts() {
   }
 
   const files = readdirSync(POSTS_DIR).filter(
-    (f) => extname(f) === ".md" || extname(f) === ".mdx",
+    (f) =>
+      (extname(f) === ".md" || extname(f) === ".mdx") &&
+      !basename(f).startsWith("_"), // 跳过模板、草稿等内部文件
   );
 
   if (files.length === 0) {
@@ -149,6 +161,10 @@ function collectPosts() {
       ? data.tags.map((t) => String(t).trim()).filter(Boolean)
       : [];
 
+    const backgroundMode = ["global", "cover", "custom"].includes(data.backgroundMode?.trim())
+      ? data.backgroundMode.trim()
+      : "global";
+
     posts.push({
       file,
       slug,
@@ -166,6 +182,14 @@ function collectPosts() {
       metaKeywords: data.metaKeywords?.trim().slice(0, 200) || null,
       canonicalUrl: data.canonicalUrl?.trim() || null,
       featuredImageKey: data.featuredImageKey?.trim() || null,
+      featuredImageAlt: data.featuredImageAlt?.trim().slice(0, 200) || null,
+      backgroundMode,
+      backgroundImageKey: data.backgroundImageKey?.trim() || null,
+      backgroundOpacity: clampInt(data.backgroundOpacity, 0, 100, 72),
+      backgroundBlur: clampInt(data.backgroundBlur, 0, 60, 24),
+      backgroundScale: clampInt(data.backgroundScale, 100, 180, 112),
+      backgroundPositionX: clampInt(data.backgroundPositionX, 0, 100, 50),
+      backgroundPositionY: clampInt(data.backgroundPositionY, 0, 100, 50),
       isPinned: data.isPinned === true ? 1 : 0,
       pinnedOrder: Number.isInteger(data.pinnedOrder) && data.pinnedOrder >= 1 && data.pinnedOrder <= 9999
         ? data.pinnedOrder
@@ -233,7 +257,12 @@ function syncPostTags(postId, tagNames, mode) {
 function sync() {
   const mode = resolveMode();
   const modeLabel = mode === "remote" ? "远程 D1" : "本地 D1";
+  const dryRun = hasFlag("--dry-run");
+  const forceOverwrite = hasFlag("--force");
+
   console.log(`同步模式: ${modeLabel}`);
+  if (dryRun) console.log("⚠ 预览模式（--dry-run）：不会实际修改数据库");
+  if (forceOverwrite) console.log("⚠ 强制覆盖模式（--force）：将覆盖数据库中已有的同名文章");
   console.log(`目录: ${POSTS_DIR}\n`);
 
   const posts = collectPosts();
@@ -253,10 +282,10 @@ function sync() {
   const now = new Date().toISOString();
   let inserted = 0;
   let updated = 0;
+  let skipped = 0;
 
   for (const post of posts) {
     const exists = existingSlugSet.has(post.slug);
-    const action = exists ? "更新" : "新建";
 
     // Resolve category ID
     const categoryId = post.categoryName
@@ -264,7 +293,21 @@ function sync() {
       : null;
 
     if (exists) {
-      // UPDATE existing post
+      if (!forceOverwrite) {
+        console.warn(
+          `  [跳过] ${post.file} → slug="${post.slug}" —— 数据库中已存在。使用 --force 强制覆盖`,
+        );
+        skipped++;
+        continue;
+      }
+
+      if (dryRun) {
+        console.log(`  [预览-更新] ${post.file} → slug="${post.slug}" (${post.status})`);
+        updated++;
+        continue;
+      }
+
+      // UPDATE existing post — 包含所有字段
       runD1(
         [
           "UPDATE blog_posts SET",
@@ -275,6 +318,14 @@ function sync() {
           `publish_at = ${sqlString(post.publishAt)},`,
           `published_at = ${sqlString(post.publishedAt)},`,
           `featured_image_key = ${sqlString(post.featuredImageKey)},`,
+          `featured_image_alt = ${sqlString(post.featuredImageAlt)},`,
+          `background_mode = ${sqlString(post.backgroundMode)},`,
+          `background_image_key = ${sqlString(post.backgroundImageKey)},`,
+          `background_opacity = ${post.backgroundOpacity},`,
+          `background_blur = ${post.backgroundBlur},`,
+          `background_scale = ${post.backgroundScale},`,
+          `background_position_x = ${post.backgroundPositionX},`,
+          `background_position_y = ${post.backgroundPositionY},`,
           `is_pinned = ${post.isPinned},`,
           `pinned_order = ${post.pinnedOrder},`,
           `meta_title = ${sqlString(post.metaTitle)},`,
@@ -290,13 +341,19 @@ function sync() {
       );
       updated++;
     } else {
-      // INSERT new post
+      if (dryRun) {
+        console.log(`  [预览-新建] ${post.file} → slug="${post.slug}" (${post.status})`);
+        inserted++;
+        continue;
+      }
+
+      // INSERT new post — 包含所有字段
       runD1(
         [
           "INSERT INTO blog_posts",
-          "(title, slug, content, excerpt, status, publish_at, published_at, featured_image_key, is_pinned, pinned_order, meta_title, meta_description, meta_keywords, canonical_url, category_id, author_name, created_at, updated_at)",
+          "(title, slug, content, excerpt, status, publish_at, published_at, featured_image_key, featured_image_alt, background_mode, background_image_key, background_opacity, background_blur, background_scale, background_position_x, background_position_y, is_pinned, pinned_order, meta_title, meta_description, meta_keywords, canonical_url, category_id, author_name, created_at, updated_at)",
           "VALUES",
-          `(${sqlString(post.title)}, ${sqlString(post.slug)}, ${sqlString(post.content)}, ${sqlString(post.excerpt)}, ${sqlString(post.status)}, ${sqlString(post.publishAt)}, ${sqlString(post.publishedAt)}, ${sqlString(post.featuredImageKey)}, ${post.isPinned}, ${post.pinnedOrder}, ${sqlString(post.metaTitle)}, ${sqlString(post.metaDescription)}, ${sqlString(post.metaKeywords)}, ${sqlString(post.canonicalUrl)}, ${categoryId !== null ? categoryId : "NULL"}, ${sqlString(post.authorName)}, ${sqlString(now)}, ${sqlString(now)})`,
+          `(${sqlString(post.title)}, ${sqlString(post.slug)}, ${sqlString(post.content)}, ${sqlString(post.excerpt)}, ${sqlString(post.status)}, ${sqlString(post.publishAt)}, ${sqlString(post.publishedAt)}, ${sqlString(post.featuredImageKey)}, ${sqlString(post.featuredImageAlt)}, ${sqlString(post.backgroundMode)}, ${sqlString(post.backgroundImageKey)}, ${post.backgroundOpacity}, ${post.backgroundBlur}, ${post.backgroundScale}, ${post.backgroundPositionX}, ${post.backgroundPositionY}, ${post.isPinned}, ${post.pinnedOrder}, ${sqlString(post.metaTitle)}, ${sqlString(post.metaDescription)}, ${sqlString(post.metaKeywords)}, ${sqlString(post.canonicalUrl)}, ${categoryId !== null ? categoryId : "NULL"}, ${sqlString(post.authorName)}, ${sqlString(now)}, ${sqlString(now)})`,
         ].join(" "),
         mode,
       );
@@ -304,7 +361,7 @@ function sync() {
     }
 
     // Fetch post ID for tag sync (only if tags are present)
-    if (post.tagNames.length > 0) {
+    if (post.tagNames.length > 0 && !dryRun) {
       const rows = runD1(
         `SELECT id FROM blog_posts WHERE slug = ${sqlString(post.slug)}`,
         mode,
@@ -314,10 +371,23 @@ function sync() {
       }
     }
 
-    console.log(`  [${action}] ${post.file} → slug="${post.slug}" (${post.status})`);
+    const action = exists ? (dryRun ? "[预览-更新]" : "[更新]") : (dryRun ? "[预览-新建]" : "[新建]");
+    if (!exists || forceOverwrite || dryRun) {
+      console.log(`  ${action} ${post.file} → slug="${post.slug}" (${post.status})`);
+    }
   }
 
-  console.log(`\n完成: ${inserted} 篇新建, ${updated} 篇更新, 共 ${posts.length} 篇`);
+  console.log(
+    `\n完成: ${inserted} 篇新建, ${updated} 篇更新, ${skipped} 篇跳过（已存在且未使用 --force）, 共 ${posts.length} 篇`,
+  );
+  if (skipped > 0) {
+    console.log(
+      "💡 提示：如果确认要用本地文件覆盖数据库中已有的文章，请添加 --force 参数",
+    );
+  }
+  if (dryRun) {
+    console.log("💡 这是预览模式（--dry-run），数据库未被修改。确认无误后去掉 --dry-run 执行。");
+  }
 }
 
 try {
