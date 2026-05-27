@@ -1128,7 +1128,8 @@ function renderKanban(code: string): string {
 		// 卡片: - 卡片内容 或 * 卡片内容
 		const cardMatch = trimmed.match(/^[-*]\s+(.+)/);
 		if (cardMatch) {
-			html += `<div class="prose-kanban-card">${escapeHtml(cardMatch[1]!.trim())}</div>`;
+			const content = escapeHtml(cardMatch[1]!.trim()).replace(/\\n/g, "<br>");
+			html += `<div class="prose-kanban-card">${content}</div>`;
 			continue;
 		}
 	}
