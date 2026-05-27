@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import matter from "gray-matter";
 
@@ -119,7 +119,8 @@ function collectPosts() {
   const localSlugSet = new Set();
 
   for (const file of files) {
-    const raw = readFileSync(join(POSTS_DIR, file), "utf8");
+    const filePath = join(POSTS_DIR, file);
+    const raw = readFileSync(filePath, "utf8");
     let data, content;
     try {
       const parsed = matter(raw);
@@ -167,6 +168,7 @@ function collectPosts() {
 
     posts.push({
       file,
+      fileMtimeMs: statSync(filePath).mtimeMs,
       slug,
       title,
       content: content.trim() || "",
@@ -271,13 +273,15 @@ function sync() {
     return;
   }
 
-  // Batch-check which slugs already exist in D1
+  // Batch-check which slugs already exist in D1, with updated_at for merge
   const slugList = posts.map((p) => `'${escapeSql(p.slug)}'`).join(", ");
   const existingRows = runD1(
-    `SELECT slug FROM blog_posts WHERE slug IN (${slugList})`,
+    `SELECT slug, updated_at FROM blog_posts WHERE slug IN (${slugList})`,
     mode,
   );
-  const existingSlugSet = new Set(existingRows.map((r) => r.slug));
+  const dbInfoMap = new Map(
+    existingRows.map((r) => [r.slug, { updatedAt: r.updated_at || "" }]),
+  );
 
   const now = new Date().toISOString();
   let inserted = 0;
@@ -285,7 +289,8 @@ function sync() {
   let skipped = 0;
 
   for (const post of posts) {
-    const exists = existingSlugSet.has(post.slug);
+    const dbInfo = dbInfoMap.get(post.slug);
+    const exists = !!dbInfo;
 
     // Resolve category ID
     const categoryId = post.categoryName
@@ -293,9 +298,21 @@ function sync() {
       : null;
 
     if (exists) {
-      if (!forceOverwrite) {
+      // ── 时间戳智能合并 ──────────────────────────────────────────────
+      // 比较本地文件的修改时间 vs 数据库中该文章的 updated_at：
+      //   本地更新 → 正常覆盖（日常写作场景）
+      //   DB 更新  → 跳过并警告（后台修改过的文章，避免覆盖丢失）
+      //   --force  → 跳过时间戳检查，强制覆盖
+      const dbUpdatedMs = parseDate(dbInfo.updatedAt)
+        ? new Date(parseDate(dbInfo.updatedAt)).getTime()
+        : 0;
+      const localNewer = post.fileMtimeMs > dbUpdatedMs;
+
+      if (!forceOverwrite && !localNewer && !Number.isNaN(dbUpdatedMs) && dbUpdatedMs > 0) {
+        const dbTime = new Date(dbUpdatedMs).toLocaleString("zh-CN", { hour12: false });
+        const fileTime = new Date(post.fileMtimeMs).toLocaleString("zh-CN", { hour12: false });
         console.warn(
-          `  [跳过] ${post.file} → slug="${post.slug}" —— 数据库中已存在。使用 --force 强制覆盖`,
+          `  [跳过] ${post.file} → slug="${post.slug}" —— DB 更新较新（DB: ${dbTime} / 文件: ${fileTime}），可能已在后台修改。使用 --force 强制覆盖`,
         );
         skipped++;
         continue;
@@ -371,18 +388,21 @@ function sync() {
       }
     }
 
-    const action = exists ? (dryRun ? "[预览-更新]" : "[更新]") : (dryRun ? "[预览-新建]" : "[新建]");
-    if (!exists || forceOverwrite || dryRun) {
-      console.log(`  ${action} ${post.file} → slug="${post.slug}" (${post.status})`);
-    }
+    const action = exists
+      ? (dryRun ? "[预览-更新]" : "[更新]")
+      : (dryRun ? "[预览-新建]" : "[新建]");
+    console.log(`  ${action} ${post.file} → slug="${post.slug}" (${post.status})`);
   }
 
   console.log(
-    `\n完成: ${inserted} 篇新建, ${updated} 篇更新, ${skipped} 篇跳过（已存在且未使用 --force）, 共 ${posts.length} 篇`,
+    `\n完成: ${inserted} 篇新建, ${updated} 篇更新, ${skipped} 篇跳过, 共 ${posts.length} 篇`,
   );
   if (skipped > 0) {
     console.log(
-      "💡 提示：如果确认要用本地文件覆盖数据库中已有的文章，请添加 --force 参数",
+      "💡 以上跳过的文章，数据库中的版本比本地文件更新（可能已在后台修改），",
+    );
+    console.log(
+      "   如需强制覆盖请使用 --force。未跳过的文章已正常同步。",
     );
   }
   if (dryRun) {
