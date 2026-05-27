@@ -797,6 +797,26 @@ async function renderSafeMarkdownInternal(
 		return "";
 	};
 
+	renderer.table = function (token: Tokens.Table) {
+		let header = "";
+		let cell = "";
+		for (let j = 0; j < token.header.length; j++) {
+			cell += this.tablecell(token.header[j]);
+		}
+		header += this.tablerow({ text: cell });
+		let body = "";
+		for (let j = 0; j < token.rows.length; j++) {
+			const row = token.rows[j];
+			cell = "";
+			for (let k = 0; k < row.length; k++) {
+				cell += this.tablecell(row[k]);
+			}
+			body += this.tablerow({ text: cell });
+		}
+		if (body) body = `<tbody>${body}</tbody>`;
+		return `<div class="prose-table-wrapper"><table>${header}${body}</table></div>`;
+	};
+
 	renderer.code = function (token: Tokens.Code) {
 		const lang = String(token.lang ?? "").trim().toLowerCase();
 		const code = String(token.text ?? "");
