@@ -482,7 +482,9 @@ function extractEmoji(markdown: string): {
 	markdown: string;
 	blocks: EmojiBlock[];
 } {
-	const pattern = /(:[a-zA-Z0-9_+\-]+:)/g;
+	// 要求 :code: 中至少有一个非 dash 字符（字母/数字/下划线/+），
+	// 避免误匹配表格分隔行如 | :---: |
+	const pattern = /(:(?=[a-zA-Z0-9_+\-]*[a-zA-Z0-9_+])[a-zA-Z0-9_+\-]+:)/g;
 	let index = 0;
 	const blocks: EmojiBlock[] = [];
 
