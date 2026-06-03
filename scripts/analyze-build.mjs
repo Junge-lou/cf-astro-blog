@@ -11,8 +11,8 @@
  *   - Top-10 最大文件列表
  *   - 与上次构建的差异对比（若存在 .build-snapshot.json）
  */
-import { readFile, readdir, stat, writeFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { dirname, join, relative, resolve } from "node:path";
 
 const DIST_DIR = resolve(import.meta.dirname ?? ".", "..", "dist");
 const SNAPSHOT_FILE = resolve(import.meta.dirname ?? ".", "..", "meta", ".build-snapshot.json");
@@ -156,6 +156,7 @@ async function main() {
 		totalFiles: files.length,
 		categories: categories.map((c) => ({ ext: c.ext, count: c.count, totalSize: c.totalSize })),
 	};
+	await mkdir(dirname(SNAPSHOT_FILE), { recursive: true });
 	await writeFile(SNAPSHOT_FILE, JSON.stringify(snapshot, null, 2));
 }
 
