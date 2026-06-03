@@ -7,18 +7,24 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["src/**", "tests/**"]
+		"includes": ["src/**", "tests/**", "scripts/**", "*.mjs", "*.ts", "*.json"],
+		"ignore": [".astro/**", "dist/**", "node_modules/**", ".wrangler/**"]
 	},
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab"
+		"indentStyle": "tab",
+		"lineWidth": 100
 	},
 	"linter": {
 		"enabled": true,
 		"rules": {
 			"recommended": true,
 			"correctness": {
-				"noUnusedImports": "warn"
+				"noUnusedImports": "warn",
+				"noUnusedVariables": "warn"
+			},
+			"performance": {
+				"noAccumulatingSpread": "warn"
 			}
 		}
 	},

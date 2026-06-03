@@ -803,15 +803,18 @@ async function renderSafeMarkdownInternal(
 		let header = "";
 		let cell = "";
 		for (let j = 0; j < token.header.length; j++) {
-			cell += this.tablecell(token.header[j]);
+			const headerCell = token.header[j];
+			if (headerCell) cell += this.tablecell(headerCell);
 		}
 		header += this.tablerow({ text: cell });
 		let body = "";
 		for (let j = 0; j < token.rows.length; j++) {
 			const row = token.rows[j];
+			if (!row) continue;
 			cell = "";
 			for (let k = 0; k < row.length; k++) {
-				cell += this.tablecell(row[k]);
+				const rowCell = row[k];
+				if (rowCell) cell += this.tablecell(rowCell);
 			}
 			body += this.tablerow({ text: cell });
 		}

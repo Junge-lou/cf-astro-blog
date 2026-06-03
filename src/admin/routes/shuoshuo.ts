@@ -4,7 +4,7 @@ import { shuoshuoPosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { sanitizePlainText } from "@/lib/security";
 import {
-	AdminAppEnv,
+	type AdminAppEnv,
 	assertCsrfToken,
 	getAuthenticatedSession,
 	getBodyText,
@@ -39,6 +39,7 @@ shuoshuo.get("/", async (c) => {
 			id: shuoshuoPosts.id,
 			content: shuoshuoPosts.content,
 			status: shuoshuoPosts.status,
+			createdAt: shuoshuoPosts.createdAt,
 			updatedAt: shuoshuoPosts.updatedAt,
 		})
 		.from(shuoshuoPosts)

@@ -6,8 +6,14 @@
 			"@/*": ["src/*"]
 		},
 		"types": ["@cloudflare/workers-types", "node"],
-		"ignoreDeprecations": "6.0"
+		// 严格模式补充
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": false,
+		"noImplicitOverride": true,
+		// 性能与输出
+		"incremental": true,
+		"tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo"
 	},
-	"include": ["src", "tests", "env.d.ts"],
-	"exclude": ["node_modules", "dist", ".astro"]
+	"include": ["src", "tests", "scripts", "env.d.ts", "astro.config.mjs"],
+	"exclude": ["node_modules", "dist", ".astro", ".wrangler"]
 }

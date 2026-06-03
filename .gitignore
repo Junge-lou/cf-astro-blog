@@ -49,6 +49,13 @@ operations-log.md
 public/pagefind/
 public/pagefind-meta.json
 
+# TypeScript incremental build cache
+node_modules/.cache/
+*.tsbuildinfo
+
+# build analysis snapshot
+meta/.build-snapshot.json
+
 # markdown
 suibi.md
 

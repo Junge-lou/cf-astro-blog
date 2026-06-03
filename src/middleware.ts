@@ -95,6 +95,17 @@ function applySecurityHeaders(
 	);
 	response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
+	// 告知 CDN/浏览器响应可因 Accept-Encoding 和 Cookie 而不同
+	const existingVary = response.headers.get("Vary") || "";
+	const varySegments = new Set(
+		existingVary.split(",").map((s) => s.trim()).filter(Boolean),
+	);
+	varySegments.add("Accept-Encoding");
+	if (response.headers.has("set-cookie")) {
+		varySegments.add("Cookie");
+	}
+	response.headers.set("Vary", [...varySegments].join(", "));
+
 	if (!normalizedPath.startsWith("/api/")) {
 		const frameAncestors = isAdminPreview ? "'self'" : "'none'";
 		// 'wasm-unsafe-eval' 须在所有非 API 页面上生效：

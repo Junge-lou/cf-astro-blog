@@ -1,0 +1,36 @@
+# Cloudflare Pages 静态资源缓存头
+# 所有路径均相对于 public/ 目录
+
+# 不可变资产（指纹化文件名）
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 字体文件
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 图片
+/images/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/media/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+# Pagefind 搜索索引
+/pagefind/*
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# JS/CSS 静态产物（Astro 构建输出带上 hash）
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Sitemap / RSS
+/sitemap.xml
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/rss.xml
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# favicon / 图标
+/favicon.*
+  Cache-Control: public, max-age=86400, must-revalidate

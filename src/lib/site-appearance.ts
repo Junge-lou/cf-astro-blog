@@ -14,16 +14,16 @@ export interface SiteNavLink {
 
 const MAX_DYNAMIC_LINK_ITEMS = 16;
 
-const DEFAULT_NAV_LINKS: SiteNavLink[] = [
+const DEFAULT_NAV_LINKS = [
 	{ label: "首页", href: "/" },
 	{ label: "归档", href: "/blog" },
 	{ label: "搜索", href: "/search" },
-];
+] as const satisfies readonly SiteNavLink[];
 
-const DEFAULT_HERO_ACTIONS: SiteNavLink[] = [
+const DEFAULT_HERO_ACTIONS = [
 	{ label: "进入归档", href: "/blog" },
 	{ label: "站内搜索", href: "/search" },
-];
+] as const satisfies readonly SiteNavLink[];
 
 export interface SiteAppearance {
 	backgroundImageKey: string | null;

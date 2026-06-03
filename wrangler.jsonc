@@ -2,10 +2,9 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": "@astrojs/cloudflare/entrypoints/server",
 	"name": "astro-blog",
-	"compatibility_date": "2026-02-10",
+	"compatibility_date": "2026-03-17",
 	"compatibility_flags": [
-		"nodejs_compat",
-		"disable_nodejs_process_v2"
+		"nodejs_compat"
 	],
 	"assets": {
 		"binding": "ASSETS",
