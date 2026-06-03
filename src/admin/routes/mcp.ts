@@ -11,6 +11,7 @@ import {
 	blogPostTags,
 	blogTags,
 	mcpAuditLogs,
+	shuoshuoPosts,
 	siteAppearanceSettings,
 } from "@/db/schema";
 import { getDb } from "@/lib/db";
@@ -45,6 +46,8 @@ const MAX_FEATURED_IMAGE_KEY_LENGTH = 255;
 const MAX_FEATURED_IMAGE_ALT_LENGTH = 200;
 const MAX_LIST_LIMIT = 50;
 const MAX_KEYWORD_LENGTH = 120;
+const MAX_SHUOSHUO_CONTENT_LENGTH = 3000;
+const MAX_SHUOSHUO_LIST_LIMIT = 50;
 const MCP_POST_SLUG_KEYS = [
 	"slug",
 	"path",
@@ -1125,6 +1128,132 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 	};
 }
 
+// ─── 说说（Shuoshuo）MCP 辅助类型与函数 ─────────────────────────────────────
+
+interface CreateShuoshuoInput {
+	content: string;
+	status: "draft" | "published";
+}
+
+type ParseCreateShuoshuoInputResult =
+	| { data: CreateShuoshuoInput }
+	| { error: string };
+
+interface ListShuoshuoInput {
+	limit: number;
+	status: "draft" | "published" | null;
+}
+
+type ParseListShuoshuoInputResult =
+	| { data: ListShuoshuoInput }
+	| { error: string };
+
+function parseCreateShuoshuoInput(
+	args: unknown,
+): ParseCreateShuoshuoInputResult {
+	if (!args || typeof args !== "object") {
+		return { error: "参数格式不合法，必须是对象" };
+	}
+
+	const input = args as Record<string, unknown>;
+	const content = sanitizePlainText(input.content, MAX_SHUOSHUO_CONTENT_LENGTH, {
+		allowNewlines: true,
+		trim: false,
+	});
+	if (!content.trim()) {
+		return { error: "说说内容不能为空" };
+	}
+
+	const statusRaw = sanitizePlainText(input.status, 24);
+	let status: "draft" | "published" = "published";
+	if (statusRaw === "draft") {
+		status = "draft";
+	} else if (statusRaw && statusRaw !== "published") {
+		return { error: "说说状态不合法，仅支持 draft 或 published" };
+	}
+
+	return { data: { content, status } };
+}
+
+function parseListShuoshuoInput(
+	args: unknown,
+): ParseListShuoshuoInputResult {
+	const input =
+		args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+	const statusRaw = sanitizePlainText(input.status, 24);
+	let status: "draft" | "published" | null = null;
+	if (statusRaw === "draft" || statusRaw === "published") {
+		status = statusRaw;
+	} else if (statusRaw) {
+		return { error: "筛选状态不合法，仅支持 draft 或 published" };
+	}
+
+	return {
+		data: {
+			limit: parseLimit(input.limit, 10, 1, MAX_SHUOSHUO_LIST_LIMIT),
+			status,
+		},
+	};
+}
+
+async function createShuoshuoFromMcpInput(
+	env: Env,
+	input: CreateShuoshuoInput,
+) {
+	const db = getDb(env.DB);
+	const now = new Date().toISOString();
+
+	const [inserted] = await db
+		.insert(shuoshuoPosts)
+		.values({
+			content: input.content,
+			status: input.status,
+			createdAt: now,
+			updatedAt: now,
+		})
+		.returning({ id: shuoshuoPosts.id });
+
+	return {
+		id: inserted?.id ?? null,
+		content: input.content,
+		status: input.status,
+		createdAt: now,
+	};
+}
+
+async function listShuoshuoFromMcpInput(
+	env: Env,
+	input: ListShuoshuoInput,
+) {
+	const db = getDb(env.DB);
+	const conditions = [];
+
+	if (input.status) {
+		conditions.push(eq(shuoshuoPosts.status, input.status));
+	}
+
+	const whereCondition =
+		conditions.length === 0 ? undefined : conditions[0];
+
+	const rows = whereCondition
+		? await db
+				.select()
+				.from(shuoshuoPosts)
+				.where(whereCondition)
+				.orderBy(desc(shuoshuoPosts.createdAt))
+				.limit(input.limit)
+		: await db
+				.select()
+				.from(shuoshuoPosts)
+				.orderBy(desc(shuoshuoPosts.createdAt))
+				.limit(input.limit);
+
+	return {
+		total: rows.length,
+		items: rows,
+	};
+}
+
 function createMcpServer(env: Env): McpServer {
 	const server = new McpServer({
 		name: "cf-astro-blog-mcp",
@@ -1401,6 +1530,129 @@ function createMcpServer(env: Env): McpServer {
 								error instanceof Error
 									? error.message
 									: "读取文章失败，请稍后重试",
+						},
+					],
+				};
+			}
+		},
+	);
+
+	server.registerTool(
+		"create_shuoshuo",
+		{
+			title: "发布说说",
+			description:
+				"发布一条说说（类似微博/微动态），content 必填，status 默认为 published。",
+			inputSchema: {
+				content: z.string().describe("说说内容，必填，最长 3000 字"),
+				status: z
+					.enum(["draft", "published"])
+					.optional()
+					.describe("说说状态，可选，默认 published"),
+			},
+		},
+		async (args) => {
+			const parsed = parseCreateShuoshuoInput(args);
+			if ("error" in parsed) {
+				return {
+					isError: true,
+					content: [{ type: "text", text: parsed.error }],
+				};
+			}
+
+			try {
+				const created = await createShuoshuoFromMcpInput(env, parsed.data);
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify(
+								{
+									success: true,
+									message: "说说发布成功",
+									shuoshuo: created,
+								},
+								null,
+								2,
+							),
+						},
+					],
+				};
+			} catch (error) {
+				console.error("[MCP create_shuoshuo] 发布失败", error);
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text:
+								error instanceof Error
+									? error.message
+									: "发布说说失败，请稍后重试",
+						},
+					],
+				};
+			}
+		},
+	);
+
+	server.registerTool(
+		"list_shuoshuo",
+		{
+			title: "读取说说列表",
+			description: "按条件读取说说列表，按时间倒序排列。",
+			inputSchema: {
+				limit: z
+					.number()
+					.int()
+					.min(1)
+					.max(MAX_SHUOSHUO_LIST_LIMIT)
+					.optional()
+					.describe(`返回数量，默认 10，最大 ${MAX_SHUOSHUO_LIST_LIMIT}`),
+				status: z
+					.enum(["draft", "published"])
+					.optional()
+					.describe("按状态筛选，可选"),
+			},
+		},
+		async (args) => {
+			const parsed = parseListShuoshuoInput(args);
+			if ("error" in parsed) {
+				return {
+					isError: true,
+					content: [{ type: "text", text: parsed.error }],
+				};
+			}
+
+			try {
+				const result = await listShuoshuoFromMcpInput(env, parsed.data);
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify(
+								{
+									success: true,
+									message: "说说列表读取成功",
+									...result,
+								},
+								null,
+								2,
+							),
+						},
+					],
+				};
+			} catch (error) {
+				console.error("[MCP list_shuoshuo] 读取失败", error);
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text:
+								error instanceof Error
+									? error.message
+									: "读取说说列表失败，请稍后重试",
 						},
 					],
 				};
