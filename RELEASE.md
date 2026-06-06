@@ -1,13 +1,6 @@
-
-# [My Blog where is](https://ffaff.fun/)
-
-### [cf-astro-blog v0.1.0 发布说明](https://ffaff.fun/blog/cf-astro-blog-v0-1-0-release)
+# cf-astro-blog v0.1.0 发布说明
 
 > 基于 Astro 6 + Hono + Cloudflare Workers 的全栈博客站点，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
-
-[快速部署指南](#5-快速部署)
-
------
 
 ---
 
@@ -128,15 +121,15 @@
 
 ## 5. 快速部署
 
-> **在开始之前**：请确保你已拥有 [Cloudflare 账号](https://dash.cloudflare.com/) 并开通 Workers Paid 计划（D1 / R2 / KV 均需付费计划）(日常访问量不高,不扣钱)。
+> **在开始之前**：请确保你已拥有 [Cloudflare 账号](https://dash.cloudflare.com/) 并开通 Workers Paid 计划（D1 / R2 / KV 均需付费计划）。
 
 ---
 
 ### 5.1 克隆与安装
 
 ```bash
-git clone https://github.com/Junge-lou/cf-astro-blog.git
-cd cf-astro-blog
+git clone https://github.com/Junge-lou/cf-astro-blog my-blog
+cd my-blog
 npm install
 ```
 
@@ -347,11 +340,11 @@ openssl rand -hex 32
 
 ### 5.5 配置评论系统（Momo）
 
-项目使用 [Momo](https://github.com/Motues/Momo-Backend) 作为评论系统，需独立部署评论服务。
+项目使用 [Momo](https://github.com/Eric-Terminal/momo-comment) 作为评论系统，需独立部署评论服务。
 
 #### 5.5.1 部署 Momo 评论后端
 
-Momo 是一个轻量级评论系统，后端同样部署在 Cloudflare Workers + D1 上。请参考 [Momo 官方文档](https://github.com/Motues/Momo-Backend/blob/main/worker/README.md) `从 Release 下载代码`，完成以下步骤：
+Momo 是一个轻量级评论系统，后端同样部署在 Cloudflare Workers + D1 上。请参考 [Momo 官方文档](https://github.com/Eric-Terminal/momo-comment) 完成以下步骤：
 
 1. 创建独立的 D1 数据库（与博客数据库分开）
 2. 部署 Momo Worker 到 `comments.你的域名.com`（或其他子域名）
