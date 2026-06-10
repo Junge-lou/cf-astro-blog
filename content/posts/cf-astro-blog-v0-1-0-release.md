@@ -1,7 +1,7 @@
 ---
 title: 「cf-astro-blog v0.1.0」发布说明
 slug: cf-astro-blog-v0-1-0-release
-status: d1raft
+status: published
 publishedAt: '2026-06-03'
 excerpt: 基于 Astro 6 + Hono + Cloudflare Workers 的全栈博客站点正式发布，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
 authorName: Admin
