@@ -273,14 +273,14 @@ function sync() {
     return;
   }
 
-  // Batch-check which slugs already exist in D1, with updated_at for merge
+  // Batch-check which slugs already exist in D1, with updated_at and status for merge
   const slugList = posts.map((p) => `'${escapeSql(p.slug)}'`).join(", ");
   const existingRows = runD1(
-    `SELECT slug, updated_at FROM blog_posts WHERE slug IN (${slugList})`,
+    `SELECT slug, updated_at, status FROM blog_posts WHERE slug IN (${slugList})`,
     mode,
   );
   const dbInfoMap = new Map(
-    existingRows.map((r) => [r.slug, { updatedAt: r.updated_at || "" }]),
+    existingRows.map((r) => [r.slug, { updatedAt: r.updated_at || "", status: r.status || "draft" }]),
   );
 
   const now = new Date().toISOString();
@@ -313,6 +313,18 @@ function sync() {
         const fileTime = new Date(post.fileMtimeMs).toLocaleString("zh-CN", { hour12: false });
         console.warn(
           `  [跳过] ${post.file} → slug="${post.slug}" —— DB 更新较新（DB: ${dbTime} / 文件: ${fileTime}），可能已在后台修改。使用 --force 强制覆盖`,
+        );
+        skipped++;
+        continue;
+      }
+
+      // ── 语义保护：禁止文件中的 draft 覆盖 DB 中已 published 的文章 ──
+      // 场景：用户通过管理后台将文章发布（DB: published），
+      // 但仓库中的 .md 文件仍然是 draft，自动部署触发 sync:posts 时，
+      // 不应将已发布的文章降级为草稿。
+      if (!forceOverwrite && dbInfo.status === "published" && post.status === "draft") {
+        console.warn(
+          `  [保护] ${post.file} → slug="${post.slug}" —— DB 中已是 published 状态，忽略文件中的 draft。使用 --force 强制覆盖`,
         );
         skipped++;
         continue;
