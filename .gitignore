@@ -12,7 +12,7 @@ npm-debug.log*
 # draft posts (not ready for version control)
 content/posts/_drafts/*.md
 content/posts/_drafts/*.mdx
-content/posts/Python/
+content/
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
