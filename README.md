@@ -1,7 +1,7 @@
 
 # [My Blog where is](https://ffaff.fun/)
 
-### [cf-astro-blog v0.1.0 发布说明](https://ffaff.fun/blog/cf-astro-blog-v0-1-0-release)
+## [cf-astro-blog v0.1.0 发布说明](https://ffaff.fun/blog/cf-astro-blog-v0-1-0-release)
 
 > 基于 Astro 6 + Hono + Cloudflare Workers 的全栈博客站点，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
 

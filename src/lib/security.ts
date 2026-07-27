@@ -568,6 +568,7 @@ const SAFE_HTML_TAGS = [
 	"data",
 	"time",
 	"wbr",
+	"img",
 ];
 
 const SAFE_ATTRS = [
@@ -1197,6 +1198,17 @@ function renderChat(code: string): string {
 	return html;
 }
 
+function escapeInlineMarkdown(text: string): string {
+	let html = escapeHtml(text);
+	// 行内代码 (``code``)
+	html = html.replaceAll(/`([^`]+)`/g, "<code>$1</code>");
+	// 加粗 (**text**)
+	html = html.replaceAll(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+	// 斜体 (*text*)
+	html = html.replaceAll(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
+	return html;
+}
+
 function renderTimeline(code: string): string {
 	const lines = code.trim().split("\n");
 	let html = '<div class="prose-timeline">';
@@ -1206,10 +1218,15 @@ function renderTimeline(code: string): string {
 		const trimmed = line.trim();
 		if (!trimmed) continue;
 
+		// 整体标题: # 标题（可选，非 ##）
+		if (/^#[^#]/.test(trimmed)) {
+			html += `<div class="prose-timeline-header">${escapeHtml(trimmed.replace(/^#\s+/, ""))}</div>`;
+			continue;
+		}
+
 		// 时间节点: ## 时间标题
 		const timeMatch = trimmed.match(/^##\s+(.+)/);
 		if (timeMatch) {
-			// 在开启新节点前闭合上一个节点，避免嵌套
 			if (hasOpenItem) {
 				html += "</div></div>";
 			}
@@ -1218,12 +1235,22 @@ function renderTimeline(code: string): string {
 			continue;
 		}
 
-		// 内容: - 描述内容
-		const contentMatch = trimmed.match(/^[-*]\s+(.+)/);
-		if (contentMatch) {
-			html += `<div class="prose-timeline-desc">${escapeHtml(contentMatch[1]!.trim())}</div>`;
+		// 子标题: ### 或更深层标题
+		const subHeadingMatch = trimmed.match(/^#{3,}\s+(.+)/);
+		if (subHeadingMatch) {
+			html += `<div class="prose-timeline-subtitle">${escapeInlineMarkdown(subHeadingMatch[1]!.trim())}</div>`;
 			continue;
 		}
+
+		// 列表项: - 内容
+		const contentMatch = trimmed.match(/^[-*]\s+(.+)/);
+		if (contentMatch) {
+			html += `<div class="prose-timeline-desc">${escapeInlineMarkdown(contentMatch[1]!.trim())}</div>`;
+			continue;
+		}
+
+		// 普通文本段落
+		html += `<div class="prose-timeline-desc">${escapeInlineMarkdown(trimmed)}</div>`;
 	}
 
 	if (hasOpenItem) {

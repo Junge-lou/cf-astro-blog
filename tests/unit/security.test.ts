@@ -348,14 +348,17 @@ describe("安全工具", () => {
 		assert.ok(html.includes("<video"), "不应被转义");
 	});
 
-	test("renderSafeMarkdown 转义危险 HTML 标签（如图 img）", async () => {
+	test("renderSafeMarkdown 允许 img 标签并过滤危险属性", async () => {
 		const html = await renderSafeMarkdown(
-			'<img src=x onerror="alert(1)">',
+			'<img src="https://example.com/pic.png" onerror="alert(1)" style="zoom:50%;">',
 		);
 
-		// img 不在安全标签白名单中，整个标签会被转义
-		assert.ok(!html.includes("<img"), "img 标签应被转义而非原样输出");
-		assert.ok(html.includes("&lt;img"), "img 标签应以 HTML 实体形式输出");
+		// img 现在在白名单中，安全属性被保留
+		assert.ok(html.includes("<img"), "img 标签应被保留");
+		assert.ok(html.includes('src="https://example.com/pic.png"'), "src 属性应被保留");
+		assert.ok(html.includes('style="zoom:50%;"'), "style 属性应被保留");
+		// 危险属性被移除
+		assert.ok(!html.includes("onerror"), "onerror 危险属性应被移除");
 	});
 
 	// ── 图表代码块 ────────────────────────────────────────────────────────
