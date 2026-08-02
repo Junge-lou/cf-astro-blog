@@ -140,6 +140,9 @@ const recentSectionSubheading =
 		? ""
 		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
+const heroPinnedPost = pinnedPosts[0] ?? null;
+const heroRecentPost = recentPosts[0] ?? null;
+const hasHeroSidebar = Boolean(heroPinnedPost || heroRecentPost);
 const totalPostCount = pinnedPosts.length + recentPosts.length;
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
@@ -152,8 +155,8 @@ function isInternalHref(href: string) {
 ---
 
 <Base title={siteConfig.name} description={homepageMetaDescription}>
-	<section class="home-hero glass-panel">
-		<div class="home-hero-copy">
+	<section class:list={["home-hero-copy glass-panel", { "home-hero-has-sidebar": hasHeroSidebar }]}>
+		<div class="hero-body">
 			<span class="section-kicker">{homepageAppearance.heroKicker}</span>
 			<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
 			<p class="page-intro">{homepageAppearance.heroIntro}</p>
@@ -195,6 +198,38 @@ function isInternalHref(href: string) {
 				)}
 			</div>
 		</div>
+		{
+			hasHeroSidebar && (
+				<aside class="hero-sidebar">
+					{
+						heroPinnedPost && (
+							<PostCard
+								title={heroPinnedPost.title}
+								slug={heroPinnedPost.slug}
+								excerpt={heroPinnedPost.excerpt}
+								publishedAt={heroPinnedPost.publishedAt}
+								categoryName={heroPinnedPost.categoryName}
+								featuredImageKey={heroPinnedPost.featuredImageKey}
+								featuredImageAlt={heroPinnedPost.featuredImageAlt}
+								variant="compact"
+							/>
+						)
+					}
+					{
+						heroRecentPost && (
+							<PostCard
+								title={heroRecentPost.title}
+								slug={heroRecentPost.slug}
+								excerpt={heroRecentPost.excerpt}
+								publishedAt={heroRecentPost.publishedAt}
+								categoryName={heroRecentPost.categoryName}
+								variant="list"
+							/>
+						)
+					}
+				</aside>
+			)
+		}
 	</section>
 
 	{
@@ -276,41 +311,64 @@ function isInternalHref(href: string) {
 </Base>
 
 <style>
-	.home-hero {
-		--hero-opacity-scale: calc(var(--hero-card-opacity, 14) / 14);
+	.home-hero-copy.glass-panel {
 		--glass-panel-blur: var(--hero-card-blur, 18px);
-		--hero-blur-effective: min(calc(var(--hero-card-blur, 18px) * 1.6), 84px);
-		--hero-surface-alpha: min(calc(var(--hero-card-opacity, 14) / 100), 0.32);
 		position: relative;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: clamp(2rem, 2.5vw, 3.5rem) clamp(1.5rem, 3vw, 3rem);
-		box-shadow:
-			0 30px 90px -60px rgba(8, 18, 34, 0.34),
-			0 12px 24px -18px rgba(8, 18, 34, 0.18);
-		border-left: 4px solid var(--color-accent);
+		display: grid;
+		gap: clamp(0.8rem, 1.5vw, 1.2rem);
+		max-width: 50rem;
+		width: 100%;
+		padding: clamp(1rem, 2vw, 1.8rem) clamp(1.2rem, 2.5vw, 2.2rem);
 		overflow: hidden;
 	}
 
-	.home-hero::before {
+	.home-hero-has-sidebar {
+		grid-template-columns: 1fr;
+	}
+
+	.home-hero-copy.glass-panel::before {
 		content: "";
 		position: absolute;
 		inset: 0;
 		pointer-events: none;
 		z-index: 1;
 		background:
-			radial-gradient(ellipse at 50% 0%, rgba(10, 132, 255, 0.06), transparent 60%),
-			radial-gradient(ellipse at 80% 100%, rgba(255, 255, 255, 0.04), transparent 50%);
+			radial-gradient(ellipse at 50% 0%, rgba(10, 132, 255, 0.04), transparent 60%),
+			radial-gradient(ellipse at 80% 100%, rgba(255, 255, 255, 0.03), transparent 50%);
 	}
 
-	.home-hero-copy {
+	.home-hero-copy.glass-panel > * {
 		position: relative;
 		z-index: 2;
+	}
+
+	.hero-body {
 		display: grid;
-		gap: 1.05rem;
-		max-width: 48rem;
-		width: 100%;
+		gap: 0.85rem;
+		align-content: start;
+		min-width: 0;
+	}
+
+	.hero-sidebar {
+		display: grid;
+		gap: 0.5rem;
+		align-content: start;
+		padding: 0.5rem;
+		border-radius: var(--radius-card);
+		background: rgba(var(--card-surface-rgb), 0.06);
+		border: 1px solid var(--color-border);
+	}
+
+	@media (min-width: 768px) {
+		.home-hero-has-sidebar {
+			grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+		}
+	}
+
+	.home-hero-copy .page-title {
+		font-size: clamp(1.8rem, 1.5rem + 1.5vw, 2.8rem);
+		line-height: 1.08;
+		letter-spacing: -0.03em;
 	}
 
 	.home-hero-minimal {
@@ -642,31 +700,31 @@ function isInternalHref(href: string) {
 		border: 1px solid rgba(255, 255, 255, 0.08);
 	}
 
-	.home-hero-copy > * {
+	.hero-body > * {
 		animation: home-float-in 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
-	.home-hero-copy > :nth-child(1) {
+	.hero-body > :nth-child(1) {
 		animation-delay: 40ms;
 	}
 
-	.home-hero-copy > :nth-child(2) {
+	.hero-body > :nth-child(2) {
 		animation-delay: 120ms;
 	}
 
-	.home-hero-copy > :nth-child(3) {
+	.hero-body > :nth-child(3) {
 		animation-delay: 190ms;
 	}
 
-	.home-hero-copy > :nth-child(4) {
+	.hero-body > :nth-child(4) {
 		animation-delay: 260ms;
 	}
 
-	.home-hero-copy > :nth-child(5) {
+	.hero-body > :nth-child(5) {
 		animation-delay: 330ms;
 	}
 
-	.home-hero-copy > :nth-child(6) {
+	.hero-body > :nth-child(6) {
 		animation-delay: 400ms;
 	}
 
