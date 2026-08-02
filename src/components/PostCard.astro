@@ -47,8 +47,8 @@ const cardClassName = [
 		? coverSide === "right"
 			? "post-card-cover-right"
 			: "post-card-cover-left"
-		: "post-card-no-cover",
-].join(" ");
+		: "",
+].filter(Boolean).join(" ");
 const safeCjkCharCount =
 	Number.isFinite(cjkCharCount) && Number(cjkCharCount) > 0
 		? Math.trunc(Number(cjkCharCount))

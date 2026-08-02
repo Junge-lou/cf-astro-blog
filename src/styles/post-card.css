@@ -40,7 +40,7 @@
 		backdrop-filter var(--transition);
 }
 
-.post-card-no-cover {
+.post-card:not(:has(.post-card-cover)) {
 	grid-template-columns: 1fr;
 	min-height: auto;
 }
@@ -56,7 +56,7 @@
 	background: linear-gradient(
 		120deg,
 		rgba(var(--card-sheen-rgb), 0) 22%,
-		rgba(var(--card-sheen-rgb), 0.16) 50%,
+		rgba(var(--card-sheen-rgb), 0.1) 50%,
 		rgba(var(--card-sheen-rgb), 0) 76%
 	);
 	/* 显式禁用来自 global.css .glass-panel::after 的 backdrop-filter，
@@ -261,7 +261,7 @@
 	}
 }
 
-@media (max-width: 900px) {
+@container post-card-grid (max-width: 560px) {
 	.post-card,
 	.post-card-cover-right {
 		grid-template-columns: 1fr;

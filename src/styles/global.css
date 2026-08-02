@@ -39,7 +39,7 @@
 	--font-size-2xl: clamp(1.6rem, 1.25rem + 1vw, 2.2rem);
 	--font-size-3xl: clamp(2.2rem, 1.7rem + 2vw, 3.5rem);
 	--font-size-4xl: clamp(3rem, 2.2rem + 3vw, 5rem);
-	--space-2xs: 0.375rem;
+	--space-2xs: 0.25rem;
 	--space-xs: 0.5rem;
 	--space-sm: 0.75rem;
 	--space-md: 1rem;
@@ -96,8 +96,8 @@
 	--color-bg-tertiary: rgba(16, 28, 44, 0.24);
 	--color-surface-elevated: rgba(15, 27, 43, 0.52);
 	--color-text: #eef4ff;
-	--color-text-secondary: #cad4e6;
-	--color-text-muted: #93a1bc;
+	--color-text-secondary: #d4ddec;
+	--color-text-muted: #a2aec6;
 	--color-text-placeholder: #b6c4dc;
 	--color-border: rgba(147, 161, 188, 0.14);
 	--color-accent: #57a6ff;
@@ -126,8 +126,8 @@
 		--color-bg-tertiary: rgba(15, 27, 44, 0.82);
 		--color-surface-elevated: rgba(17, 29, 48, 0.92);
 		--color-text: #eef4ff;
-		--color-text-secondary: #cad4e6;
-		--color-text-muted: #93a1bc;
+		--color-text-secondary: #d4ddec;
+		--color-text-muted: #a2aec6;
 		--color-text-placeholder: #b6c4dc;
 		--color-border: rgba(147, 161, 188, 0.14);
 		--color-accent: #57a6ff;
@@ -321,6 +321,26 @@ pre code {
 ::selection {
 	background-color: var(--color-accent-soft);
 	color: var(--color-text);
+}
+
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+	text-wrap: pretty;
 }
 
 .site-shell {
