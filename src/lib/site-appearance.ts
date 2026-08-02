@@ -55,6 +55,7 @@ export interface SiteAppearance {
 	heroPrimaryHref: string;
 	heroSecondaryLabel: string;
 	heroSecondaryHref: string;
+	heroLayout: string;
 	heroSignalLabel: string;
 	heroSignalHeading: string;
 	heroSignalCopy: string;
@@ -137,6 +138,7 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 	heroPrimaryHref: DEFAULT_HERO_ACTIONS[0].href,
 	heroSecondaryLabel: DEFAULT_HERO_ACTIONS[1].label,
 	heroSecondaryHref: DEFAULT_HERO_ACTIONS[1].href,
+	heroLayout: "default",
 	heroSignalLabel: "Scene Depth",
 	heroSignalHeading: "首页会跟着你的视线轻轻转一下",
 	heroSignalCopy:
@@ -601,6 +603,7 @@ export function normalizeSiteAppearanceInput(
 		heroPrimaryHref: normalizedHeroPrimary.href,
 		heroSecondaryLabel: normalizedHeroSecondary.label,
 		heroSecondaryHref: normalizedHeroSecondary.href,
+		heroLayout: input.heroLayout === "minimal" ? "minimal" : "default",
 		heroSignalLabel: normalizeText(
 			input.heroSignalLabel,
 			30,
@@ -740,6 +743,7 @@ async function fetchSiteAppearance(db: Database): Promise<SiteAppearance> {
 			heroSecondaryLabel: siteAppearanceSettings.heroSecondaryLabel,
 			heroSecondaryHref: siteAppearanceSettings.heroSecondaryHref,
 			heroActionsJson: siteAppearanceSettings.heroActionsJson,
+			heroLayout: siteAppearanceSettings.heroLayout,
 			heroSignalLabel: siteAppearanceSettings.heroSignalLabel,
 			heroSignalHeading: siteAppearanceSettings.heroSignalHeading,
 			heroSignalCopy: siteAppearanceSettings.heroSignalCopy,
@@ -902,6 +906,7 @@ export async function saveSiteAppearance(
 			heroPrimaryHref: normalized.heroPrimaryHref,
 			heroSecondaryLabel: normalized.heroSecondaryLabel,
 			heroSecondaryHref: normalized.heroSecondaryHref,
+			heroLayout: normalized.heroLayout,
 			heroActionsJson,
 			heroSignalLabel: normalized.heroSignalLabel,
 			heroSignalHeading: normalized.heroSignalHeading,
@@ -947,6 +952,7 @@ export async function saveSiteAppearance(
 				heroPrimaryHref: normalized.heroPrimaryHref,
 				heroSecondaryLabel: normalized.heroSecondaryLabel,
 				heroSecondaryHref: normalized.heroSecondaryHref,
+				heroLayout: normalized.heroLayout,
 				heroActionsJson,
 				heroSignalLabel: normalized.heroSignalLabel,
 				heroSignalHeading: normalized.heroSignalHeading,

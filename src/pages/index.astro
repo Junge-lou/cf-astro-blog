@@ -140,6 +140,8 @@ const recentSectionSubheading =
 		? ""
 		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
+const isHeroMinimal = homepageAppearance.heroLayout === "minimal";
+const totalPostCount = pinnedPosts.length + recentPosts.length;
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
 	siteConfig.description,
@@ -151,44 +153,29 @@ function isInternalHref(href: string) {
 ---
 
 <Base title={siteConfig.name} description={homepageMetaDescription}>
-	<section class="home-hero glass-panel" data-hero-depth>
-		<div class="hero-atmosphere" aria-hidden="true">
-			<span class="hero-aura hero-aura-primary"></span>
-			<span class="hero-aura hero-aura-secondary"></span>
-			<span class="hero-grid"></span>
-			<span class="hero-beam"></span>
-		</div>
-		<div class="home-hero-main">
-			<div
-				class:list={[
-					"hero-main-media",
-					{ "hero-main-media-has-image": Boolean(homepageAppearance.heroMainImagePath) },
-				]}
-				data-tilt-card
-				data-tilt-scale="0.78"
-				data-tilt-shift-scale="1.08"
-				aria-hidden={homepageAppearance.heroMainImagePath ? undefined : "true"}
-			>
-				{
-					homepageAppearance.heroMainImagePath ? (
-						<img
-							src={homepageAppearance.heroMainImagePath}
-							alt=""
-							loading="lazy"
-							decoding="async"
-						/>
-					) : null
-				}
-			</div>
-			<div class="home-hero-copy">
-				<span class="section-kicker">{homepageAppearance.heroKicker}</span>
-				<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
-				<p class="page-intro">{homepageAppearance.heroIntro}</p>
-				<div class="hero-actions">
-					{
-						heroActions.map((action, index) => (
-							index === 1 ? (
-								<span class="hero-search-bridge" transition:name="search-entry">
+	{
+		isHeroMinimal ? (
+			<section class="home-hero home-hero-minimal glass-panel">
+				<div class="home-hero-minimal-body">
+					<span class="section-kicker">{homepageAppearance.heroKicker}</span>
+					<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
+					<p class="page-intro">{homepageAppearance.heroIntro}</p>
+					<div class="hero-actions">
+						{
+							heroActions.map((action, index) => (
+								index === 1 ? (
+									<span class="hero-search-bridge" transition:name="search-entry">
+										<a
+											href={action.href}
+											class:list={["button", { "button-secondary": index > 0 }]}
+											target={isInternalHref(action.href) ? undefined : "_blank"}
+											rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
+										>
+											{action.label}
+											<kbd class="hero-kbd">Ctrl K</kbd>
+										</a>
+									</span>
+								) : (
 									<a
 										href={action.href}
 										class:list={["button", { "button-secondary": index > 0 }]}
@@ -197,74 +184,141 @@ function isInternalHref(href: string) {
 									>
 										{action.label}
 									</a>
-								</span>
-							) : (
-								<a
-									href={action.href}
-									class:list={["button", { "button-secondary": index > 0 }]}
-									target={isInternalHref(action.href) ? undefined : "_blank"}
-									rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-								>
-									{action.label}
-								</a>
-							)
-						))
-					}
+								)
+							))
+						}
+					</div>
+					<div class="hero-minimal-stats">
+						<span>📝 共 {totalPostCount} 篇文章</span>
+						{latestUpdateAt && (
+							<span>
+								· 最近更新{" "}
+								<time class="local-time-pending" datetime={latestUpdateAt} data-local-time="date">
+									{latestUpdate}
+								</time>
+							</span>
+						)}
+					</div>
 				</div>
-			</div>
-		</div>
-			<div class="home-hero-side">
-				<article
-					class:list={[
-						"hero-signal-card",
-						{ "hero-signal-card-has-image": Boolean(homepageAppearance.heroSignalImagePath) },
-					]}
-					data-tilt-card
-				>
-					<div class="hero-signal-glow" aria-hidden="true"></div>
-					{
-						homepageAppearance.heroSignalImagePath ? (
-							<div class="hero-signal-media" aria-hidden="true">
+			</section>
+		) : (
+			<section class="home-hero glass-panel" data-hero-depth>
+				<div class="hero-atmosphere" aria-hidden="true">
+					<span class="hero-aura hero-aura-primary"></span>
+					<span class="hero-aura hero-aura-secondary"></span>
+					<span class="hero-grid"></span>
+					<span class="hero-beam"></span>
+				</div>
+				<div class="home-hero-main">
+					<div
+						class:list={[
+							"hero-main-media",
+							{ "hero-main-media-has-image": Boolean(homepageAppearance.heroMainImagePath) },
+						]}
+						data-tilt-card
+						data-tilt-scale="0.78"
+						data-tilt-shift-scale="1.08"
+						aria-hidden={homepageAppearance.heroMainImagePath ? undefined : "true"}
+					>
+						{
+							homepageAppearance.heroMainImagePath ? (
 								<img
-									src={homepageAppearance.heroSignalImagePath}
+									src={homepageAppearance.heroMainImagePath}
 									alt=""
 									loading="lazy"
 									decoding="async"
 								/>
-							</div>
-						) : null
-					}
-					<div class="hero-signal-content">
-						<span class="hero-signal-label">{homepageAppearance.heroSignalLabel}</span>
-						<strong class="hero-signal-heading">{homepageAppearance.heroSignalHeading}</strong>
-						<p class="hero-signal-copy">{homepageAppearance.heroSignalCopy}</p>
-						<div class="hero-signal-row">
-							<span class="hero-signal-chip">{homepageAppearance.heroSignalChip1}</span>
-							<span class="hero-signal-chip">{homepageAppearance.heroSignalChip2}</span>
-							<span class="hero-signal-chip">{homepageAppearance.heroSignalChip3}</span>
+							) : null
+						}
+					</div>
+					<div class="home-hero-copy">
+						<span class="section-kicker">{homepageAppearance.heroKicker}</span>
+						<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
+						<p class="page-intro">{homepageAppearance.heroIntro}</p>
+						<div class="hero-actions">
+							{
+								heroActions.map((action, index) => (
+									index === 1 ? (
+										<span class="hero-search-bridge" transition:name="search-entry">
+											<a
+												href={action.href}
+												class:list={["button", { "button-secondary": index > 0 }]}
+												target={isInternalHref(action.href) ? undefined : "_blank"}
+												rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
+											>
+												{action.label}
+												<kbd class="hero-kbd">Ctrl K</kbd>
+											</a>
+										</span>
+									) : (
+										<a
+											href={action.href}
+											class:list={["button", { "button-secondary": index > 0 }]}
+											target={isInternalHref(action.href) ? undefined : "_blank"}
+											rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
+										>
+											{action.label}
+										</a>
+									)
+								))
+							}
 						</div>
 					</div>
-				</article>
-			<div class="hero-metric">
-				<span>最近更新</span>
-				<strong>
-					{
-						latestUpdateAt ? (
-							<time
-								class="local-time-pending"
-								datetime={latestUpdateAt}
-								data-local-time="date"
-							>
-								{latestUpdate}
-							</time>
-						) : (
-							latestUpdate
-						)
-					}
-				</strong>
-			</div>
-		</div>
-	</section>
+				</div>
+					<div class="home-hero-side">
+						<article
+							class:list={[
+								"hero-signal-card",
+								{ "hero-signal-card-has-image": Boolean(homepageAppearance.heroSignalImagePath) },
+							]}
+							data-tilt-card
+						>
+							<div class="hero-signal-glow" aria-hidden="true"></div>
+							{
+								homepageAppearance.heroSignalImagePath ? (
+									<div class="hero-signal-media" aria-hidden="true">
+										<img
+											src={homepageAppearance.heroSignalImagePath}
+											alt=""
+											loading="lazy"
+											decoding="async"
+										/>
+									</div>
+								) : null
+							}
+							<div class="hero-signal-content">
+								<span class="hero-signal-label">{homepageAppearance.heroSignalLabel}</span>
+								<strong class="hero-signal-heading">{homepageAppearance.heroSignalHeading}</strong>
+								<p class="hero-signal-copy">{homepageAppearance.heroSignalCopy}</p>
+								<div class="hero-signal-row">
+									<span class="hero-signal-chip">{homepageAppearance.heroSignalChip1}</span>
+									<span class="hero-signal-chip">{homepageAppearance.heroSignalChip2}</span>
+									<span class="hero-signal-chip">{homepageAppearance.heroSignalChip3}</span>
+								</div>
+							</div>
+						</article>
+					<div class="hero-metric">
+						<span>最近更新</span>
+						<strong>
+							{
+								latestUpdateAt ? (
+									<time
+										class="local-time-pending"
+										datetime={latestUpdateAt}
+										data-local-time="date"
+									>
+										{latestUpdate}
+									</time>
+								) : (
+									latestUpdate
+								)
+							}
+						</strong>
+					</div>
+				</div>
+			</section>
+		)
+	}
 
 	{
 		categories.length > 0 && (
@@ -366,6 +420,32 @@ function isInternalHref(href: string) {
 		box-shadow:
 			0 30px 90px -60px rgba(8, 18, 34, 0.34),
 			0 12px 24px -18px rgba(8, 18, 34, 0.18);
+	}
+
+	.home-hero-minimal {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		padding: clamp(2rem, 3vw, 3.5rem) clamp(1.5rem, 3vw, 3rem);
+		gap: 0;
+	}
+
+	.home-hero-minimal-body {
+		display: grid;
+		justify-items: center;
+		gap: 1.1rem;
+		max-width: 38rem;
+	}
+
+	.hero-minimal-stats {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.3rem;
+		margin-top: 0.3rem;
+		font-size: 0.9rem;
+		color: var(--color-text-muted);
 	}
 
 	.home-hero > :not(.hero-atmosphere) {
@@ -629,6 +709,21 @@ function isInternalHref(href: string) {
 
 	.hero-search-bridge {
 		display: inline-flex;
+	}
+
+	.hero-kbd {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 0.4rem;
+		padding: 0.1em 0.4em;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.24);
+		background: rgba(255, 255, 255, 0.1);
+		font-size: 0.68rem;
+		font-weight: 500;
+		letter-spacing: 0.04em;
+		line-height: 1.4;
+		opacity: 0.7;
 	}
 
 	.hero-actions .button-secondary {
@@ -977,7 +1072,7 @@ function isInternalHref(href: string) {
 	.home-grid {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 1.2rem;
+		gap: 1.5rem;
 	}
 
 	.home-grid :global(.post-card:nth-child(1)) {

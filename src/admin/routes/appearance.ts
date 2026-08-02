@@ -599,6 +599,13 @@ function renderAppearancePage(options: {
 				<section class="appearance-panel">
 					<h2>首页首屏文案</h2>
 					<div class="form-group">
+						<label for="heroLayout">首屏布局</label>
+						<select id="heroLayout" name="heroLayout" class="form-input">
+							<option value="default" ${settings.heroLayout !== "minimal" ? "selected" : ""}>默认（双层 + 卡片）</option>
+							<option value="minimal" ${settings.heroLayout === "minimal" ? "selected" : ""}>精简（居中 + 纯文字）</option>
+						</select>
+					</div>
+					<div class="form-group">
 						<label for="heroKicker">顶部标签</label>
 						<input
 							id="heroKicker"
@@ -1170,6 +1177,7 @@ appearance.post("/", async (c) => {
 			getBodyTexts(body, "navLinkHref"),
 		),
 		heroKicker: getBodyText(body, "heroKicker"),
+		heroLayout: getBodyText(body, "heroLayout"),
 		heroTitle: getBodyText(body, "heroTitle"),
 		heroIntro: getBodyText(body, "heroIntro"),
 		heroMainImagePath: getBodyText(body, "heroMainImagePath"),

@@ -118,6 +118,14 @@ const resolvedDescription =
 		<script is:inline src="/theme.js"></script>
 		{!isAdminPreview && <script is:inline src="/analytics.js"></script>}
 		{!isAdminPreview && <script is:inline src="/footer-reveal.js"></script>}
+		<script is:inline>
+			document.addEventListener("keydown", (e) => {
+				if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+					e.preventDefault();
+					window.location.href = "/search";
+				}
+			});
+		</script>
 	</head>
 		<body
 			class:list={[

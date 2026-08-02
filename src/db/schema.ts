@@ -196,6 +196,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 		.default("站内搜索"),
 	heroSecondaryHref: text("hero_secondary_href").notNull().default("/search"),
 	heroActionsJson: text("hero_actions_json"),
+	heroLayout: text("hero_layout").notNull().default("default"),
 	heroSignalLabel: text("hero_signal_label").notNull().default("Scene Depth"),
 	heroSignalHeading: text("hero_signal_heading")
 		.notNull()
