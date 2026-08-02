@@ -238,7 +238,7 @@ body::after {
 	height: 24rem;
 	border-radius: 50%;
 	filter: blur(70px);
-	opacity: 0.24;
+	opacity: 0.14;
 	pointer-events: none;
 	z-index: -1;
 	animation: float-glow 16s ease-in-out infinite;
@@ -454,7 +454,7 @@ body.site-shell-has-background-image .site-background::after {
 
 .site-main {
 	display: grid;
-	gap: var(--space-3xl);
+	gap: clamp(2rem, 4vw, 3.5rem);
 	padding-block: clamp(1.5rem, 3vw, 3rem) clamp(3rem, 5vw, 5rem);
 }
 

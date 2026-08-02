@@ -95,8 +95,7 @@ const encodedSlug = encodeRouteParam(slug);
 					</time>
 				)}
 				{categoryName && <span class="pill">{categoryName}</span>}
-				<span class="pill">{articleLengthLabel}</span>
-				<span class="pill">{articleReadingTimeLabel}</span>
+			<span class="pill">{articleReadingTimeLabel} · {articleLengthLabel}</span>
 			</div>
 			<a href={`/blog/${encodedSlug}`} class="post-card-link" data-astro-prefetch="hover">
 				<h2 class="post-card-title" transition:name={`title-${slug}`}>{title}</h2>

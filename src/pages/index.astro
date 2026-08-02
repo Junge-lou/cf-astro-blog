@@ -261,7 +261,7 @@ function isInternalHref(href: string) {
 			<>
 				<section class="section-head">
 					<div>
-						<span class="section-kicker">置顶文章</span>
+						<span class="section-kicker">📌 精选</span>
 						<h2 class="section-heading">置顶文章</h2>
 					</div>
 				</section>
@@ -290,7 +290,7 @@ function isInternalHref(href: string) {
 
 	<section class="section-head">
 		<div>
-			<span class="section-kicker">最近更新</span>
+			<span class="section-kicker">📝 动态</span>
 			<h2 class="section-heading">最近更新</h2>
 		</div>
 		<p class="section-subheading">
@@ -399,8 +399,8 @@ function isInternalHref(href: string) {
 
 	.hero-aura {
 		border-radius: 50%;
-		filter: blur(10px);
-		opacity: 0.88;
+		filter: blur(14px);
+		opacity: 0.78;
 	}
 
 	.hero-aura-primary {
@@ -432,11 +432,11 @@ function isInternalHref(href: string) {
 	.hero-grid {
 		inset: 0;
 		background-image:
-			linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+			linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 		background-size: 3.25rem 3.25rem;
 		mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 88%);
-		opacity: 0.5;
+		opacity: 0.3;
 		transform: translate3d(
 			calc(var(--hero-pointer-x) * -8px),
 			calc(var(--hero-scroll-shift) * 0.08),
@@ -452,10 +452,10 @@ function isInternalHref(href: string) {
 		background: linear-gradient(
 			180deg,
 			rgba(255, 255, 255, 0),
-			rgba(255, 255, 255, 0.18),
+			rgba(255, 255, 255, 0.14),
 			rgba(255, 255, 255, 0)
 		);
-		opacity: 0.46;
+		opacity: 0.3;
 		transform:
 			rotate(24deg)
 			translate3d(calc(var(--hero-pointer-x) * -10px), calc(var(--hero-pointer-y) * 12px), 0);
@@ -667,8 +667,8 @@ function isInternalHref(href: string) {
 			height: 100%;
 			border-radius: calc(var(--radius-card) + 4px);
 			background:
-				linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1)),
-				radial-gradient(circle at 18% 18%, rgba(10, 132, 255, 0.18), transparent 42%);
+				linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
+				radial-gradient(circle at 18% 18%, rgba(10, 132, 255, 0.12), transparent 42%);
 			border: 1px solid rgba(255, 255, 255, 0.16);
 			box-shadow: 0 24px 50px -34px rgba(8, 18, 34, 0.3);
 			overflow: hidden;
@@ -768,9 +768,9 @@ function isInternalHref(href: string) {
 		width: 11rem;
 		height: 11rem;
 		border-radius: 50%;
-		background: radial-gradient(circle, rgba(10, 132, 255, 0.24), transparent 70%);
+		background: radial-gradient(circle, rgba(10, 132, 255, 0.16), transparent 70%);
 		filter: blur(14px);
-			opacity: 0.78;
+			opacity: 0.55;
 			transform: translate3d(
 				calc(var(--tilt-shift-x, 0) * -6px),
 				calc(var(--tilt-shift-y, 0) * -6px),
