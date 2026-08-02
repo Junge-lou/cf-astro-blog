@@ -1,6 +1,6 @@
 ---
 import { env } from "cloudflare:workers";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import PostCard from "@/components/PostCard.astro";
 import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
@@ -9,6 +9,7 @@ import { estimateArticleReadStats } from "@/lib/format";
 import { getPublicPostVisibilityCondition } from "@/lib/public-content";
 
 const page = Number(Astro.url.searchParams.get("page") || "1");
+const categorySlug = Astro.url.searchParams.get("category") || null;
 const limit = 10;
 const offset = (page - 1) * limit;
 
@@ -40,14 +41,35 @@ interface ArchivePostCardRow {
 
 let posts: ArchivePostCardRow[] = [];
 let totalPosts = 0;
+let activeCategoryName: string | null = null;
 
 try {
 	const db = getDb(env.DB);
 
+	// 解析分类筛选
+	const categoryFilter = categorySlug
+		? eq(blogCategories.slug, categorySlug)
+		: undefined;
+
+	if (categorySlug) {
+		const [cat] = await db
+			.select({ name: blogCategories.name })
+			.from(blogCategories)
+			.where(eq(blogCategories.slug, categorySlug))
+			.limit(1);
+		activeCategoryName = cat?.name ?? null;
+	}
+
+	const visibilityCondition = getPublicPostVisibilityCondition();
+	const whereCondition = categoryFilter
+		? and(visibilityCondition, categoryFilter)
+		: visibilityCondition;
+
 	const [countResult] = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(blogPosts)
-		.where(getPublicPostVisibilityCondition());
+		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
+		.where(whereCondition);
 	totalPosts = countResult?.count ?? 0;
 
 	const rows: ArchivePostSourceRow[] = await db
@@ -64,7 +86,7 @@ try {
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-		.where(getPublicPostVisibilityCondition())
+		.where(whereCondition)
 		.orderBy(desc(blogPosts.publishedAt))
 		.limit(limit)
 		.offset(offset);
@@ -91,9 +113,14 @@ try {
 }
 
 const totalPages = Math.ceil(totalPosts / limit);
+const paginationQuery = categorySlug ? `&category=${categorySlug}` : "";
+const pageTitle = activeCategoryName ? `归档 · ${activeCategoryName}` : "归档";
+const pageDescription = activeCategoryName
+	? `浏览「${activeCategoryName}」分类下的全部文章`
+	: "按时间顺序浏览全部已发布文章";
 ---
 
-<Base title="归档" description="按时间顺序浏览全部已发布文章">
+<Base title={pageTitle} description={pageDescription}>
 	<section
 		class="archive-hero archive-hero-depth glass-panel"
 		data-tilt-card
@@ -102,9 +129,19 @@ const totalPages = Math.ceil(totalPosts / limit);
 	>
 		<div class="archive-hero-copy">
 			<span class="section-kicker">归档目录</span>
-			<h1 class="page-title">归档</h1>
+			<h1 class="page-title">
+				{activeCategoryName ? (
+					<>归档 <span class="archive-category-badge">{activeCategoryName}</span></>
+				) : (
+					"归档"
+				)}
+			</h1>
 			<p class="page-intro">
-				所有已发布文章都按时间顺序排列在这里，适合顺着浏览，也适合翻到某篇旧文重新确认一个判断。
+				{activeCategoryName ? (
+					<>浏览「{activeCategoryName}」分类下的全部文章。<a href="/blog" class="archive-clear-filter">← 查看全部</a></>
+				) : (
+					"所有已发布文章都按时间顺序排列在这里，适合顺着浏览，也适合翻到某篇旧文重新确认一个判断。"
+				)}
 			</p>
 		</div>
 		<div class="archive-hero-meta">
@@ -140,20 +177,20 @@ const totalPages = Math.ceil(totalPosts / limit);
 		</div>
 	) : (
 		<div class="empty-state glass-panel">
-			<p>还没有已发布文章。</p>
+			<p>{activeCategoryName ? `「${activeCategoryName}」分类下暂无文章。` : "还没有已发布文章。"}</p>
 		</div>
 	)}
 
 	{totalPages > 1 && (
 		<nav class="pagination glass-panel" aria-label="分页">
 			{page > 1 ? (
-				<a href={`/blog?page=${page - 1}`} class="button button-secondary">上一页</a>
+				<a href={`/blog?page=${page - 1}${paginationQuery}`} class="button button-secondary">上一页</a>
 			) : (
 				<span class="pagination-placeholder" />
 			)}
 			<span class="pagination-status">第 {page} 页，共 {totalPages} 页</span>
 			{page < totalPages ? (
-				<a href={`/blog?page=${page + 1}`} class="button button-secondary">下一页</a>
+				<a href={`/blog?page=${page + 1}${paginationQuery}`} class="button button-secondary">下一页</a>
 			) : (
 				<span class="pagination-placeholder" />
 			)}
@@ -240,6 +277,31 @@ const totalPages = Math.ceil(totalPosts / limit);
 			24px
 		);
 		transition: transform var(--nav-motion-surface);
+	}
+
+	.archive-category-badge {
+		display: inline-block;
+		padding: 0.12em 0.48em;
+		margin-left: 0.18em;
+		border-radius: var(--radius-pill);
+		background: var(--color-accent-soft);
+		color: var(--color-accent);
+		font-size: 0.55em;
+		font-weight: 600;
+		vertical-align: middle;
+	}
+
+	.archive-clear-filter {
+		display: inline-block;
+		margin-left: 0.6rem;
+		font-size: 0.88rem;
+		color: var(--color-accent);
+		text-decoration: underline;
+		text-underline-offset: 0.18em;
+	}
+
+	.archive-clear-filter:hover {
+		color: var(--color-accent-hover);
 	}
 
 	.hero-summary {

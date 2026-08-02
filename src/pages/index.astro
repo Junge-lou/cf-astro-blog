@@ -31,6 +31,7 @@ interface HomePostCardRow {
 
 let pinnedPosts: HomePostCardRow[] = [];
 let recentPosts: HomePostCardRow[] = [];
+let categories: { id: number; name: string; slug: string }[] = [];
 let homepageAppearance = DEFAULT_SITE_APPEARANCE;
 
 function toHomePostCardRow(row: {
@@ -64,6 +65,15 @@ function toHomePostCardRow(row: {
 try {
 	const db = getDb(env.DB);
 	homepageAppearance = await getSiteAppearance(db);
+
+	categories = await db
+		.select({
+			id: blogCategories.id,
+			name: blogCategories.name,
+			slug: blogCategories.slug,
+		})
+		.from(blogCategories)
+		.orderBy(asc(blogCategories.name));
 
 	const pinnedRows = await db
 		.select({
@@ -257,6 +267,17 @@ function isInternalHref(href: string) {
 	</section>
 
 	{
+		categories.length > 0 && (
+			<nav class="tags-nav">
+				<a href="/blog" class="tags-nav-pill tags-nav-pill-active">全部</a>
+				{categories.map((cat) => (
+					<a href={`/blog?category=${cat.slug}`} class="tags-nav-pill">{cat.name}</a>
+				))}
+			</nav>
+		)
+	}
+
+	{
 		pinnedPosts.length > 0 && (
 			<>
 				<section class="section-head">
@@ -299,7 +320,7 @@ function isInternalHref(href: string) {
 	</section>
 
 	{recentPosts.length > 0 ? (
-		<div class="home-grid">
+		<div class="home-list">
 			{recentPosts.map((post, index) => (
 				<PostCard
 					title={post.title}
@@ -313,7 +334,7 @@ function isInternalHref(href: string) {
 					cjkCharCount={post.cjkCharCount}
 					latinWordCount={post.latinWordCount}
 					estimatedReadingMinutes={post.estimatedReadingMinutes}
-					coverSide={index % 2 === 0 ? "left" : "right"}
+					variant="list"
 				/>
 			))}
 		</div>
@@ -893,6 +914,64 @@ function isInternalHref(href: string) {
 
 	.section-head .section-kicker {
 		margin-bottom: 0.8rem;
+	}
+
+	.tags-nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.tags-nav-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.38rem 1rem;
+		border-radius: var(--radius-pill);
+		font-size: 0.84rem;
+		font-weight: 500;
+		color: var(--color-text-secondary);
+		background: rgba(var(--card-surface-rgb), 0.08);
+		border: 1px solid var(--color-border);
+		backdrop-filter: blur(8px) saturate(120%);
+		-webkit-backdrop-filter: blur(8px) saturate(120%);
+		transition:
+			background-color var(--transition),
+			border-color var(--transition),
+			color var(--transition),
+			transform var(--transition);
+		text-decoration: none;
+	}
+
+	.tags-nav-pill:hover {
+		background: rgba(var(--card-surface-rgb), 0.16);
+		border-color: rgba(10, 132, 255, 0.24);
+		color: var(--color-text);
+		transform: translateY(-1px);
+	}
+
+	.tags-nav-pill-active,
+	.tags-nav-pill-active:hover {
+		background: var(--color-accent);
+		border-color: var(--color-accent);
+		color: #fff;
+	}
+
+	.home-list {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0;
+	}
+
+	.home-list :global(.post-list-item:nth-child(1)) {
+		animation-delay: 80ms;
+	}
+
+	.home-list :global(.post-list-item:nth-child(2)) {
+		animation-delay: 130ms;
+	}
+
+	.home-list :global(.post-list-item:nth-child(3)) {
+		animation-delay: 180ms;
 	}
 
 	.home-grid {

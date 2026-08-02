@@ -344,3 +344,89 @@
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
 }
+
+/* ── 列表模式（BBC 紧凑新闻流）────────────────────────────────────────── */
+
+.post-list-item {
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	padding: 0.85rem 0.35rem;
+	border-bottom: 1px solid var(--color-border);
+	transition:
+		background-color var(--transition),
+		padding var(--transition);
+	border-radius: var(--radius-sm);
+	text-decoration: none;
+	opacity: 0;
+	animation: post-card-settle 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.post-list-item:hover {
+	background: rgba(var(--card-surface-rgb), 0.04);
+}
+
+.post-list-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	font-size: 0.82rem;
+	color: var(--color-text-muted);
+	flex-shrink: 0;
+}
+
+.post-list-date {
+	font-feature-settings: "tnum";
+}
+
+.post-list-category {
+	color: var(--color-accent);
+	font-weight: 500;
+	font-size: 0.8rem;
+}
+
+.post-list-content {
+	min-width: 0;
+}
+
+.post-list-link {
+	display: block;
+	color: inherit;
+	text-decoration: none;
+}
+
+.post-list-link:hover {
+	color: var(--color-accent-hover);
+}
+
+.post-list-title {
+	font-size: 1.05rem;
+	font-weight: 650;
+	line-height: 1.4;
+	margin: 0;
+	color: var(--color-text);
+}
+
+.post-list-excerpt {
+	font-size: 0.92rem;
+	color: var(--color-text-secondary);
+	margin: 0.18rem 0 0 0;
+	line-height: 1.6;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+@media (min-width: 640px) {
+	.post-list-item {
+		flex-direction: row;
+		align-items: baseline;
+		gap: 1.5rem;
+		padding: 0.75rem 0.5rem;
+	}
+
+	.post-list-meta {
+		min-width: 140px;
+	}
+}

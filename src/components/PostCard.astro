@@ -17,6 +17,7 @@ interface Props {
 	latinWordCount?: number;
 	estimatedReadingMinutes?: number;
 	coverSide?: "left" | "right";
+	variant?: "card" | "list";
 }
 
 const {
@@ -32,6 +33,7 @@ const {
 	latinWordCount,
 	estimatedReadingMinutes,
 	coverSide = "left",
+	variant = "card",
 } = Astro.props;
 
 const formattedDate = publishedAt ? formatDate(publishedAt) : null;
@@ -76,39 +78,66 @@ const articleReadingTimeLabel = `约 ${safeEstimatedReadingMinutes.toLocaleStrin
 const encodedSlug = encodeRouteParam(slug);
 ---
 
-<article class={cardClassName}>
-	{hasCover && (
-		<a href={`/blog/${encodedSlug}`} class="post-card-cover" data-astro-prefetch="hover">
-			<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
-		</a>
-	)}
-	<div class="post-card-content">
-		<div class="post-card-top">
-			<div class="pill-row" transition:name={`meta-${slug}`}>
+{
+	variant === "list" ? (
+		<article class="post-list-item">
+			<div class="post-list-meta">
 				{formattedDate && (
 					<time
-						class="pill local-time-pending"
+						class="post-list-date local-time-pending"
 						datetime={publishedAt ?? undefined}
 						data-local-time="date"
 					>
 						{formattedDate}
 					</time>
 				)}
-				{categoryName && <span class="pill">{categoryName}</span>}
-			<span class="pill">{articleReadingTimeLabel} · {articleLengthLabel}</span>
+				{categoryName && <span class="post-list-category">{categoryName}</span>}
 			</div>
-			<a href={`/blog/${encodedSlug}`} class="post-card-link" data-astro-prefetch="hover">
-				<h2 class="post-card-title" transition:name={`title-${slug}`}>{title}</h2>
-			</a>
-		</div>
-		{excerpt && (
-			<p class="post-card-excerpt" transition:name={`summary-${slug}`}>
-				{excerpt}
-			</p>
-		)}
-		<div class="post-card-meta">
-			<span>{authorName || siteConfig.author}</span>
-			<a href={`/blog/${encodedSlug}`} class="post-card-readmore" data-astro-prefetch="hover">继续阅读</a>
-		</div>
-	</div>
-</article>
+			<div class="post-list-content">
+				<a href={`/blog/${encodedSlug}`} class="post-list-link" data-astro-prefetch="hover">
+					<h3 class="post-list-title" transition:name={`title-${slug}`}>{title}</h3>
+				</a>
+				{excerpt && (
+					<p class="post-list-excerpt" transition:name={`summary-${slug}`}>{excerpt}</p>
+				)}
+			</div>
+		</article>
+	) : (
+		<article class={cardClassName}>
+			{hasCover && (
+				<a href={`/blog/${encodedSlug}`} class="post-card-cover" data-astro-prefetch="hover">
+					<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
+				</a>
+			)}
+			<div class="post-card-content">
+				<div class="post-card-top">
+					<div class="pill-row" transition:name={`meta-${slug}`}>
+						{formattedDate && (
+							<time
+								class="pill local-time-pending"
+								datetime={publishedAt ?? undefined}
+								data-local-time="date"
+							>
+								{formattedDate}
+							</time>
+						)}
+						{categoryName && <span class="pill">{categoryName}</span>}
+			<span class="pill">{articleReadingTimeLabel} · {articleLengthLabel}</span>
+					</div>
+					<a href={`/blog/${encodedSlug}`} class="post-card-link" data-astro-prefetch="hover">
+						<h2 class="post-card-title" transition:name={`title-${slug}`}>{title}</h2>
+					</a>
+				</div>
+				{excerpt && (
+					<p class="post-card-excerpt" transition:name={`summary-${slug}`}>
+						{excerpt}
+					</p>
+				)}
+				<div class="post-card-meta">
+					<span>{authorName || siteConfig.author}</span>
+					<a href={`/blog/${encodedSlug}`} class="post-card-readmore" data-astro-prefetch="hover">继续阅读</a>
+				</div>
+			</div>
+		</article>
+	)
+}

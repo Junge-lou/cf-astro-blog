@@ -1,13 +1,20 @@
-import { execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import process from "node:process";
-
-const NPX = process.platform === "win32" ? "npx.cmd" : "npx";
 const ROOT_DIR = process.cwd();
 const SOURCE_DIR = join(ROOT_DIR, ".pagefind-source");
 const OUTPUT_DIR = join(ROOT_DIR, "public", "pagefind");
 const META_FILE = join(ROOT_DIR, "public", "pagefind-meta.json");
+const BIN_DIR = join(ROOT_DIR, "node_modules", ".bin");
+const PAGEFIND = join(
+	BIN_DIR,
+	process.platform === "win32" ? "pagefind.cmd" : "pagefind",
+);
+const WRANGLER = join(
+	BIN_DIR,
+	process.platform === "win32" ? "wrangler.cmd" : "wrangler",
+);
 
 const forceRemote = process.argv.includes("--remote");
 const forceLocal = process.argv.includes("--local");
@@ -99,18 +106,8 @@ function toIsoDate(value) {
 
 function runWranglerQuery(command, sourceMode) {
 	const modeFlag = sourceMode === "remote" ? "--remote" : "--local";
-	const stdout = execFileSync(
-		NPX,
-		[
-			"wrangler",
-			"d1",
-			"execute",
-			"DB",
-			modeFlag,
-			"--command",
-			command,
-			"--json",
-		],
+	const stdout = execSync(
+		`"${WRANGLER}" d1 execute DB ${modeFlag} --command ${JSON.stringify(command)} --json`,
 		{
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "inherit"],
@@ -244,18 +241,8 @@ async function runPagefind() {
 	await rm(OUTPUT_DIR, { recursive: true, force: true });
 	await ensureDirectory(join(ROOT_DIR, "public"));
 
-	execFileSync(
-		NPX,
-		[
-			"pagefind",
-			"--site",
-			SOURCE_DIR,
-			"--output-path",
-			OUTPUT_DIR,
-			"--force-language",
-			"zh",
-			"--quiet",
-		],
+	execSync(
+		`"${PAGEFIND}" --site "${SOURCE_DIR}" --output-path "${OUTPUT_DIR}" --force-language zh --quiet`,
 		{
 			stdio: "inherit",
 		},
