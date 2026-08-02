@@ -1,3 +1,31 @@
+# cf-astro-blog v1.5 — Astro 7 + BBC-style Homepage + Golden Ratio Typography
+
+**2026-08-03**
+
+## Framework
+- **Astro 6.4.3 → 7.1.6**: Rust compiler, Rolldown (Vite 8), Sätteri Markdown
+- **@astrojs/cloudflare 13 → 14**, **@cloudflare/workers-types 4.x → 5.x**
+
+## Homepage
+- Flat structure: removed atmosphere/media/sidebar/signal/metric layers
+- Dual-column Hero with sidebar (pinned compact + recent list) on desktop
+- BBC-style compact cards: vertical, 240:134, no cover radius, reduced glass
+- Category tag navigation + archive filtering (`/blog?category=...`)
+- Golden ratio typography from section-head h2 (φ=1.618 descending)
+
+## Features
+- `Ctrl+K` global search, container queries, `:has()` selector
+- Global `:focus-visible`, `prefers-reduced-motion`, `text-wrap: pretty`
+- Dark mode contrast boost
+
+## Admin
+- Removed Hero layout toggle, signal card, hero image uploader forms
+
+## Changelog
+- ~400 lines dead CSS removed, `--space-2xs` aligned to 4px grid
+
+---
+
 # cf-astro-blog v0.1.0 发布说明
 
 > 基于 Astro 6 + Hono + Cloudflare Workers 的全栈博客站点，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
