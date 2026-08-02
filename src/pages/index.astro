@@ -190,12 +190,13 @@ function isInternalHref(href: string) {
 				}
 			</div>
 			<div class="hero-stats">
-				<span>📝 共 <strong>{totalPostCount}</strong> 篇文章</span>
+				<span>📝 已发布 <strong>{totalPostCount}</strong> 篇文章</span>
 				{latestUpdateAt && (
 					<time class="local-time-pending" datetime={latestUpdateAt} data-local-time="date">
-						最近更新 {latestUpdate}
+						最后更新于 {latestUpdate}
 					</time>
 				)}
+				<span class="hero-stats-note">记录技术、阅读与思考</span>
 			</div>
 		</div>
 		{
@@ -318,6 +319,7 @@ function isInternalHref(href: string) {
 		gap: clamp(0.8rem, 1.5vw, 1.2rem);
 		max-width: 50rem;
 		width: 100%;
+		margin: 0 auto;
 		padding: clamp(1rem, 2vw, 1.8rem) clamp(1.2rem, 2.5vw, 2.2rem);
 		overflow: hidden;
 	}
@@ -357,6 +359,33 @@ function isInternalHref(href: string) {
 		border-radius: var(--radius-card);
 		background: rgba(var(--card-surface-rgb), 0.06);
 		border: 1px solid var(--color-border);
+	}
+
+	/* sidebar 内列表项：meta 置于标题上方，垂直堆叠 */
+	.hero-sidebar :global(.post-list-item) {
+		flex-direction: column !important;
+		gap: 0.2rem;
+		padding: 0.4rem 0.3rem;
+	}
+
+	.hero-sidebar :global(.post-list-meta) {
+		order: -1;
+		min-width: 0;
+		font-size: 0.72rem;
+	}
+
+	/* sidebar 内卡片标题和摘要统一字号 */
+	.hero-sidebar :global(.post-compact-title),
+	.hero-sidebar :global(.post-list-title) {
+		font-size: 0.95rem;
+		font-weight: 650;
+		line-height: 1.3;
+	}
+
+	.hero-sidebar :global(.post-compact-excerpt),
+	.hero-sidebar :global(.post-list-excerpt) {
+		font-size: 0.8rem;
+		line-height: 1.45;
 	}
 
 	@media (min-width: 768px) {
@@ -756,6 +785,11 @@ function isInternalHref(href: string) {
 
 	.hero-stats time {
 		color: var(--color-text-muted);
+	}
+
+	.hero-stats-note {
+		color: var(--color-text-muted);
+		font-style: italic;
 	}
 
 		.hero-signal-card {
