@@ -599,13 +599,6 @@ function renderAppearancePage(options: {
 				<section class="appearance-panel">
 					<h2>首页首屏文案</h2>
 					<div class="form-group">
-						<label for="heroLayout">首屏布局</label>
-						<select id="heroLayout" name="heroLayout" class="form-input">
-							<option value="default" ${settings.heroLayout !== "minimal" ? "selected" : ""}>默认（双层 + 卡片）</option>
-							<option value="minimal" ${settings.heroLayout === "minimal" ? "selected" : ""}>精简（居中 + 纯文字）</option>
-						</select>
-					</div>
-					<div class="form-group">
 						<label for="heroKicker">顶部标签</label>
 						<input
 							id="heroKicker"
@@ -629,50 +622,6 @@ function renderAppearancePage(options: {
 						<label for="heroIntro">简介</label>
 						<textarea id="heroIntro" name="heroIntro" class="form-textarea" maxlength="600">${escapeHtml(settings.heroIntro)}</textarea>
 					</div>
-					<div class="form-group">
-						<label for="heroMainImagePath">首屏图片预留位路径</label>
-						<input
-							id="heroMainImagePath"
-							name="heroMainImagePath"
-							class="form-input appearance-key-input"
-							value="${escapeAttribute(settings.heroMainImagePath ?? "")}"
-							maxlength="320"
-							placeholder="/media/appearance/home/hero-main.webp"
-							data-hero-image-path-input="true"
-						/>
-						<div
-							class="appearance-hero-uploader"
-							data-hero-image-uploader="true"
-							data-upload-url="/api/admin/media/upload-async"
-							data-csrf-token="${escapeAttribute(csrfToken)}"
-						>
-							<input
-								type="file"
-								accept="${escapeAttribute(getAllowedMediaAcceptValue())}"
-								class="appearance-upload-input"
-								data-hero-image-file-input="true"
-							/>
-							<div
-								class="appearance-upload-dropzone appearance-hero-dropzone"
-								data-hero-image-dropzone="true"
-								role="button"
-								tabindex="0"
-								aria-label="拖拽文件或点击上传首屏图片"
-							>
-								${
-									settings.heroMainImagePath
-										? `<img src="${escapeAttribute(settings.heroMainImagePath)}" alt="首屏图片预览" class="cover-preview-image" data-hero-image-preview="true" />`
-										: `<div class="cover-empty" data-hero-image-empty="true">拖拽图片或点击上传首屏图片</div>`
-								}
-							</div>
-							<div class="appearance-background-actions">
-								<button type="button" class="btn btn-sm" data-hero-image-select="true">上传首屏图片</button>
-								<button type="button" class="btn btn-sm btn-danger" data-hero-image-clear="true">清空首屏引用</button>
-							</div>
-							<p class="form-help" data-hero-image-status></p>
-						</div>
-					</div>
-					<p class="appearance-note">支持拖拽上传自动回填，也支持手动输入 /media/...、站内绝对路径或 https:// 外链。</p>
 					<div class="appearance-list-head">
 						<h4>首页按钮</h4>
 						<button type="button" class="btn" data-link-add="hero">+ 新增按钮</button>
@@ -769,109 +718,6 @@ function renderAppearancePage(options: {
 								<span data-appearance-display="backgroundPositionY">${escapeHtml(String(backgroundPositionYOffset))}%</span>
 							</div>
 							<input id="backgroundPositionY" name="backgroundPositionY" type="range" min="-50" max="50" value="${escapeAttribute(String(backgroundPositionYOffset))}" data-appearance-control="backgroundPositionY" />
-						</div>
-					</div>
-				</section>
-				<section class="appearance-panel">
-					<h2>右侧信息卡文案</h2>
-					<div class="form-group">
-						<label for="heroSignalLabel">右侧卡片标签</label>
-						<input
-							id="heroSignalLabel"
-							name="heroSignalLabel"
-							class="form-input"
-							value="${escapeAttribute(settings.heroSignalLabel)}"
-							maxlength="30"
-						/>
-					</div>
-					<div class="form-group">
-						<label for="heroSignalHeading">右侧卡片标题</label>
-						<input
-							id="heroSignalHeading"
-							name="heroSignalHeading"
-							class="form-input"
-							value="${escapeAttribute(settings.heroSignalHeading)}"
-							maxlength="120"
-						/>
-					</div>
-					<div class="form-group">
-						<label for="heroSignalCopy">右侧卡片描述</label>
-						<textarea id="heroSignalCopy" name="heroSignalCopy" class="form-textarea" maxlength="300">${escapeHtml(settings.heroSignalCopy)}</textarea>
-					</div>
-					<div class="form-group">
-						<label for="heroSignalImagePath">右侧卡片图片路径（可选）</label>
-						<input
-							id="heroSignalImagePath"
-							name="heroSignalImagePath"
-							class="form-input appearance-key-input"
-							value="${escapeAttribute(settings.heroSignalImagePath ?? "")}"
-							maxlength="320"
-							placeholder="/media/appearance/home/hero-signal.webp"
-							data-signal-image-path-input="true"
-						/>
-						<div
-							class="appearance-hero-uploader"
-							data-signal-image-uploader="true"
-							data-upload-url="/api/admin/media/upload-async"
-							data-csrf-token="${escapeAttribute(csrfToken)}"
-						>
-							<input
-								type="file"
-								accept="${escapeAttribute(getAllowedMediaAcceptValue())}"
-								class="appearance-upload-input"
-								data-signal-image-file-input="true"
-							/>
-							<div
-								class="appearance-upload-dropzone appearance-hero-dropzone"
-								data-signal-image-dropzone="true"
-								role="button"
-								tabindex="0"
-								aria-label="拖拽文件或点击上传右侧卡片图片"
-							>
-								${
-									settings.heroSignalImagePath
-										? `<img src="${escapeAttribute(settings.heroSignalImagePath)}" alt="右侧卡片图片预览" class="cover-preview-image" data-signal-image-preview="true" />`
-										: `<div class="cover-empty" data-signal-image-empty="true">拖拽图片或点击上传右侧卡片图片</div>`
-								}
-							</div>
-							<div class="appearance-background-actions">
-								<button type="button" class="btn btn-sm" data-signal-image-select="true">上传卡片图片</button>
-								<button type="button" class="btn btn-sm btn-danger" data-signal-image-clear="true">清空卡片图片</button>
-							</div>
-							<p class="form-help" data-signal-image-status></p>
-						</div>
-					</div>
-					<p class="appearance-note">不上传时首页右侧卡片会继续使用当前无图样式。</p>
-					<div class="appearance-chip-grid">
-						<div class="form-group">
-							<label for="heroSignalChip1">卡片标签 1</label>
-							<input
-								id="heroSignalChip1"
-								name="heroSignalChip1"
-								class="form-input"
-								value="${escapeAttribute(settings.heroSignalChip1)}"
-								maxlength="24"
-							/>
-						</div>
-						<div class="form-group">
-							<label for="heroSignalChip2">卡片标签 2</label>
-							<input
-								id="heroSignalChip2"
-								name="heroSignalChip2"
-								class="form-input"
-								value="${escapeAttribute(settings.heroSignalChip2)}"
-								maxlength="24"
-							/>
-						</div>
-						<div class="form-group">
-							<label for="heroSignalChip3">卡片标签 3</label>
-							<input
-								id="heroSignalChip3"
-								name="heroSignalChip3"
-								class="form-input"
-								value="${escapeAttribute(settings.heroSignalChip3)}"
-								maxlength="24"
-							/>
 						</div>
 					</div>
 				</section>
@@ -1177,21 +1023,12 @@ appearance.post("/", async (c) => {
 			getBodyTexts(body, "navLinkHref"),
 		),
 		heroKicker: getBodyText(body, "heroKicker"),
-		heroLayout: getBodyText(body, "heroLayout"),
 		heroTitle: getBodyText(body, "heroTitle"),
 		heroIntro: getBodyText(body, "heroIntro"),
-		heroMainImagePath: getBodyText(body, "heroMainImagePath"),
 		heroActions: buildLinkItemsFromBody(
 			getBodyTexts(body, "heroActionLabel"),
 			getBodyTexts(body, "heroActionHref"),
 		),
-		heroSignalLabel: getBodyText(body, "heroSignalLabel"),
-		heroSignalHeading: getBodyText(body, "heroSignalHeading"),
-		heroSignalCopy: getBodyText(body, "heroSignalCopy"),
-		heroSignalImagePath: getBodyText(body, "heroSignalImagePath"),
-		heroSignalChip1: getBodyText(body, "heroSignalChip1"),
-		heroSignalChip2: getBodyText(body, "heroSignalChip2"),
-		heroSignalChip3: getBodyText(body, "heroSignalChip3"),
 		articleSidebarAvatarPath: getBodyText(body, "articleSidebarAvatarPath"),
 		articleSidebarName: getBodyText(body, "articleSidebarName"),
 		articleSidebarBadge: getBodyText(body, "articleSidebarBadge"),

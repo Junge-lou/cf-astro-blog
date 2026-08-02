@@ -17,7 +17,7 @@ interface Props {
 	latinWordCount?: number;
 	estimatedReadingMinutes?: number;
 	coverSide?: "left" | "right";
-	variant?: "card" | "list";
+	variant?: "card" | "list" | "compact";
 }
 
 const {
@@ -79,7 +79,31 @@ const encodedSlug = encodeRouteParam(slug);
 ---
 
 {
-	variant === "list" ? (
+	variant === "compact" ? (
+		<article class="post-compact">
+			{hasCover && (
+				<a href={`/blog/${encodedSlug}`} class="post-compact-cover" data-astro-prefetch="hover">
+					<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
+				</a>
+			)}
+			<div class="post-compact-body">
+				<div class="post-compact-meta">
+					{categoryName && <span class="post-compact-category">{categoryName}</span>}
+					{formattedDate && (
+						<time class="post-compact-date local-time-pending" datetime={publishedAt ?? undefined} data-local-time="date">
+							{formattedDate}
+						</time>
+					)}
+				</div>
+				<a href={`/blog/${encodedSlug}`} class="post-compact-link" data-astro-prefetch="hover">
+					<h3 class="post-compact-title" transition:name={`title-${slug}`}>{title}</h3>
+				</a>
+				{excerpt && (
+					<p class="post-compact-excerpt" transition:name={`summary-${slug}`}>{excerpt}</p>
+				)}
+			</div>
+		</article>
+	) : variant === "list" ? (
 		<article class="post-list-item">
 			<div class="post-list-meta">
 				{formattedDate && (

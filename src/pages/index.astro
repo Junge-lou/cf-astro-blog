@@ -140,8 +140,6 @@ const recentSectionSubheading =
 		? ""
 		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
-const isHeroMinimal = homepageAppearance.heroLayout === "minimal";
-const totalPostCount = pinnedPosts.length + recentPosts.length;
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
 	siteConfig.description,
@@ -153,172 +151,41 @@ function isInternalHref(href: string) {
 ---
 
 <Base title={siteConfig.name} description={homepageMetaDescription}>
-	{
-		isHeroMinimal ? (
-			<section class="home-hero home-hero-minimal glass-panel">
-				<div class="home-hero-minimal-body">
-					<span class="section-kicker">{homepageAppearance.heroKicker}</span>
-					<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
-					<p class="page-intro">{homepageAppearance.heroIntro}</p>
-					<div class="hero-actions">
-						{
-							heroActions.map((action, index) => (
-								index === 1 ? (
-									<span class="hero-search-bridge" transition:name="search-entry">
-										<a
-											href={action.href}
-											class:list={["button", { "button-secondary": index > 0 }]}
-											target={isInternalHref(action.href) ? undefined : "_blank"}
-											rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-										>
-											{action.label}
-											<kbd class="hero-kbd">Ctrl K</kbd>
-										</a>
-									</span>
-								) : (
-									<a
-										href={action.href}
-										class:list={["button", { "button-secondary": index > 0 }]}
-										target={isInternalHref(action.href) ? undefined : "_blank"}
-										rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-									>
-										{action.label}
-									</a>
-								)
-							))
-						}
-					</div>
-					<div class="hero-minimal-stats">
-						<span>📝 共 {totalPostCount} 篇文章</span>
-						{latestUpdateAt && (
-							<span>
-								· 最近更新{" "}
-								<time class="local-time-pending" datetime={latestUpdateAt} data-local-time="date">
-									{latestUpdate}
-								</time>
+	<section class="home-hero glass-panel">
+		<div class="home-hero-copy">
+			<span class="section-kicker">{homepageAppearance.heroKicker}</span>
+			<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
+			<p class="page-intro">{homepageAppearance.heroIntro}</p>
+			<div class="hero-actions">
+				{
+					heroActions.map((action, index) => (
+						index === 1 ? (
+							<span class="hero-search-bridge" transition:name="search-entry">
+								<a
+									href={action.href}
+									class:list={["button", { "button-secondary": index > 0 }]}
+									target={isInternalHref(action.href) ? undefined : "_blank"}
+									rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
+								>
+									{action.label}
+									<kbd class="hero-kbd">Ctrl K</kbd>
+								</a>
 							</span>
-						)}
-					</div>
-				</div>
-			</section>
-		) : (
-			<section class="home-hero glass-panel" data-hero-depth>
-				<div class="hero-atmosphere" aria-hidden="true">
-					<span class="hero-aura hero-aura-primary"></span>
-					<span class="hero-aura hero-aura-secondary"></span>
-					<span class="hero-grid"></span>
-					<span class="hero-beam"></span>
-				</div>
-				<div class="home-hero-main">
-					<div
-						class:list={[
-							"hero-main-media",
-							{ "hero-main-media-has-image": Boolean(homepageAppearance.heroMainImagePath) },
-						]}
-						data-tilt-card
-						data-tilt-scale="0.78"
-						data-tilt-shift-scale="1.08"
-						aria-hidden={homepageAppearance.heroMainImagePath ? undefined : "true"}
-					>
-						{
-							homepageAppearance.heroMainImagePath ? (
-								<img
-									src={homepageAppearance.heroMainImagePath}
-									alt=""
-									loading="lazy"
-									decoding="async"
-								/>
-							) : null
-						}
-					</div>
-					<div class="home-hero-copy">
-						<span class="section-kicker">{homepageAppearance.heroKicker}</span>
-						<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
-						<p class="page-intro">{homepageAppearance.heroIntro}</p>
-						<div class="hero-actions">
-							{
-								heroActions.map((action, index) => (
-									index === 1 ? (
-										<span class="hero-search-bridge" transition:name="search-entry">
-											<a
-												href={action.href}
-												class:list={["button", { "button-secondary": index > 0 }]}
-												target={isInternalHref(action.href) ? undefined : "_blank"}
-												rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-											>
-												{action.label}
-												<kbd class="hero-kbd">Ctrl K</kbd>
-											</a>
-										</span>
-									) : (
-										<a
-											href={action.href}
-											class:list={["button", { "button-secondary": index > 0 }]}
-											target={isInternalHref(action.href) ? undefined : "_blank"}
-											rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-										>
-											{action.label}
-										</a>
-									)
-								))
-							}
-						</div>
-					</div>
-				</div>
-					<div class="home-hero-side">
-						<article
-							class:list={[
-								"hero-signal-card",
-								{ "hero-signal-card-has-image": Boolean(homepageAppearance.heroSignalImagePath) },
-							]}
-							data-tilt-card
-						>
-							<div class="hero-signal-glow" aria-hidden="true"></div>
-							{
-								homepageAppearance.heroSignalImagePath ? (
-									<div class="hero-signal-media" aria-hidden="true">
-										<img
-											src={homepageAppearance.heroSignalImagePath}
-											alt=""
-											loading="lazy"
-											decoding="async"
-										/>
-									</div>
-								) : null
-							}
-							<div class="hero-signal-content">
-								<span class="hero-signal-label">{homepageAppearance.heroSignalLabel}</span>
-								<strong class="hero-signal-heading">{homepageAppearance.heroSignalHeading}</strong>
-								<p class="hero-signal-copy">{homepageAppearance.heroSignalCopy}</p>
-								<div class="hero-signal-row">
-									<span class="hero-signal-chip">{homepageAppearance.heroSignalChip1}</span>
-									<span class="hero-signal-chip">{homepageAppearance.heroSignalChip2}</span>
-									<span class="hero-signal-chip">{homepageAppearance.heroSignalChip3}</span>
-								</div>
-							</div>
-						</article>
-					<div class="hero-metric">
-						<span>最近更新</span>
-						<strong>
-							{
-								latestUpdateAt ? (
-									<time
-										class="local-time-pending"
-										datetime={latestUpdateAt}
-										data-local-time="date"
-									>
-										{latestUpdate}
-									</time>
-								) : (
-									latestUpdate
-								)
-							}
-						</strong>
-					</div>
-				</div>
-			</section>
-		)
-	}
+						) : (
+							<a
+								href={action.href}
+								class:list={["button", { "button-secondary": index > 0 }]}
+								target={isInternalHref(action.href) ? undefined : "_blank"}
+								rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
+							>
+								{action.label}
+							</a>
+						)
+					))
+				}
+			</div>
+		</div>
+	</section>
 
 	{
 		categories.length > 0 && (
@@ -336,12 +203,11 @@ function isInternalHref(href: string) {
 			<>
 				<section class="section-head">
 					<div>
-						<span class="section-kicker">📌 精选</span>
 						<h2 class="section-heading">置顶文章</h2>
 					</div>
 				</section>
 
-				<div class="home-grid home-grid-pinned">
+				<div class="post-compact-grid">
 					{pinnedPosts.map((post, index) => (
 						<PostCard
 							title={post.title}
@@ -355,7 +221,7 @@ function isInternalHref(href: string) {
 							cjkCharCount={post.cjkCharCount}
 							latinWordCount={post.latinWordCount}
 							estimatedReadingMinutes={post.estimatedReadingMinutes}
-							coverSide={index % 2 === 0 ? "left" : "right"}
+							variant="compact"
 						/>
 					))}
 				</div>
@@ -365,7 +231,6 @@ function isInternalHref(href: string) {
 
 	<section class="section-head">
 		<div>
-			<span class="section-kicker">📝 动态</span>
 			<h2 class="section-heading">最近更新</h2>
 		</div>
 		<p class="section-subheading">
@@ -1022,7 +887,7 @@ function isInternalHref(href: string) {
 		align-items: center;
 		padding: 0.38rem 1rem;
 		border-radius: var(--radius-pill);
-		font-size: 0.84rem;
+		font-size: 0.78rem;
 		font-weight: 500;
 		color: var(--color-text-secondary);
 		background: rgba(var(--card-surface-rgb), 0.08);
@@ -1067,6 +932,30 @@ function isInternalHref(href: string) {
 
 	.home-list :global(.post-list-item:nth-child(3)) {
 		animation-delay: 180ms;
+	}
+
+	.post-compact-grid :global(.post-compact:nth-child(1)) {
+		animation-delay: 80ms;
+	}
+
+	.post-compact-grid :global(.post-compact:nth-child(2)) {
+		animation-delay: 130ms;
+	}
+
+	.post-compact-grid :global(.post-compact:nth-child(3)) {
+		animation-delay: 180ms;
+	}
+
+	.post-compact-grid :global(.post-compact:nth-child(4)) {
+		animation-delay: 230ms;
+	}
+
+	.post-compact-grid :global(.post-compact:nth-child(5)) {
+		animation-delay: 280ms;
+	}
+
+	.post-compact-grid :global(.post-compact:nth-child(6)) {
+		animation-delay: 330ms;
 	}
 
 	.home-grid {
