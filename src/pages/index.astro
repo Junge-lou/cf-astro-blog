@@ -140,6 +140,7 @@ const recentSectionSubheading =
 		? ""
 		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
+const totalPostCount = pinnedPosts.length + recentPosts.length;
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
 	siteConfig.description,
@@ -156,6 +157,7 @@ function isInternalHref(href: string) {
 			<span class="section-kicker">{homepageAppearance.heroKicker}</span>
 			<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
 			<p class="page-intro">{homepageAppearance.heroIntro}</p>
+			<div class="hero-divider" aria-hidden="true"></div>
 			<div class="hero-actions">
 				{
 					heroActions.map((action, index) => (
@@ -183,6 +185,14 @@ function isInternalHref(href: string) {
 						)
 					))
 				}
+			</div>
+			<div class="hero-stats">
+				<span>📝 共 <strong>{totalPostCount}</strong> 篇文章</span>
+				{latestUpdateAt && (
+					<time class="local-time-pending" datetime={latestUpdateAt} data-local-time="date">
+						最近更新 {latestUpdate}
+					</time>
+				)}
 			</div>
 		</div>
 	</section>
@@ -267,24 +277,40 @@ function isInternalHref(href: string) {
 
 <style>
 	.home-hero {
-		--hero-pointer-x: 0;
-		--hero-pointer-y: 0;
-		--hero-scroll-shift: 0px;
 		--hero-opacity-scale: calc(var(--hero-card-opacity, 14) / 14);
 		--glass-panel-blur: var(--hero-card-blur, 18px);
 		--hero-blur-effective: min(calc(var(--hero-card-blur, 18px) * 1.6), 84px);
-		--hero-surface-alpha: min(
-			calc(var(--hero-card-opacity, 14) / 100),
-			0.32
-		);
+		--hero-surface-alpha: min(calc(var(--hero-card-opacity, 14) / 100), 0.32);
 		position: relative;
-		display: grid;
-		grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
-		gap: clamp(1.4rem, 2vw, 2.2rem);
-		padding: clamp(1.5rem, 1rem + 3vw, 3rem);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: clamp(2rem, 2.5vw, 3.5rem) clamp(1.5rem, 3vw, 3rem);
 		box-shadow:
 			0 30px 90px -60px rgba(8, 18, 34, 0.34),
 			0 12px 24px -18px rgba(8, 18, 34, 0.18);
+		border-left: 4px solid var(--color-accent);
+		overflow: hidden;
+	}
+
+	.home-hero::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 1;
+		background:
+			radial-gradient(ellipse at 50% 0%, rgba(10, 132, 255, 0.06), transparent 60%),
+			radial-gradient(ellipse at 80% 100%, rgba(255, 255, 255, 0.04), transparent 50%);
+	}
+
+	.home-hero-copy {
+		position: relative;
+		z-index: 2;
+		display: grid;
+		gap: 1.05rem;
+		max-width: 48rem;
+		width: 100%;
 	}
 
 	.home-hero-minimal {
@@ -634,6 +660,44 @@ function isInternalHref(href: string) {
 
 	.home-hero-copy > :nth-child(4) {
 		animation-delay: 260ms;
+	}
+
+	.home-hero-copy > :nth-child(5) {
+		animation-delay: 330ms;
+	}
+
+	.home-hero-copy > :nth-child(6) {
+		animation-delay: 400ms;
+	}
+
+	.hero-divider {
+		width: 4rem;
+		height: 3px;
+		border-radius: 2px;
+		background: linear-gradient(
+			90deg,
+			var(--color-accent),
+			rgba(10, 132, 255, 0.2)
+		);
+		margin-top: 0.2rem;
+	}
+
+	.hero-stats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		font-size: 0.82rem;
+		color: var(--color-text-muted);
+		margin-top: 0.2rem;
+	}
+
+	.hero-stats strong {
+		color: var(--color-text-secondary);
+		font-weight: 650;
+	}
+
+	.hero-stats time {
+		color: var(--color-text-muted);
 	}
 
 		.hero-signal-card {
