@@ -1167,34 +1167,170 @@ function renderKanban(code: string): string {
 	return html;
 }
 
-function renderChat(code: string): string {
-	const lines = code.trim().split("\n");
-	let html = '<div class="prose-chat">';
-	let side: "left" | "right" = "left";
+interface ChatConfig {
+	senderNickname: string;
+	timeNickname: string;
+	showNickname: boolean;
+	showAvatar: boolean;
+	notAllowShowTime: boolean;
+	allowMarkdown: boolean;
+	avatars: Record<string, string>;
+}
+
+function parseChatConfig(yamlBlock: string): ChatConfig {
+	const config: ChatConfig = {
+		senderNickname: "me",
+		timeNickname: "time",
+		showNickname: true,
+		showAvatar: true,
+		notAllowShowTime: false,
+		allowMarkdown: false,
+		avatars: {},
+	};
+
+	const lines = yamlBlock.trim().split("\n");
+	let currentKey: string | null = null;
 
 	for (const line of lines) {
 		const trimmed = line.trim();
 		if (!trimmed) continue;
 
-		// 方向切换: %% left 或 %% right
-		const dirMatch = trimmed.match(/^%%\s*(left|right)/i);
-		if (dirMatch) {
-			side = dirMatch[1]!.toLowerCase() as "left" | "right";
+		// 嵌套属性（如 avatars: 下的缩进行）
+		const nestedMatch = trimmed.match(/^(\w+):\s*(.+)/);
+		if (nestedMatch && trimmed.startsWith(" ") && currentKey === "avatars") {
+			const avatarName = nestedMatch[1]!.trim();
+			const avatarUrl = nestedMatch[2]!.trim();
+			config.avatars[avatarName] = avatarUrl;
 			continue;
 		}
 
-		// 消息: **名字** 消息内容
-		const msgMatch = trimmed.match(/^\*\*(.+?)\*\*\s+(.+)/);
-		if (msgMatch) {
-			html += `<div class="prose-chat-bubble prose-chat-${side}"><div class="prose-chat-author">${escapeHtml(msgMatch[1]!.trim())}</div><div class="prose-chat-text">${escapeHtml(msgMatch[2]!.trim())}</div></div>`;
-			continue;
-		}
+		// 顶层属性
+		const topMatch = trimmed.match(/^(\w+):\s*(.*)/);
+		if (topMatch) {
+			const key = topMatch[1]!.trim();
+			const rawValue = topMatch[2]!.trim();
+			currentKey = key;
 
-		// 纯消息（无作者）
-		html += `<div class="prose-chat-bubble prose-chat-${side}"><div class="prose-chat-text">${escapeHtml(trimmed)}</div></div>`;
+			switch (key) {
+				case "senderNickname":
+					config.senderNickname = rawValue || "me";
+					break;
+				case "timeNickname":
+					config.timeNickname = rawValue || "time";
+					break;
+				case "showNickname":
+					config.showNickname = rawValue !== "false";
+					break;
+				case "showAvatar":
+					config.showAvatar = rawValue !== "false";
+					break;
+				case "notAllowShowTime":
+					config.notAllowShowTime = rawValue === "true";
+					break;
+				case "allowMarkdown":
+					config.allowMarkdown = rawValue === "true";
+					break;
+				case "avatars":
+					// avatars 顶层值为空，子行处理
+					currentKey = "avatars";
+					break;
+			}
+		}
 	}
 
-	html += "</div>";
+	return config;
+}
+
+function renderChatMessageText(text: string, allowMarkdown: boolean): string {
+	if (!allowMarkdown) {
+		return escapeHtml(text);
+	}
+	// 简单 markdown 支持：**加粗**、*斜体*、`代码`、链接
+	let html = escapeHtml(text);
+	html = html.replaceAll(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+	html = html.replaceAll(/(?<!\*)\*(.+?)\*(?!\*)/g, "<em>$1</em>");
+	html = html.replaceAll(/`([^`]+)`/g, "<code>$1</code>");
+	return html;
+}
+
+function renderChat(code: string): string {
+	const raw = code.trim();
+
+	// 分割 YAML 配置 与 消息内容
+	const configSeparator = raw.indexOf("\n---");
+	let configBlock = "";
+	let messagesBlock = raw;
+
+	if (raw.startsWith("---")) {
+		const secondSep = raw.indexOf("\n---", 3);
+		if (secondSep !== -1) {
+			configBlock = raw.slice(3, secondSep).trim();
+			messagesBlock = raw.slice(secondSep + 4).trim();
+		}
+	}
+
+	const config = parseChatConfig(configBlock);
+	const sender = config.senderNickname || "me";
+	const timePrefix = config.timeNickname || "time";
+	const lines = messagesBlock.split("\n");
+
+	let html = '<div class="prose-chat"><div class="prose-chat-content">';
+
+	// 构建时间戳匹配正则
+	const timePattern = new RegExp(`^${escapeRegExp(timePrefix)}\\s*:\\s*(.+)`);
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+
+		// 时间戳: timeNickname: 内容
+		const timeMatch = trimmed.match(timePattern);
+		if (timeMatch) {
+			if (config.notAllowShowTime) continue;
+			const timeText = timeMatch[1]!.trim();
+			if (timeText) {
+				html += `<div class="prose-chat-time">${escapeHtml(timeText)}</div>`;
+			}
+			continue;
+		}
+
+		// 具名消息: Name: 消息内容
+		const msgMatch = trimmed.match(/^([\w\u4e00-\u9fff]+)\s*:\s*(.*)/);
+		if (msgMatch) {
+			const name = msgMatch[1]!.trim();
+			const content = msgMatch[2]!.trim();
+			if (!content) continue;
+
+			const isSender = name === sender;
+			const rowClass = isSender ? "prose-chat-send" : "prose-chat-receive";
+
+			// 头像
+			let avatarHtml = "";
+			if (config.showAvatar) {
+				const avatarUrl = config.avatars[name] || "";
+				if (avatarUrl) {
+					avatarHtml = `<img class="prose-chat-avatar" src="${escapeAttribute(avatarUrl)}" alt="${escapeAttribute(name)}" loading="lazy" />`;
+				} else {
+					avatarHtml = `<div class="prose-chat-avatar"><div class="prose-chat-avatar-font">${escapeHtml(name.charAt(0).toUpperCase())}</div></div>`;
+				}
+			}
+
+			// 昵称（仅接收方显示，与原版一致）
+			const nicknameHtml = (config.showNickname && !isSender)
+				? `<div class="prose-chat-nickname">${escapeHtml(name)}</div>`
+				: "";
+
+			const textHtml = renderChatMessageText(content, config.allowMarkdown);
+
+			html += `<div class="${rowClass}">${avatarHtml}<div class="prose-chat-quote">${nicknameHtml}<div class="prose-chat-text">${textHtml}</div></div></div>`;
+			continue;
+		}
+
+		// 纯文本（无前缀），作为普通段落
+		html += `<div class="prose-chat-plain">${escapeHtml(trimmed)}</div>`;
+	}
+
+	html += "</div></div>";
 	return html;
 }
 

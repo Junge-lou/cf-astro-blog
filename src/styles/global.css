@@ -1305,41 +1305,112 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	margin-bottom: 1.35rem;
 	display: flex;
 	flex-direction: column;
-	gap: 0.6rem;
-	padding: 0.8rem;
+	gap: 0.15rem;
+	padding: 1rem 0.8rem;
 	background: rgba(255, 255, 255, 0.04);
 	border-radius: var(--radius-inner);
 	border: 1px solid var(--color-border);
 }
 
+/* ── 时间戳 ── */
+.prose .prose-chat-time {
+	text-align: center;
+	font-size: 0.78rem;
+	color: var(--color-text-tertiary, #888);
+	padding: 0.35rem 0;
+	margin: 0.3rem 0;
+	user-select: none;
+}
+
+/* ── 消息行（头像 + 气泡） ── */
+.prose .prose-chat-msg {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	margin-bottom: 0.15rem;
+}
+
+.prose .prose-chat-msg-left {
+	flex-direction: row;
+}
+
+.prose .prose-chat-msg-right {
+	flex-direction: row-reverse;
+}
+
+/* ── 头像 ── */
+.prose .prose-chat-avatar {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+	margin-top: 2px;
+	border: 1px solid var(--color-border);
+}
+
+.prose .prose-chat-avatar-placeholder {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	margin-top: 2px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-accent);
+	color: #fff;
+	font-weight: 600;
+	font-size: 0.85rem;
+	border: 1px solid var(--color-border);
+}
+
+.prose .prose-chat-avatar-spacer {
+	width: 36px;
+	height: 1px;
+	flex-shrink: 0;
+}
+
+/* ── 聊天气泡 ── */
 .prose .prose-chat-bubble {
-	max-width: 80%;
+	max-width: 72%;
 	padding: 0.5rem 0.8rem;
 	border-radius: 14px;
 	font-size: 0.94rem;
-	line-height: 1.5;
+	line-height: 1.55;
 }
 
-.prose .prose-chat-left {
-	align-self: flex-start;
+.prose .prose-chat-bubble-left {
 	background: rgba(10, 132, 255, 0.1);
 	border-bottom-left-radius: 4px;
 }
 
-.prose .prose-chat-right {
-	align-self: flex-end;
+.prose .prose-chat-bubble-right {
 	background: rgba(52, 199, 89, 0.1);
 	border-bottom-right-radius: 4px;
 }
 
 .prose .prose-chat-author {
 	font-weight: 600;
-	font-size: 0.82rem;
-	margin-bottom: 0.2rem;
-	color: var(--color-text);
+	font-size: 0.8rem;
+	margin-bottom: 0.15rem;
+	color: var(--color-accent);
 }
 
 .prose .prose-chat-text {
+	color: var(--color-text);
+}
+
+.prose .prose-chat-text code {
+	font-size: 0.88em;
+	background: rgba(128, 128, 128, 0.15);
+	padding: 0.1em 0.35em;
+	border-radius: 3px;
+}
+
+.prose .prose-chat-plain {
+	padding: 0.25rem 0;
+	font-size: 0.9rem;
 	color: var(--color-text-secondary);
 }
 
