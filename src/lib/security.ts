@@ -1195,21 +1195,31 @@ function parseChatConfig(yamlBlock: string): ChatConfig {
 		const trimmed = line.trim();
 		if (!trimmed) continue;
 
-		// 嵌套属性（如 avatars: 下的缩进行）
+		// 嵌套属性（如 avatars: 下的缩进行）—— 用原始行检查缩进
 		const nestedMatch = trimmed.match(/^(\w+):\s*(.+)/);
-		if (nestedMatch && trimmed.startsWith(" ") && currentKey === "avatars") {
+		if (nestedMatch && /^\s/.test(line) && currentKey === "avatars") {
 			const avatarName = nestedMatch[1]!.trim();
-			const avatarUrl = nestedMatch[2]!.trim();
+			// 去除行内 # 注释
+			const avatarUrl = nestedMatch[2]!.trim().replace(/\s+#.*$/, "").trim();
 			config.avatars[avatarName] = avatarUrl;
 			continue;
 		}
 
-		// 顶层属性
+		// 顶层属性（先去除行内 # 注释，与原版 Typora YAML 行为一致）
 		const topMatch = trimmed.match(/^(\w+):\s*(.*)/);
 		if (topMatch) {
 			const key = topMatch[1]!.trim();
-			const rawValue = topMatch[2]!.trim();
+			let rawValue = topMatch[2]!.trim();
 			currentKey = key;
+
+			// 去除行内 # 注释（保留 URL 中的 # 片段）
+			if (key === "avatars") {
+				// avatars 顶层值为空，子行处理
+				currentKey = "avatars";
+				continue;
+			}
+			// 对非 URL 类字段去除 # 注释
+			rawValue = rawValue.replace(/\s+#.*$/, "").trim();
 
 			switch (key) {
 				case "senderNickname":

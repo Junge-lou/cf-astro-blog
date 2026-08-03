@@ -1306,25 +1306,35 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	overflow: hidden;
 	border-radius: var(--radius-inner);
 	border: 1px solid var(--color-border);
-	background: rgba(128, 128, 128, 0.06);
-	color: var(--color-text);
+	background: #ebebeb;
+	color: #000;
+}
+
+[data-theme="dark"] .prose .prose-chat {
+	background: #1a1a1a;
+	color: #e0e0e0;
 }
 
 .prose .prose-chat-content {
-	padding: 1.5rem;
+	width: 100%;
+	padding: 25px;
 }
 
 .prose .prose-chat-content > :last-child {
 	margin-bottom: 0;
 }
 
-/* ── 时间戳 ── */
+/* ── 时间戳（微信风格：居中灰色文字） ── */
 .prose .prose-chat-time {
-	margin-bottom: 1.2em;
-	font-size: 0.9em;
-	color: var(--color-text-tertiary, #888);
+	display: block;
+	width: 100%;
+	text-align: center;
+	margin: 0.4em 0 1em;
+	font-size: 0.82em;
+	color: #b0b0b0;
 	white-space: break-spaces;
 	word-wrap: break-word;
+	user-select: none;
 }
 
 /* ── 消息行 ── */
@@ -1344,7 +1354,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	height: 3em !important;
 	border: 0;
 	border-radius: 5px;
-	background: var(--color-bg-raised, #fff);
+	background: #fff;
 	margin-right: 10px;
 	flex-shrink: 0;
 }
@@ -1362,7 +1372,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	height: 100%;
 	font-size: 1.5em;
 	line-height: 1;
-	color: var(--color-text-secondary);
+	color: #888;
 }
 
 /* ── 引用气泡区域 ── */
@@ -1390,8 +1400,8 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	white-space: break-spaces;
 	word-wrap: break-word;
 	position: relative;
-	background: var(--color-bg-raised, #fff);
-	color: var(--color-text);
+	background: #fff;
+	color: #000;
 }
 
 .prose .prose-chat-send .prose-chat-text {
@@ -1412,7 +1422,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 .prose .prose-chat-receive .prose-chat-text::after {
 	left: -0.45em;
-	border-top-color: var(--color-bg-raised, #fff);
+	border-top-color: #fff;
 	transform: rotate(90deg) translateX(50%);
 }
 
@@ -1442,6 +1452,11 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 }
 
 /* ── 暗色模式适配 ── */
+[data-theme="dark"] .prose .prose-chat {
+	background: #1a1a1a;
+	color: #e0e0e0;
+}
+
 [data-theme="dark"] .prose .prose-chat-text {
 	background: #2a2a2a;
 	color: #e0e0e0;
@@ -1462,6 +1477,18 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 [data-theme="dark"] .prose .prose-chat-avatar {
 	background: #333;
+}
+
+[data-theme="dark"] .prose .prose-chat-avatar-font {
+	color: #aaa;
+}
+
+[data-theme="dark"] .prose .prose-chat-nickname {
+	color: #999;
+}
+
+[data-theme="dark"] .prose .prose-chat-time {
+	color: #999;
 }
 
 [data-theme="dark"] .prose .prose-chat-send .prose-chat-text code {

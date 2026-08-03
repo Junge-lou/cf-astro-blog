@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import matter from "gray-matter";
@@ -25,10 +25,9 @@ function clampInt(value, min, max, fallback) {
 
 function runD1(command, mode) {
   const modeFlag = mode === "remote" ? "--remote" : "--local";
-  const stdout = execFileSync(
-    NPX,
-    ["wrangler", "d1", "execute", "DB", modeFlag, "--command", command, "--json"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+  const stdout = execSync(
+    `${NPX} wrangler d1 execute DB ${modeFlag} --command "${command.replaceAll('"', '\\"')}" --json`,
+    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], shell: true },
   );
 
   const jsonStart = stdout.indexOf("[");
