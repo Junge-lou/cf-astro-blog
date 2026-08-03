@@ -1270,14 +1270,14 @@ function renderChat(code: string): string {
 	}
 
 	const config = parseChatConfig(configBlock);
-	const sender = config.senderNickname || "me";
-	const timePrefix = config.timeNickname || "time";
+	const sender = (config.senderNickname || "me").toLowerCase();
+	const timePrefix = (config.timeNickname || "time").toLowerCase();
 	const lines = messagesBlock.split("\n");
 
 	let html = '<div class="prose-chat"><div class="prose-chat-content">';
 
-	// 构建时间戳匹配正则
-	const timePattern = new RegExp(`^${escapeRegExp(timePrefix)}\\s*:\\s*(.+)`);
+	// 构建时间戳匹配正则（大小写不敏感，与原版一致）
+	const timePattern = new RegExp(`^${escapeRegExp(timePrefix)}\\s*:\\s*(.+)`, "i");
 
 	for (const line of lines) {
 		const trimmed = line.trim();
@@ -1298,16 +1298,20 @@ function renderChat(code: string): string {
 		const msgMatch = trimmed.match(/^([\w\u4e00-\u9fff]+)\s*:\s*(.*)/);
 		if (msgMatch) {
 			const name = msgMatch[1]!.trim();
-			const content = msgMatch[2]!.trim();
+			let content = msgMatch[2]!.trim();
 			if (!content) continue;
 
-			const isSender = name === sender;
+			// 转义序列处理（与原版一致：\n \r \t）
+			content = content.replaceAll("\\n", "\n").replaceAll("\\r", "\r").replaceAll("\\t", "\t");
+
+			const isSender = name.toLowerCase() === sender;
 			const rowClass = isSender ? "prose-chat-send" : "prose-chat-receive";
 
-			// 头像
+			// 头像（大小写不敏感查找，与原版一致）
 			let avatarHtml = "";
 			if (config.showAvatar) {
-				const avatarUrl = config.avatars[name] || "";
+				const lowerName = name.toLowerCase();
+				const avatarUrl = config.avatars[name] || Object.entries(config.avatars).find(([k]) => k.toLowerCase() === lowerName)?.[1] || "";
 				if (avatarUrl) {
 					avatarHtml = `<img class="prose-chat-avatar" src="${escapeAttribute(avatarUrl)}" alt="${escapeAttribute(name)}" loading="lazy" />`;
 				} else {

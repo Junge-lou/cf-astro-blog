@@ -1299,8 +1299,6 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* ── Chat ─────────────────────────────────────────────────────────────── */
-
 /* ── Chat / 聊天记录 ──────────────────────────────────────────────────── */
 
 .prose .prose-chat {
