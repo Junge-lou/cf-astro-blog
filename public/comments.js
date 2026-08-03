@@ -81,8 +81,12 @@
 			}
 		};
 
-		setExpandedState(panel, false);
+		setExpandedState(panel, true);
 		toggle.addEventListener("click", handleToggle);
+
+		if (isReady) {
+			injectMomo(panel, host);
+		}
 
 		disposeComments = () => {
 			toggle.removeEventListener("click", handleToggle);

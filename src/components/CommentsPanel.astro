@@ -13,7 +13,7 @@ const momoSlugId = `blog/${slug}`;
 ---
 
 <section
-	class="comments-panel"
+	class="comments-panel is-open"
 	data-comments-panel
 	data-comments-ready={isMomoReady ? "true" : "false"}
 	data-comments-provider="momo"
@@ -25,13 +25,13 @@ const momoSlugId = `blog/${slug}`;
 	<button
 		class="comments-toggle"
 		type="button"
-		aria-expanded="false"
+		aria-expanded="true"
 		aria-controls="comments-panel-body"
 		data-comments-toggle
 	>
 		<span class="comments-toggle-copy">
 			<strong>评论区</strong>
-			<small>默认折叠，点开后再加载评论</small>
+			<small>欢迎留言交流</small>
 		</span>
 		<span class="comments-toggle-icon" aria-hidden="true">+</span>
 	</button>
@@ -39,7 +39,6 @@ const momoSlugId = `blog/${slug}`;
 	<div
 		id="comments-panel-body"
 		class="comments-body"
-		hidden
 		data-comments-body
 	>
 		{isMomoReady ? (
