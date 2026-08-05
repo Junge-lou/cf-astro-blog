@@ -135,10 +135,10 @@ function applySecurityHeaders(
 				"media-src 'self' https: data:",
 				`script-src ${scriptSources.join(" ")}`,
 				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data:  https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com",
+				"img-src 'self' data: https: https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com",
 				"font-src 'self' data: https:",
-				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun",
-				"frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com",
+				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun https://webmention.io",
+				"frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com https://webmention.io",
 			].join("; "),
 		);
 	}
