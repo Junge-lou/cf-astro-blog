@@ -1,5 +1,6 @@
 ---
 import CommentsPanel from "@/components/CommentsPanel.astro";
+import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
 import type { MarkdownTocItem } from "@/lib/security";
 import Base from "./Base.astro";
@@ -218,8 +219,9 @@ const hasToc = tocEntries.length > 0;
 				</div>
 				<div class="article-comments-card glass-panel">
 					<CommentsPanel title={title} slug={slug} />
-				</div>
-			</div>
+				</div>			<div class="article-comments-card glass-panel">
+				<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} />
+			</div>			</div>
 		</article>
 	<script is:inline src="/code-block-enhance.js"></script>
 	<script is:inline src="/diagram-render.js"></script>

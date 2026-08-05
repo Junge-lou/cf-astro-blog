@@ -1,0 +1,506 @@
+---
+interface Props {
+	targetUrl: string;
+}
+
+const { targetUrl } = Astro.props;
+const encodedTarget = encodeURIComponent(targetUrl);
+---
+
+<section
+	class="webmention-panel"
+	data-webmention-panel
+	data-webmention-target={targetUrl}
+>
+	<button
+		class="webmention-toggle"
+		type="button"
+		aria-expanded="false"
+		aria-controls="webmention-panel-body"
+		data-webmention-toggle
+	>
+		<span class="webmention-toggle-copy">
+			<strong>Webmention</strong>
+			<small>加载中…</small>
+		</span>
+		<span class="webmention-toggle-icon" aria-hidden="true">+</span>
+	</button>
+
+	<div
+		id="webmention-panel-body"
+		class="webmention-body"
+		data-webmention-body
+		hidden
+	>
+		<div class="webmention-loading">加载提及中…</div>
+	</div>
+</section>
+
+<script is:inline>
+	function initWebmentionPanel() {
+		const panels = document.querySelectorAll<HTMLElement>("[data-webmention-panel]");
+		if (panels.length === 0) return;
+
+		panels.forEach((panel) => {
+			const toggle = panel.querySelector<HTMLButtonElement>("[data-webmention-toggle]");
+			const body = panel.querySelector<HTMLElement>("[data-webmention-body]");
+			const targetUrl = panel.dataset.webmentionTarget;
+			if (!toggle || !body || !targetUrl) return;
+
+			// Only fetch once
+			if (panel.dataset.webmentionLoaded === "true") return;
+			panel.dataset.webmentionLoaded = "true";
+
+			const encodedTarget = encodeURIComponent(targetUrl);
+
+			// Fetch from both webmention.io and local API
+			Promise.allSettled([
+				fetch(`https://webmention.io/api/mentions.jf2?target=${encodedTarget}`)
+					.then((r) => r.json())
+					.catch(() => null),
+				fetch(`/webmention/mentions?target=${encodedTarget}`)
+					.then((r) => r.json())
+					.catch(() => null),
+			]).then(([ioResult, localResult]) => {
+				const mentions = [];
+
+				// Parse webmention.io results (jf2 format)
+				if (ioResult.status === "fulfilled" && ioResult.value?.children) {
+					for (const child of ioResult.value.children) {
+						const prop = child["wm-property"];
+						mentions.push({
+							type: prop,
+							authorName: child.author?.name || "Anonymous",
+							authorPhoto: child.author?.photo || null,
+							authorUrl: child.author?.url || null,
+							url: child.url || null,
+							content: child.content?.text || child.content?.html || null,
+							published: child.published || null,
+							sourceTitle: child.name || null,
+						});
+					}
+				}
+
+				// Parse local API results
+				if (localResult.status === "fulfilled" && localResult.value?.mentions) {
+					for (const m of localResult.value.mentions) {
+						// Local DB doesn't have wm-property; we treat all as "mention" type
+						mentions.push({
+							type: "mention-of",
+							authorName: m.sourceAuthor || "Anonymous",
+							authorPhoto: null,
+							authorUrl: m.sourceUrl || null,
+							url: m.sourceUrl || null,
+							content: m.sourceExcerpt || null,
+							published: m.sourcePublishedAt || m.createdAt || null,
+							sourceTitle: m.sourceTitle || null,
+						});
+					}
+				}
+
+				// Group by type
+				const likes = mentions.filter((m) => m.type === "like-of");
+				const reposts = mentions.filter((m) => m.type === "repost-of");
+				const replies = mentions.filter(
+					(m) => m.type === "in-reply-to" || m.type === "mention-of",
+				);
+				const bookmarks = mentions.filter((m) => m.type === "bookmark-of");
+
+				const total = mentions.length;
+
+				// Update toggle label
+				const small = toggle.querySelector("small");
+				if (small) {
+					small.textContent = total > 0 ? `${total} 条提及` : "暂无提及";
+				}
+
+				if (total === 0) {
+					body.innerHTML = '<div class="webmention-empty">暂无 Webmention 提及</div>';
+					return;
+				}
+
+				let html = "";
+
+				// Likes row - show avatars
+				if (likes.length > 0) {
+					html += '<div class="webmention-group">';
+					html += '<h4 class="webmention-group-title">❤️ 喜欢 (' + likes.length + ")</h4>";
+					html += '<div class="webmention-avatars">';
+					for (const like of likes) {
+						const name = escapeHtml(like.authorName);
+						const url = like.authorUrl || like.url || "#";
+						if (like.authorPhoto) {
+							html +=
+								'<a href="' +
+								escapeAttr(url) +
+								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
+								escapeAttr(name) +
+								'"><img src="' +
+								escapeAttr(like.authorPhoto) +
+								'" alt="' +
+								escapeAttr(name) +
+								'" class="webmention-avatar" loading="lazy" /></a>';
+						} else {
+							html +=
+								'<a href="' +
+								escapeAttr(url) +
+								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
+								escapeAttr(name) +
+								'"><span class="webmention-avatar-fallback">' +
+								escapeHtml(name.slice(0, 1).toUpperCase()) +
+								"</span></a>";
+						}
+					}
+					html += "</div></div>";
+				}
+
+				// Reposts row
+				if (reposts.length > 0) {
+					html += '<div class="webmention-group">';
+					html += '<h4 class="webmention-group-title">🔁 转发 (' + reposts.length + ")</h4>";
+					html += '<div class="webmention-avatars">';
+					for (const repost of reposts) {
+						const name = escapeHtml(repost.authorName);
+						const url = repost.authorUrl || repost.url || "#";
+						if (repost.authorPhoto) {
+							html +=
+								'<a href="' +
+								escapeAttr(url) +
+								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
+								escapeAttr(name) +
+								'"><img src="' +
+								escapeAttr(repost.authorPhoto) +
+								'" alt="' +
+								escapeAttr(name) +
+								'" class="webmention-avatar" loading="lazy" /></a>';
+						} else {
+							html +=
+								'<a href="' +
+								escapeAttr(url) +
+								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
+								escapeAttr(name) +
+								'"><span class="webmention-avatar-fallback">' +
+								escapeHtml(name.slice(0, 1).toUpperCase()) +
+								"</span></a>";
+						}
+					}
+					html += "</div></div>";
+				}
+
+				// Bookmarks
+				if (bookmarks.length > 0) {
+					html += '<div class="webmention-group">';
+					html +=
+						'<h4 class="webmention-group-title">🔖 收藏 (' + bookmarks.length + ")</h4>";
+					html += '<div class="webmention-avatars">';
+					for (const bm of bookmarks) {
+						const name = escapeHtml(bm.authorName);
+						const url = bm.authorUrl || bm.url || "#";
+						if (bm.authorPhoto) {
+							html +=
+								'<a href="' +
+								escapeAttr(url) +
+								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
+								escapeAttr(name) +
+								'"><img src="' +
+								escapeAttr(bm.authorPhoto) +
+								'" alt="' +
+								escapeAttr(name) +
+								'" class="webmention-avatar" loading="lazy" /></a>';
+						} else {
+							html +=
+								'<a href="' +
+								escapeAttr(url) +
+								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
+								escapeAttr(name) +
+								'"><span class="webmention-avatar-fallback">' +
+								escapeHtml(name.slice(0, 1).toUpperCase()) +
+								"</span></a>";
+						}
+					}
+					html += "</div></div>";
+				}
+
+				// Replies/comments/mentions
+				if (replies.length > 0) {
+					html += '<div class="webmention-group">';
+					html +=
+						'<h4 class="webmention-group-title">💬 回复与提及 (' +
+						replies.length +
+						")</h4>";
+					html += '<ul class="webmention-replies">';
+					for (const reply of replies) {
+						const name = escapeHtml(reply.authorName);
+						const url = reply.authorUrl || reply.url || "#";
+						const text = reply.content
+							? escapeHtml(truncateText(stripHtml(reply.content), 280))
+							: reply.sourceTitle
+								? escapeHtml(reply.sourceTitle)
+								: "(无内容)";
+						const time = reply.published ? formatRelativeTime(reply.published) : "";
+						html += '<li class="webmention-reply">';
+						html +=
+							'<a href="' +
+							escapeAttr(url) +
+							'" target="_blank" rel="nofollow noopener" class="webmention-reply-author">';
+						if (reply.authorPhoto) {
+							html +=
+								'<img src="' +
+								escapeAttr(reply.authorPhoto) +
+								'" alt="" class="webmention-reply-avatar" loading="lazy" />';
+						}
+						html += "<strong>" + name + "</strong>";
+						html += "</a>";
+						if (time) {
+							html +=
+								' <span class="webmention-reply-time">' + time + "</span>";
+						}
+						html +=
+							'<p class="webmention-reply-text">' + text + "</p>";
+						html += "</li>";
+					}
+					html += "</ul></div>";
+				}
+
+				body.innerHTML = html;
+			});
+
+			// Toggle expand/collapse
+			toggle.addEventListener("click", () => {
+				const expanded = toggle.getAttribute("aria-expanded") === "true";
+				toggle.setAttribute("aria-expanded", String(!expanded));
+				body.hidden = !expanded;
+			});
+		});
+	}
+
+	function escapeHtml(text) {
+		const div = document.createElement("div");
+		div.appendChild(document.createTextNode(text));
+		return div.innerHTML;
+	}
+
+	function escapeAttr(text) {
+		return text
+			.replaceAll("&", "&amp;")
+			.replaceAll('"', "&quot;")
+			.replaceAll("<", "&lt;")
+			.replaceAll(">", "&gt;");
+	}
+
+	function stripHtml(html) {
+		const div = document.createElement("div");
+		div.innerHTML = html;
+		return div.textContent || div.innerText || "";
+	}
+
+	function truncateText(text, maxLen) {
+		if (text.length <= maxLen) return text;
+		return text.slice(0, maxLen) + "…";
+	}
+
+	function formatRelativeTime(dateStr) {
+		const date = new Date(dateStr);
+		if (Number.isNaN(date.getTime())) return "";
+		const now = new Date();
+		const diff = now.getTime() - date.getTime();
+		const seconds = Math.floor(diff / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const hours = Math.floor(minutes / 60);
+		const days = Math.floor(hours / 24);
+		if (days > 365) return Math.floor(days / 365) + " 年前";
+		if (days > 30) return Math.floor(days / 30) + " 个月前";
+		if (days > 0) return days + " 天前";
+		if (hours > 0) return hours + " 小时前";
+		if (minutes > 0) return minutes + " 分钟前";
+		return "刚刚";
+	}
+
+	// Run on DOM ready and after Astro page transitions
+	document.addEventListener("astro:page-load", initWebmentionPanel);
+	document.addEventListener("DOMContentLoaded", initWebmentionPanel);
+	initWebmentionPanel();
+</script>
+
+<style>
+	.webmention-panel {
+		display: grid;
+		gap: 0;
+		overflow: hidden;
+		border-radius: var(--radius-inner);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.04);
+	}
+
+	.webmention-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-md);
+		width: 100%;
+		padding: 1.05rem 1.2rem;
+		border: none;
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+		text-align: left;
+		border-bottom: 1px solid transparent;
+		transition:
+			background-color var(--transition),
+			border-color var(--transition);
+	}
+
+	.webmention-toggle:hover,
+	.webmention-toggle:focus-visible {
+		background: rgba(255, 255, 255, 0.05);
+		outline: none;
+	}
+
+	.webmention-toggle-copy {
+		display: grid;
+		gap: 0.2rem;
+	}
+
+	.webmention-toggle-copy strong {
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.webmention-toggle-copy small {
+		font-size: 0.8rem;
+		opacity: 0.65;
+	}
+
+	.webmention-toggle-icon {
+		font-size: 1.3rem;
+		font-weight: 300;
+		opacity: 0.55;
+		transition: transform var(--transition);
+	}
+
+	.webmention-toggle[aria-expanded="true"] .webmention-toggle-icon {
+		transform: rotate(45deg);
+	}
+
+	.webmention-body {
+		padding: 1.2rem;
+	}
+
+	.webmention-loading,
+	.webmention-empty {
+		text-align: center;
+		padding: 2rem 1rem;
+		opacity: 0.65;
+		font-size: 0.9rem;
+	}
+
+	/* Groups */
+	.webmention-group {
+		margin-bottom: 1.2rem;
+	}
+
+	.webmention-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.webmention-group-title {
+		font-size: 0.85rem;
+		font-weight: 600;
+		margin: 0 0 0.6rem;
+		opacity: 0.85;
+	}
+
+	/* Avatar row */
+	.webmention-avatars {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.webmention-avatar-link {
+		display: block;
+		flex-shrink: 0;
+	}
+
+	.webmention-avatar {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 1.5px solid rgba(255, 255, 255, 0.15);
+		transition: border-color var(--transition);
+	}
+
+	.webmention-avatar-link:hover .webmention-avatar {
+		border-color: rgba(255, 255, 255, 0.4);
+	}
+
+	.webmention-avatar-fallback {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.1);
+		border: 1.5px solid rgba(255, 255, 255, 0.15);
+		font-size: 0.75rem;
+		font-weight: 600;
+		transition: border-color var(--transition);
+	}
+
+	.webmention-avatar-link:hover .webmention-avatar-fallback {
+		border-color: rgba(255, 255, 255, 0.4);
+	}
+
+	/* Replies list */
+	.webmention-replies {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 0.8rem;
+	}
+
+	.webmention-reply {
+		padding: 0.6rem 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	}
+
+	.webmention-reply:last-child {
+		border-bottom: none;
+	}
+
+	.webmention-reply-author {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		text-decoration: none;
+		color: inherit;
+		font-size: 0.85rem;
+	}
+
+	.webmention-reply-author:hover {
+		text-decoration: underline;
+	}
+
+	.webmention-reply-avatar {
+		width: 1.3rem;
+		height: 1.3rem;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.webmention-reply-time {
+		font-size: 0.75rem;
+		opacity: 0.55;
+		margin-left: 0.4rem;
+	}
+
+	.webmention-reply-text {
+		margin: 0.3rem 0 0;
+		font-size: 0.85rem;
+		line-height: 1.5;
+		opacity: 0.85;
+	}
+</style>

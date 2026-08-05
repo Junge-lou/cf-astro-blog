@@ -1,3 +1,4 @@
+import { desc, eq } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import { blogPosts, webMentions } from "@/db/schema";
 import { getDb } from "@/lib/db";
@@ -439,6 +440,41 @@ async function validateTargetPath(
 webmentionRoutes.get("/", (c) =>
 	c.text("Webmention endpoint: use POST with source and target fields."),
 );
+
+// 公开 API：按 target URL 查询已审核通过的 Webmention
+webmentionRoutes.get("/mentions", async (c) => {
+	const target = sanitizeCanonicalUrl(c.req.query("target") ?? "");
+	if (!target) {
+		return c.json({ error: "target query parameter is required" }, 400);
+	}
+
+	const db = getDb(c.env.DB);
+	const rows = await db
+		.select({
+			id: webMentions.id,
+			sourceUrl: webMentions.sourceUrl,
+			targetUrl: webMentions.targetUrl,
+			sourceTitle: webMentions.sourceTitle,
+			sourceExcerpt: webMentions.sourceExcerpt,
+			sourceAuthor: webMentions.sourceAuthor,
+			sourcePublishedAt: webMentions.sourcePublishedAt,
+			status: webMentions.status,
+			createdAt: webMentions.createdAt,
+		})
+		.from(webMentions)
+		.where(eq(webMentions.status, "approved"))
+		.orderBy(desc(webMentions.createdAt))
+		.all();
+
+	// 用 target URL 候选集做客户端过滤（处理 trailing slash 等变体）
+	const targetUrl = new URL(target);
+	const candidates = buildTargetCandidates(targetUrl);
+	const filtered = rows.filter((row) =>
+		candidates.some((candidate) => row.targetUrl === candidate),
+	);
+
+	return c.json({ mentions: filtered });
+});
 
 webmentionRoutes.post("/", async (c) => {
 	const body = await c.req.parseBody();
