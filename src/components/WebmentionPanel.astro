@@ -131,7 +131,7 @@ const { targetUrl } = Astro.props;
 					if (quoteBtn) {
 						quoteBtn.addEventListener("click", function () {
 							var title = document.title.replace(/ · .*$/, "").replace(/ \\| .*$/, "");
-							var citation = title + " " + targetUrl;
+							var citation = "[" + title + "](" + targetUrl + ")";
 							if (navigator.clipboard) {
 								navigator.clipboard.writeText(citation).then(function () {
 									quoteBtn.textContent = "✓ 已复制";
@@ -283,18 +283,20 @@ const { targetUrl } = Astro.props;
 	/* ── 提及卡片 ── */
 	.wm-card {
 		display: block;
-		background: rgba(var(--card-surface-rgb), 0.55);
-		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
+		background-color: rgba(var(--card-surface-rgb), 0.65);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.55);
 		border-radius: 8px;
 		padding: 0.85rem 1rem;
 		text-decoration: none;
 		color: inherit;
-		transition: border-color 0.2s, background 0.2s;
+		transition: border-color 0.2s, background-color 0.2s;
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
 	}
 
 	.wm-card:hover {
 		border-color: var(--color-accent);
-		background: rgba(var(--card-surface-rgb), 0.7);
+		background-color: rgba(var(--card-surface-rgb), 0.85);
 	}
 
 	.wm-card-head {
@@ -393,8 +395,8 @@ const { targetUrl } = Astro.props;
 		font-size: 0.78rem;
 		font-family: inherit;
 		color: var(--color-text-secondary);
-		background: rgba(var(--card-surface-rgb), 0.5);
-		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
+		background-color: rgba(var(--card-surface-rgb), 0.6);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.55);
 		border-radius: 4px;
 		cursor: pointer;
 		vertical-align: baseline;
@@ -404,16 +406,18 @@ const { targetUrl } = Astro.props;
 	.wm-quote-btn:hover {
 		color: var(--color-accent-hover);
 		border-color: var(--color-accent);
-		background: var(--color-accent-soft);
+		background-color: var(--color-accent-soft);
 	}
 
 	/* ── 发送表单 ── */
 	.wm-form {
 		margin-top: 0.65rem;
-		background: rgba(var(--card-surface-rgb), 0.45);
-		border: 1px solid rgba(var(--card-surface-rgb), 0.45);
+		background-color: rgba(var(--card-surface-rgb), 0.75);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.55);
 		border-radius: 8px;
 		padding: 0.8rem 1rem;
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
 	}
 
 	.wm-form-label {
@@ -436,8 +440,8 @@ const { targetUrl } = Astro.props;
 		font-size: 0.88rem;
 		font-family: inherit;
 		color: var(--color-text);
-		background: rgba(var(--card-surface-rgb), 0.55);
-		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
+		background-color: rgba(var(--card-surface-rgb), 0.65);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.55);
 		border-radius: 6px;
 		outline: none;
 		transition: border-color 0.2s, box-shadow 0.2s;
@@ -457,14 +461,14 @@ const { targetUrl } = Astro.props;
 		font-weight: 600;
 		font-family: inherit;
 		color: #fff;
-		background: var(--color-accent);
+		background-color: var(--color-accent);
 		border: none;
 		border-radius: 6px;
 		cursor: pointer;
-		transition: background 0.2s, transform 0.1s;
+		transition: background-color 0.2s, transform 0.1s;
 	}
 
-	.wm-submit:hover { background: var(--color-accent-hover); }
+	.wm-submit:hover { background-color: var(--color-accent-hover); }
 	.wm-submit:active { transform: scale(0.97); }
 
 	@media (max-width: 480px) {
