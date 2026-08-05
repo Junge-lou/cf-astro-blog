@@ -1,7 +1,7 @@
 import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { getDb } from "@/lib/db";
-import { timingSafeEqualText } from "@/lib/password";
+import { timingSafeEqualText, verifyPassword } from "@/lib/password";
 import { sanitizePlainText } from "@/lib/security";
 import {
 	buildBackgroundImageUrl,
@@ -30,6 +30,10 @@ const auth = new Hono<AdminAppEnv>();
 const OAUTH_STATE_COOKIE = "admin_oauth_state";
 const OAUTH_VERIFIER_COOKIE = "admin_oauth_verifier";
 const OAUTH_COOKIE_TTL_SECONDS = 10 * 60;
+
+// Login CSRF token: stored in KV with 5-min TTL, validated on POST /login
+const LOGIN_CSRF_PREFIX = "login-csrf:";
+const LOGIN_CSRF_TTL_SECONDS = 5 * 60;
 
 interface GitHubOAuthConfig {
 	clientId: string;
@@ -195,6 +199,32 @@ async function fetchGitHubUserProfile(accessToken: string) {
 	return profile.login ? profile : null;
 }
 
+function isPasswordLoginEnabled(env: Env): boolean {
+	const hash = env.ADMIN_PASSWORD_HASH?.trim();
+	return Boolean(hash && hash.length > 0);
+}
+
+async function generateLoginCsrfToken(env: Env): Promise<string> {
+	const token = crypto.randomUUID();
+	await env.SESSION.put(
+		`${LOGIN_CSRF_PREFIX}${token}`,
+		"1",
+		{ expirationTtl: LOGIN_CSRF_TTL_SECONDS },
+	);
+	return token;
+}
+
+async function consumeLoginCsrfToken(
+	env: Env,
+	token: string,
+): Promise<boolean> {
+	const key = `${LOGIN_CSRF_PREFIX}${token}`;
+	const value = await env.SESSION.get(key);
+	if (!value) return false;
+	await env.SESSION.delete(key);
+	return true;
+}
+
 auth.get("/login", async (c) => {
 	const token = getCookie(c, "admin_session");
 	if (token) {
@@ -209,6 +239,7 @@ auth.get("/login", async (c) => {
 	}
 
 	const config = getGitHubOAuthConfig(c.env);
+	const passwordEnabled = isPasswordLoginEnabled(c.env);
 
 	let backgroundImageUrl: string | null = null;
 	try {
@@ -218,15 +249,176 @@ auth.get("/login", async (c) => {
 		// DB 未绑定或查询失败时退化为无背景图
 	}
 
+	const csrfToken = passwordEnabled
+		? await generateLoginCsrfToken(c.env)
+		: undefined;
+
 	return c.html(
 		loginPage({
 			oauthEnabled: Boolean(config),
+			passwordEnabled,
+			csrfToken,
 			backgroundImageUrl,
 		}),
 	);
 });
 
-auth.post("/login", (c) => c.text("当前后台仅支持 GitHub OAuth 登录", 405));
+auth.post("/login", async (c) => {
+	const passwordEnabled = isPasswordLoginEnabled(c.env);
+	const config = getGitHubOAuthConfig(c.env);
+
+	if (!passwordEnabled) {
+		// 仅 GitHub OAuth 模式
+		if (config) {
+			return c.text("当前后台仅支持 GitHub OAuth 登录", 405);
+		}
+		return c.html(
+			loginPage({
+				error: "后台登录尚未配置，请联系站点管理员",
+				oauthEnabled: false,
+				passwordEnabled: false,
+			}),
+			503,
+		);
+	}
+
+	// Rate limit check for password login
+	const ip = getClientIp(c);
+	try {
+		const state = await (async () => {
+			const raw = await c.env.SESSION.get(`login-rate:${ip}`);
+			return raw ? (JSON.parse(raw) as {
+				attempts: number;
+				lockedUntil: string | null;
+			}) : null;
+		})();
+
+		if (state?.lockedUntil) {
+			const lockExpiry = new Date(state.lockedUntil);
+			if (lockExpiry.getTime() > Date.now()) {
+				const remainingSeconds = Math.ceil(
+					(lockExpiry.getTime() - Date.now()) / 1000,
+				);
+				return c.html(
+					loginPage({
+						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,
+						oauthEnabled: Boolean(config),
+						passwordEnabled,
+					}),
+					429,
+				);
+			}
+		}
+	} catch {
+		// KV read failed — allow login attempt to proceed
+	}
+
+	const body = await c.req.parseBody({ all: true });
+	const username = sanitizePlainText(getBodyText(body, "username"), 120);
+	const password = sanitizePlainText(getBodyText(body, "password"), 256);
+	const csrfToken = sanitizePlainText(getBodyText(body, "_csrf"), 128);
+
+	// Validate CSRF token
+	if (!csrfToken || !(await consumeLoginCsrfToken(c.env, csrfToken))) {
+		await recordFailedAttempt(c.env, ip);
+		return c.html(
+			loginPage({
+				error: "表单已过期，请刷新页面后重试",
+				oauthEnabled: Boolean(config),
+				passwordEnabled,
+			}),
+			403,
+		);
+	}
+
+	if (!username || !password) {
+		await recordFailedAttempt(c.env, ip);
+		return c.html(
+			loginPage({
+				error: "请输入用户名和密码",
+				oauthEnabled: Boolean(config),
+				passwordEnabled,
+			}),
+			400,
+		);
+	}
+
+	// Verify username
+	const adminUsername = (
+		c.env.ADMIN_USERNAME?.trim() ||
+		c.env.ADMIN_GITHUB_LOGIN?.trim() ||
+		""
+	).trim();
+
+	if (!adminUsername || !timingSafeEqualText(username, adminUsername)) {
+		await recordFailedAttempt(c.env, ip);
+		return c.html(
+			loginPage({
+				error: "用户名或密码错误",
+				oauthEnabled: Boolean(config),
+				passwordEnabled,
+			}),
+			401,
+		);
+	}
+
+	// Verify password
+	const passwordHash = c.env.ADMIN_PASSWORD_HASH?.trim();
+	if (!passwordHash) {
+		await recordFailedAttempt(c.env, ip);
+		return c.html(
+			loginPage({
+				error: "后台密码未配置，请联系站点管理员",
+				oauthEnabled: Boolean(config),
+				passwordEnabled: false,
+			}),
+			503,
+		);
+	}
+
+	let passwordValid = false;
+	try {
+		passwordValid = await verifyPassword(password, passwordHash);
+	} catch {
+		// Hash verification failed — let it fall through to 401
+	}
+
+	if (!passwordValid) {
+		await recordFailedAttempt(c.env, ip);
+		return c.html(
+			loginPage({
+				error: "用户名或密码错误",
+				oauthEnabled: Boolean(config),
+				passwordEnabled,
+			}),
+			401,
+		);
+	}
+
+	// Password correct — create session
+	const session = await createSession(c.env, adminUsername);
+	let token: string;
+	try {
+		token = await createToken(c.env, session);
+	} catch (error) {
+		console.error("admin_token_create_failed", error);
+		await destroySession(c.env, session.id);
+		return c.html(
+			loginPage({
+				error: "后台会话配置异常，请联系站点管理员检查 JWT_SECRET",
+				oauthEnabled: Boolean(config),
+				passwordEnabled,
+			}),
+			503,
+		);
+	}
+	setCookie(c, "admin_session", token, {
+		...getSessionCookieOptions(c.req.url),
+	});
+	await clearAttempts(c.env, ip);
+
+	return c.redirect("/api/admin");
+});
 auth.use("/github", rateLimit);
 auth.use("/github/callback", rateLimit);
 

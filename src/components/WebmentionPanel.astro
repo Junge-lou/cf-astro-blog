@@ -11,138 +11,139 @@ const { targetUrl } = Astro.props;
 	data-webmention-panel
 	data-webmention-target={targetUrl}
 >
-	<h3 class="wm-title" data-wm-title>🔗 Webmentions</h3>
+	<h2 class="wm-title" data-wm-title>
+		🔗 Webmentions (<span class="wm-count" data-wm-count>…</span>)
+	</h2>
 	<div class="wm-list" data-wm-list>
 		<div class="wm-loading">加载中…</div>
 	</div>
+	<div class="wm-empty" data-wm-empty style="display:none">
+		<span>暂无 Webmentions</span>
+	</div>
+	<p class="wm-hint" data-wm-hint>
+		本站支持 <a href="https://www.w3.org/TR/webmention/" target="_blank" rel="noopener noreferrer">Webmention</a>。
+		如果你 <button type="button" class="wm-quote-btn" data-wm-quote>引用这篇文章</button>，可以通过下方表单通知我，互动会显示在这里。
+	</p>
+	<form class="wm-form" data-wm-form action="https://webmention.io/ffaff.fun/webmention" method="POST" target="_blank">
+		<input type="hidden" name="target" value={targetUrl} />
+		<label class="wm-form-label">发送 Webmention</label>
+		<div class="wm-form-row">
+			<input type="url" name="source" class="wm-input" placeholder="https://example.com/your-post" required />
+			<button type="submit" class="wm-submit">发送</button>
+		</div>
+	</form>
 </div>
 
 <script is:inline>
 	function initWebmentionPanel() {
-		const panels = document.querySelectorAll("[data-webmention-panel]");
+		var panels = document.querySelectorAll("[data-webmention-panel]");
 		if (panels.length === 0) return;
 
-		panels.forEach((panel) => {
-			const list = panel.querySelector("[data-wm-list]");
-			const titleEl = panel.querySelector("[data-wm-title]");
-			const targetUrl = panel.dataset.webmentionTarget;
+		panels.forEach(function (panel) {
+			var list = panel.querySelector("[data-wm-list]");
+			var emptyEl = panel.querySelector("[data-wm-empty]");
+			var countEl = panel.querySelector("[data-wm-count]");
+			var targetUrl = panel.dataset.webmentionTarget;
 			if (!list || !targetUrl) return;
 			if (panel.dataset.wmLoaded === "true") return;
 			panel.dataset.wmLoaded = "true";
 
-			const encodedTarget = encodeURIComponent(targetUrl);
+			var targetVariants = buildTargetVariants(targetUrl);
+			var queryParts = targetVariants.map(function (t) {
+				return "target[]=" + encodeURIComponent(t);
+			});
+			var queryString = queryParts.join("&");
 
-			fetch("https://webmention.io/api/mentions.jf2?target=" + encodedTarget)
+			fetch("https://webmention.io/api/mentions.jf2?" + queryString)
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
 					var mentions = [];
 					if (data && data.children) {
 						data.children.forEach(function (child) {
+							if (child["wm-private"] === true) return;
+
+							var wmTarget = child["wm-target"] || "";
+							try {
+								var targetUrlObj = new URL(wmTarget);
+								var pageUrlObj = new URL(targetUrl);
+								if (targetUrlObj.pathname !== pageUrlObj.pathname) return;
+							} catch (e) { return; }
+
+							var contentHtml = child.content ? (child.content.html || "") : "";
+							var contentText = child.content ? (child.content.text || "") : "";
+							var contextSnippet = extractContext(contentHtml, contentText, targetUrl);
+							var wmSource = child["wm-source"] || child.url || "";
+
 							mentions.push({
 								type: child["wm-property"] || "mention-of",
 								authorName: child.author ? child.author.name || "Anonymous" : "Anonymous",
 								authorPhoto: child.author ? child.author.photo || null : null,
 								authorUrl: child.author ? child.author.url || null : null,
-								url: child.url || null,
-								content: child.content ? (child.content.text || child.content.html || null) : null,
-								published: child.published || null,
+								url: child.url || wmSource,
+								content: contextSnippet || contentText,
+								published: child.published || child["wm-received"] || null,
+								source: wmSource,
 							});
 						});
 					}
 
+					if (countEl) countEl.textContent = mentions.length;
+
 					var html = "";
-					// Update heading count
-					if (titleEl) {
-						titleEl.textContent = "🔗 Webmentions (" + mentions.length + ")";
-					}
 
 					if (mentions.length === 0) {
-						html = '<div class="wm-empty">暂无 Webmentions</div>';
+						list.style.display = "none";
+						if (emptyEl) emptyEl.style.display = "";
 					} else {
+						if (emptyEl) emptyEl.style.display = "none";
+						list.style.display = "flex";
 						mentions.forEach(function (m) {
 							var typeLabel = getTypeLabel(m.type);
 							var name = escHtml(m.authorName);
+							var domain = getDomain(m.source || m.url || "");
 							var avatarHtml = m.authorPhoto
-								? '<img src="' + escAttr(m.authorPhoto) + '" alt="" class="wm-avatar" loading="lazy" />'
+								? '<img src="' + escAttr(m.authorPhoto) + '" alt="" class="wm-avatar" loading="lazy" decoding="async" />'
 								: '<span class="wm-avatar-fallback">' + escHtml(m.authorName.slice(0, 1).toUpperCase()) + '</span>';
-							var link = m.authorUrl || m.url || "#";
-							var text = m.content
-								? escHtml(truncate(stripHtml(m.content), 280))
-								: "";
+							var link = m.url || m.source || "#";
+							var text = m.content || "";
 							var time = m.published ? fmtRelative(m.published) : "";
+							var fullDate = m.published ? fmtFullDate(m.published) : "";
 
-							html += '<a href="' + escAttr(link) + '" target="_blank" rel="nofollow noopener" class="wm-card">';
-							html += '<div class="wm-card-head">' + avatarHtml + '<div class="wm-card-info"><span class="wm-author">' + name + '</span>';
-							if (time) html += '<span class="wm-meta">' + time + '</span>';
-							html += '</div><span class="wm-badge">' + typeLabel + '</span></div>';
-							if (text) html += '<div class="wm-content">' + text + '</div>';
+							html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-card"';
+							if (fullDate) html += ' title="' + escAttr(fullDate) + '"';
+							html += '>';
+							html += '<div class="wm-card-head">' + avatarHtml;
+							html += '<span>';
+							html += '<span class="wm-author">' + name + '</span>';
+							if (domain || time) html += '<span class="wm-meta"> · ' + [domain, time].filter(Boolean).join(" · ") + '</span>';
+							html += '</span>';
+							html += '<span class="wm-badge">' + typeLabel + '</span>';
+							html += '</div>';
+							if (text) html += '<p class="wm-content">' + text + '</p>';
 							html += '</a>';
 						});
 					}
 
-					html += '<div class="wm-hint">本站支持 <a href="https://www.w3.org/TR/webmention/" target="_blank" rel="noopener">Webmention</a>。如果你 <button type="button" class="wm-quote-btn" data-wm-quote>引用这篇文章</button>，可以通过下方表单通知我，互动会显示在这里。</div>';
-					html += '<div class="wm-form">';
-					html += '<div class="wm-form-label">发送 Webmention</div>';
-					html += '<div class="wm-form-row">';
-					html += '<input type="url" class="wm-input" placeholder="https://example.com/your-post" data-wm-source />';
-					html += '<input type="hidden" data-wm-target value="' + escAttr(targetUrl) + '" />';
-					html += '<button type="button" class="wm-submit" data-wm-send>发送</button>';
-					html += '</div><div class="wm-form-status" data-wm-status></div></div>';
-
 					list.innerHTML = html;
 
-					var sendBtn = list.querySelector("[data-wm-send]");
-					var sourceInput = list.querySelector("[data-wm-source]");
-					var targetInput = list.querySelector("[data-wm-target]");
-					var statusEl = list.querySelector("[data-wm-status]");
-					if (sendBtn && sourceInput && targetInput && statusEl) {
-						sendBtn.addEventListener("click", function () {
-							var source = sourceInput.value.trim();
-							if (!source) {
-								statusEl.textContent = "请输入你的文章 URL";
-								statusEl.className = "wm-form-status error";
-								return;
-							}
-							try { new URL(source); } catch (e) {
-								statusEl.textContent = "请输入有效的 URL";
-								statusEl.className = "wm-form-status error";
-								return;
-							}
-							sendBtn.disabled = true;
-							sendBtn.textContent = "发送中…";
-							statusEl.textContent = "";
-							statusEl.className = "wm-form-status";
-							var formData = new URLSearchParams();
-							formData.set("source", source);
-							formData.set("target", targetInput.value);
-							fetch("https://webmention.io/ffaff.fun/webmention", {
-								method: "POST",
-								headers: { "Content-Type": "application/x-www-form-urlencoded" },
-								body: formData.toString(),
-							}).then(function (resp) { return resp.text(); })
-								.then(function (result) {
-									statusEl.textContent = "发送成功！稍后刷新即可看到。";
-									statusEl.className = "wm-form-status";
-									sourceInput.value = "";
-									sendBtn.disabled = false;
-									sendBtn.textContent = "发送";
-								}).catch(function () {
-									statusEl.textContent = "网络错误，请稍后重试";
-									statusEl.className = "wm-form-status error";
-									sendBtn.disabled = false;
-									sendBtn.textContent = "发送";
-								});
-						});
-					}
-
-					// "引用这篇文章" 复制按钮
-					var quoteBtn = list.querySelector("[data-wm-quote]");
+					// Quote button
+					var quoteBtn = panel.querySelector("[data-wm-quote]");
 					if (quoteBtn) {
 						quoteBtn.addEventListener("click", function () {
-							var title = document.title.replace(/ · .*$/, "");
+							var title = document.title.replace(/ · .*$/, "").replace(/ \\| .*$/, "");
 							var citation = title + " " + targetUrl;
 							if (navigator.clipboard) {
 								navigator.clipboard.writeText(citation).then(function () {
+									quoteBtn.textContent = "✓ 已复制";
+									setTimeout(function () { quoteBtn.textContent = "引用这篇文章"; }, 2000);
+								}).catch(function () {
+									var ta = document.createElement("textarea");
+									ta.value = citation;
+									ta.style.position = "fixed"; ta.style.opacity = "0";
+									document.body.appendChild(ta);
+									ta.select();
+									document.execCommand("copy");
+									document.body.removeChild(ta);
 									quoteBtn.textContent = "✓ 已复制";
 									setTimeout(function () { quoteBtn.textContent = "引用这篇文章"; }, 2000);
 								});
@@ -151,17 +152,62 @@ const { targetUrl } = Astro.props;
 					}
 				})
 				.catch(function () {
-					list.innerHTML = '<div class="wm-empty">加载失败，请刷新页面重试</div>';
+					list.style.display = "none";
+					if (emptyEl) { emptyEl.style.display = ""; emptyEl.querySelector("span").textContent = "加载失败，请刷新页面重试"; }
 				});
 		});
 	}
 
+	function buildTargetVariants(url) {
+		var variants = [];
+		try {
+			var u = new URL(url);
+			variants.push(u.origin + u.pathname + u.search);
+			if (location.hash) variants.push(u.origin + u.pathname + u.search + location.hash);
+		} catch (e) { variants.push(url); }
+		return variants;
+	}
+
+	function extractContext(html, text, targetUrl) {
+		if (!html && !text) return "";
+		if (html) {
+			var div = document.createElement("div");
+			div.innerHTML = html;
+			var links = div.querySelectorAll("a");
+			var pageHost = location.hostname;
+			for (var i = 0; i < links.length; i++) {
+				var href = links[i].getAttribute("href") || "";
+				try {
+					var linkHost = new URL(href, location.origin).hostname;
+					if (linkHost === pageHost || linkHost === "ffaff.fun") {
+						var linkText = links[i].textContent.trim();
+						var fullText = div.textContent || "";
+						var idx = fullText.indexOf(linkText);
+						if (idx !== -1) {
+							var ctxLen = 100;
+							var start = Math.max(0, idx - ctxLen);
+							var end = Math.min(fullText.length, idx + linkText.length + ctxLen);
+							var before = fullText.slice(start, idx);
+							var after = fullText.slice(idx + linkText.length, end);
+							return (start > 0 ? "[…]" : "") + escHtml(before.trim()) + " <mark>" + escHtml(linkText) + "</mark> " + escHtml(after.trim()) + (end < fullText.length ? "[…]" : "");
+						}
+					}
+				} catch (e) {}
+			}
+		}
+		return escHtml(text || "");
+	}
+
+	function getDomain(url) {
+		try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
+	}
+
 	function getTypeLabel(type) {
-		if (type === "like-of") return "喜欢";
-		if (type === "repost-of") return "转发";
-		if (type === "in-reply-to") return "回复";
-		if (type === "bookmark-of") return "收藏";
-		return "提及";
+		if (type === "like-of") return "❤️ 喜欢";
+		if (type === "repost-of") return "🔄 转发";
+		if (type === "in-reply-to") return "💬 回复";
+		if (type === "bookmark-of") return "🔖 收藏";
+		return "💭 提及";
 	}
 
 	function escHtml(text) {
@@ -174,30 +220,27 @@ const { targetUrl } = Astro.props;
 		return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 	}
 
-	function stripHtml(html) {
-		var div = document.createElement("div");
-		div.innerHTML = html;
-		return div.textContent || div.innerText || "";
-	}
-
-	function truncate(text, max) {
-		return text.length <= max ? text : text.slice(0, max) + "…";
-	}
-
 	function fmtRelative(dateStr) {
 		var d = new Date(dateStr);
 		if (isNaN(d.getTime())) return "";
-		var diff = Date.now() - d.getTime();
-		var sec = Math.floor(diff / 1000);
-		if (sec < 60) return "刚刚";
-		var min = Math.floor(sec / 60);
-		if (min < 60) return min + " 分钟前";
-		var hr = Math.floor(min / 60);
-		if (hr < 24) return hr + " 小时前";
-		var days = Math.floor(hr / 24);
-		if (days < 30) return days + " 天前";
-		if (days < 365) return Math.floor(days / 30) + " 个月前";
-		return Math.floor(days / 365) + " 年前";
+		var now = new Date();
+		var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		var targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+		var dayDiff = Math.round((today.getTime() - targetDay.getTime()) / 86400000);
+		if (dayDiff === 0) return "今天";
+		if (dayDiff === 1) return "昨天";
+		if (dayDiff === 2) return "前天";
+		if (dayDiff < 30) return dayDiff + " 天前";
+		if (dayDiff < 365) return Math.floor(dayDiff / 30) + " 个月前";
+		return Math.floor(dayDiff / 365) + " 年前";
+	}
+
+	function fmtFullDate(dateStr) {
+		var d = new Date(dateStr);
+		if (isNaN(d.getTime())) return "";
+		try {
+			return new Intl.DateTimeFormat("zh-CN", { dateStyle: "full", timeStyle: "long", timeZone: "Asia/Shanghai" }).format(d);
+		} catch (e) { return d.toLocaleString("zh-CN"); }
 	}
 
 	document.addEventListener("astro:page-load", initWebmentionPanel);
@@ -206,48 +249,52 @@ const { targetUrl } = Astro.props;
 </script>
 
 <style>
-	.wm-section {
-		margin: 0;
-	}
+	.wm-section { margin: 0; }
 
 	.wm-title {
-		font-size: 0.9rem;
-		font-weight: 500;
-		letter-spacing: 0.05em;
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-text);
+		margin: 0 0 0.9rem;
 		text-align: center;
-		color: rgba(255, 255, 255, 0.4);
-		margin: 0 0 1rem;
 	}
 
+	.wm-count { font-weight: 400; color: var(--color-text-muted); }
+
+	/* ── 卡片列表 ── */
 	.wm-list {
-		display: flex;
+		display: none;
 		flex-direction: column;
 		gap: 0.75rem;
-		max-width: 500px;
-		margin: 0 auto;
 	}
 
 	.wm-loading,
 	.wm-empty {
 		text-align: center;
-		color: rgba(255, 255, 255, 0.35);
+		color: var(--color-text-muted);
 		font-size: 0.9rem;
 		padding: 1rem 0;
 	}
 
+	.wm-loading {
+		display: block;
+	}
+
+	/* ── 提及卡片 ── */
 	.wm-card {
 		display: block;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(var(--card-surface-rgb), 0.55);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
 		border-radius: 8px;
-		padding: 0.9rem 1rem;
+		padding: 0.85rem 1rem;
 		text-decoration: none;
 		color: inherit;
-		transition: border-color 0.2s ease;
+		transition: border-color 0.2s, background 0.2s;
 	}
 
 	.wm-card:hover {
-		border-color: rgba(255, 255, 255, 0.18);
+		border-color: var(--color-accent);
+		background: rgba(var(--card-surface-rgb), 0.7);
 	}
 
 	.wm-card-head {
@@ -261,7 +308,7 @@ const { targetUrl } = Astro.props;
 		height: 40px;
 		border-radius: 50%;
 		object-fit: cover;
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
 		flex-shrink: 0;
 	}
 
@@ -272,69 +319,82 @@ const { targetUrl } = Astro.props;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(255, 255, 255, 0.1);
-		font-size: 1.1rem;
-		font-weight: 600;
+		background: var(--color-accent-soft);
+		color: var(--color-accent-hover);
+		font-size: 1rem;
+		font-weight: 700;
 		flex-shrink: 0;
 	}
 
-	.wm-card-info {
+	.wm-card-head > span {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
+		gap: 0.12rem;
 		min-width: 0;
+		flex: 1;
 	}
 
 	.wm-author {
-		font-size: 0.95rem;
-		font-weight: 600;
-		color: rgba(255, 255, 255, 0.9);
+		font-size: 0.92rem;
+		font-weight: 650;
+		color: var(--color-text);
 	}
 
 	.wm-meta {
-		font-size: 0.8rem;
-		color: rgba(255, 255, 255, 0.38);
+		font-size: 0.78rem;
+		color: var(--color-text-muted);
 	}
 
 	.wm-badge {
-		margin-left: auto;
 		flex-shrink: 0;
-		background: rgba(255, 255, 255, 0.08);
-		color: rgba(255, 255, 255, 0.55);
-		font-size: 0.75rem;
-		padding: 0.15rem 0.6rem;
+		background: var(--color-accent-soft);
+		color: var(--color-accent-hover);
+		font-size: 0.73rem;
+		font-weight: 500;
+		padding: 0.14rem 0.55rem;
 		border-radius: 999px;
 		white-space: nowrap;
+		align-self: flex-start;
 	}
 
 	.wm-content {
-		margin: 0.6rem 0 0;
-		color: rgba(255, 255, 255, 0.65);
-		font-size: 0.95rem;
-		line-height: 1.6;
+		margin: 0.55rem 0 0;
+		color: var(--color-text-secondary);
+		font-size: 0.9rem;
+		line-height: 1.7;
 	}
 
+	.wm-content mark {
+		background: var(--color-accent-soft);
+		color: var(--color-accent-hover);
+		padding: 0.04em 0.18em;
+		border-radius: 2px;
+	}
+
+	/* ── 提示 ── */
 	.wm-hint {
-		margin: 1rem 0 0;
-		text-align: center;
-		font-size: 0.85rem;
-		color: rgba(255, 255, 255, 0.35);
-		line-height: 1.6;
+		margin: 0.9rem 0 0;
+		font-size: 0.84rem;
+		color: var(--color-text-muted);
+		line-height: 1.7;
 	}
 
 	.wm-hint a {
-		color: rgba(255, 255, 255, 0.5);
+		color: var(--color-accent-hover);
+		text-decoration: none;
 	}
+
+	.wm-hint a:hover { text-decoration: underline; }
 
 	.wm-quote-btn {
 		display: inline;
-		padding: 0.1rem 0.6rem;
+		padding: 0.08rem 0.55rem;
 		margin: 0 0.15rem;
-		font-size: 0.8rem;
+		font-size: 0.78rem;
 		font-family: inherit;
-		color: rgba(255, 255, 255, 0.55);
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		color: var(--color-text-secondary);
+		background: rgba(var(--card-surface-rgb), 0.5);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
 		border-radius: 4px;
 		cursor: pointer;
 		vertical-align: baseline;
@@ -342,24 +402,26 @@ const { targetUrl } = Astro.props;
 	}
 
 	.wm-quote-btn:hover {
-		color: rgba(255, 255, 255, 0.85);
-		background: rgba(255, 255, 255, 0.14);
+		color: var(--color-accent-hover);
+		border-color: var(--color-accent);
+		background: var(--color-accent-soft);
 	}
 
+	/* ── 发送表单 ── */
 	.wm-form {
-		margin-top: 0.75rem;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		margin-top: 0.65rem;
+		background: rgba(var(--card-surface-rgb), 0.45);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.45);
 		border-radius: 8px;
-		padding: 0.9rem 1rem;
+		padding: 0.8rem 1rem;
 	}
 
 	.wm-form-label {
 		display: block;
-		font-size: 0.85rem;
+		font-size: 0.83rem;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.55);
-		margin-bottom: 0.5rem;
+		color: var(--color-text-muted);
+		margin-bottom: 0.45rem;
 	}
 
 	.wm-form-row {
@@ -368,68 +430,45 @@ const { targetUrl } = Astro.props;
 	}
 
 	.wm-input {
-		flex: 1;
+		flex: 1 1 auto;
 		min-width: 0;
-		padding: 0.45rem 0.75rem;
-		font-size: 0.9rem;
+		padding: 0.4rem 0.7rem;
+		font-size: 0.88rem;
 		font-family: inherit;
-		color: rgba(255, 255, 255, 0.85);
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.14);
+		color: var(--color-text);
+		background: rgba(var(--card-surface-rgb), 0.55);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.5);
 		border-radius: 6px;
 		outline: none;
-		transition: border-color 0.2s;
+		transition: border-color 0.2s, box-shadow 0.2s;
 	}
 
 	.wm-input:focus {
-		border-color: rgba(255, 255, 255, 0.35);
-		outline: 2px solid rgba(255, 255, 255, 0.12);
-		outline-offset: 1px;
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 3px var(--color-accent-soft);
 	}
 
-	.wm-input::placeholder {
-		color: rgba(255, 255, 255, 0.25);
-	}
+	.wm-input::placeholder { color: var(--color-text-placeholder); }
 
 	.wm-submit {
 		flex-shrink: 0;
-		padding: 0.45rem 1.25rem;
-		font-size: 0.9rem;
-		font-weight: 500;
+		padding: 0.4rem 1.1rem;
+		font-size: 0.88rem;
+		font-weight: 600;
 		font-family: inherit;
 		color: #fff;
-		background: #c0885a;
+		background: var(--color-accent);
 		border: none;
 		border-radius: 6px;
 		cursor: pointer;
-		transition: background 0.2s;
+		transition: background 0.2s, transform 0.1s;
 	}
 
-	.wm-submit:hover {
-		background: #d49860;
-	}
-
-	.wm-submit:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.wm-form-status {
-		margin-top: 0.5rem;
-		font-size: 0.85rem;
-		color: rgba(255, 255, 255, 0.45);
-	}
-
-	.wm-form-status.error {
-		color: #f87171;
-	}
+	.wm-submit:hover { background: var(--color-accent-hover); }
+	.wm-submit:active { transform: scale(0.97); }
 
 	@media (max-width: 480px) {
-		.wm-form-row {
-			flex-direction: column;
-		}
-		.wm-submit {
-			width: 100%;
-		}
+		.wm-form-row { flex-direction: column; }
+		.wm-submit { width: 100%; }
 	}
 </style>

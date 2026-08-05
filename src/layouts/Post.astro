@@ -218,18 +218,12 @@ const hasToc = tocEntries.length > 0;
 						<slot />
 					</div>
 				</div>
-				<div class="article-comments-card glass-panel">
-				<div class="comment-content" data-comment-content="comments">
-					<CommentsPanel title={title} slug={slug} />
-				</div>
-				<div class="comment-content" data-comment-content="webmentions" hidden>
+				<div class="article-webmention-card glass-panel">
 					<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} />
 				</div>
-				<div class="comment-selector" data-comment-selector>
-					<button type="button" class="comment-type-btn active" data-comment-tab="comments">💬 评论</button>
-					<button type="button" class="comment-type-btn" data-comment-tab="webmentions">🔗 Webmention</button>
+				<div class="article-comments-card glass-panel">
+					<CommentsPanel title={title} slug={slug} />
 				</div>
-			</div>
 			</div>
 		</article>
 	<script is:inline src="/code-block-enhance.js"></script>
@@ -237,20 +231,6 @@ const hasToc = tocEntries.length > 0;
 	<script is:inline src="/article-transparency-toggle.js"></script>
 	<script is:inline src="/article-sidebar-sticky.js"></script>
 	<script is:inline src="/article-toc-highlight.js"></script>
-<script is:inline>
-	document.addEventListener("click", function (e) {
-		var btn = e.target.closest("[data-comment-tab]");
-		if (!btn) return;
-		var selector = btn.closest("[data-comment-selector]");
-		if (!selector) return;
-		var tab = btn.dataset.commentTab;
-		selector.querySelectorAll(".comment-type-btn").forEach(function (b) { b.classList.remove("active"); });
-		btn.classList.add("active");
-		selector.parentElement.querySelectorAll("[data-comment-content]").forEach(function (c) {
-			c.hidden = c.dataset.commentContent !== tab;
-		});
-	});
-</script>
 </Base>
 
 <style>
@@ -481,7 +461,8 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	.article-hero,
-	.article-body {
+	.article-body,
+	.article-webmention-card {
 		padding: clamp(1.4rem, 1rem + 2vw, 2.5rem);
 	}
 
@@ -609,13 +590,15 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	/* 评论卡片内 CommentsPanel 融入外层 glass-panel，去掉自带的边框、背景和圆角 */
-	:global(.article-comments-card .comments-panel) {
+	:global(.article-comments-card .comments-panel),
+	:global(.article-webmention-card .wm-section) {
 		border: none;
 		background: transparent;
 		border-radius: 0;
 		overflow: visible;
 	}
-	:global(html.article-opaque-mode .article-comments-card .comments-panel) {
+	:global(html.article-opaque-mode .article-comments-card .comments-panel),
+	:global(html.article-opaque-mode .article-webmention-card .wm-section) {
 		background: transparent;
 	}
 
@@ -666,58 +649,6 @@ const hasToc = tocEntries.length > 0;
 			margin-left: 0;
 			width: 100%;
 			justify-content: flex-start;
-		}
-	}
-
-	/* ── 评论 / Webmention 标签切换 ── */
-	.comment-selector {
-		display: flex;
-		gap: 0.5rem;
-		justify-content: center;
-		padding: 4px;
-		background: rgba(255, 255, 255, 0.05);
-		border-radius: 10px;
-		max-width: fit-content;
-		margin: 0.8rem auto 0;
-	}
-
-	.comment-type-btn {
-		padding: 0.5rem 1.25rem;
-		border: 1px solid transparent;
-		border-radius: 7px;
-		background: transparent;
-		color: rgba(255, 255, 255, 0.55);
-		cursor: pointer;
-		font-size: 0.9rem;
-		font-weight: 500;
-		font-family: inherit;
-		transition: all 0.2s ease;
-	}
-
-	.comment-type-btn:hover {
-		color: rgba(255, 255, 255, 0.8);
-	}
-
-	.comment-type-btn.active {
-		background: rgba(255, 255, 255, 0.1);
-		color: rgba(255, 255, 255, 0.9);
-		border-color: rgba(255, 255, 255, 0.14);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-	}
-
-	.comment-content {
-		min-height: 0;
-	}
-
-	@media (max-width: 480px) {
-		.comment-selector {
-			width: 100%;
-			max-width: none;
-		}
-
-		.comment-type-btn {
-			flex: 1;
-			text-align: center;
 		}
 	}
 </style>

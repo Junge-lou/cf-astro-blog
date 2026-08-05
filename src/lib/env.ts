@@ -74,7 +74,7 @@ const ENV_RULES: EnvRule[] = [
 	// ── 安全密钥 ──
 	{ key: "JWT_SECRET", required: true, validate: (v) => (!isNonEmptyString(v) || (typeof v === "string" && v.length < 16) ? "JWT_SECRET 至少需要 16 个字符" : null) },
 	{ key: "ADMIN_USERNAME", required: true, validate: (v) => (!isNonEmptyString(v) ? "ADMIN_USERNAME 不能为空" : null) },
-	{ key: "ADMIN_PASSWORD_HASH", required: true, validate: (v) => (!isNonEmptyString(v) ? "ADMIN_PASSWORD_HASH 不能为空" : null) },
+	{ key: "ADMIN_PASSWORD_HASH", required: false },
 
 	// ── 可选变量（不校验，仅记录缺失） ──
 	{ key: "TURNSTILE_SITE_KEY", required: false },

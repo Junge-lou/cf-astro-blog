@@ -28,6 +28,15 @@ async function readAttemptState(
 	return JSON.parse(raw) as LoginAttemptState;
 }
 
+function isOAuthEnabled(env: Env): boolean {
+	return Boolean(env.GITHUB_OAUTH_CLIENT_ID?.trim());
+}
+
+function isPasswordEnabled(env: Env): boolean {
+	const hash = env.ADMIN_PASSWORD_HASH?.trim();
+	return Boolean(hash && hash.length > 0);
+}
+
 export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 	const ip = c.req.header("cf-connecting-ip") || "unknown";
 
@@ -42,7 +51,8 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 				return c.html(
 					loginPage({
 						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,
-						oauthEnabled: false,
+						oauthEnabled: isOAuthEnabled(c.env),
+						passwordEnabled: isPasswordEnabled(c.env),
 					}),
 					429,
 				);
@@ -54,7 +64,8 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 		return c.html(
 			loginPage({
 				error: "登录保护暂时不可用，请稍后再试",
-				oauthEnabled: false,
+				oauthEnabled: isOAuthEnabled(c.env),
+				passwordEnabled: isPasswordEnabled(c.env),
 			}),
 			503,
 		);

@@ -3,15 +3,35 @@ import { escapeAttribute, escapeHtml } from "@/lib/security";
 interface LoginPageOptions {
 	error?: string;
 	oauthEnabled?: boolean;
+	passwordEnabled?: boolean;
+	csrfToken?: string;
 	backgroundImageUrl?: string | null;
 }
 
 export function loginPage(options: LoginPageOptions = {}): string {
-	const { error, oauthEnabled = false, backgroundImageUrl } = options;
+	const {
+		error,
+		oauthEnabled = false,
+		passwordEnabled = false,
+		csrfToken,
+		backgroundImageUrl,
+	} = options;
 	const hasBackgroundImage = Boolean(backgroundImageUrl);
 	const escapedBackgroundImageUrl = backgroundImageUrl
 		? escapeAttribute(backgroundImageUrl)
 		: "";
+	const escapedCsrfToken = csrfToken ? escapeAttribute(csrfToken) : "";
+
+	// Build the login description text
+	const loginHint = (() => {
+		if (passwordEnabled && oauthEnabled) {
+			return "请使用账号密码或 GitHub 验证身份以继续访问后台。";
+		}
+		if (passwordEnabled) {
+			return "请输入管理员账号密码以继续访问后台。";
+		}
+		return "请通过 GitHub 验证身份以继续访问后台。";
+	})();
 
 	return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -354,7 +374,65 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			color: #f87171;
 		}
 
-		/* ---- 操作按钮 ---- */
+		/* ---- 登录表单 ---- */
+		.entry-form {
+			display: grid;
+			gap: 0.8rem;
+		}
+
+		.entry-field {
+			display: grid;
+			gap: 0.32rem;
+		}
+
+		.entry-field-label {
+			font-size: 0.82rem;
+			font-weight: 600;
+			color: var(--color-text-secondary);
+			letter-spacing: 0.01em;
+		}
+
+		.entry-field-input {
+			width: 100%;
+			padding: 0.72rem 0.92rem;
+			border: 1px solid var(--color-border);
+			border-radius: 14px;
+			background: rgba(var(--card-surface-rgb), 0.6);
+			color: var(--color-text);
+			font-size: 0.94rem;
+			font-family: var(--font-sans);
+			outline: none;
+			transition: border-color 200ms ease, box-shadow 200ms ease;
+		}
+
+		.entry-field-input:focus {
+			border-color: var(--color-accent);
+			box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+		}
+
+		.entry-field-input::placeholder {
+			color: var(--color-text-muted);
+			opacity: 0.6;
+		}
+
+		/* ---- 分隔线 ---- */
+		.entry-divider {
+			display: flex;
+			align-items: center;
+			gap: 0.8rem;
+			color: var(--color-text-muted);
+			font-size: 0.78rem;
+			font-weight: 500;
+			opacity: 0.7;
+		}
+
+		.entry-divider::before,
+		.entry-divider::after {
+			content: "";
+			flex: 1;
+			height: 1px;
+			background: var(--color-border);
+		}
 		.entry-actions {
 			display: flex;
 			flex-wrap: wrap;
@@ -462,7 +540,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 					<span>站点管理</span>
 				</div>
 				<h1 class="entry-title">欢迎回来</h1>
-				<p class="entry-subtitle">请通过 GitHub 验证身份以继续访问后台。</p>
+				<p class="entry-subtitle">${escapeHtml(loginHint)}</p>
 
 				<div class="entry-notice" role="note">
 					<svg class="entry-notice-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -473,19 +551,66 @@ export function loginPage(options: LoginPageOptions = {}): string {
 
 				${error ? `<p class="entry-error" role="alert">${escapeHtml(error)}</p>` : ""}
 
+				${passwordEnabled ? `
+				<form method="post" action="/api/auth/login" class="entry-form">
+					<input type="hidden" name="_csrf" value="${escapedCsrfToken}" />
+					<div class="entry-field">
+						<label class="entry-field-label" for="login-username">用户名</label>
+						<input
+							id="login-username"
+							name="username"
+							type="text"
+							class="entry-field-input"
+							placeholder="请输入管理员用户名"
+							autocomplete="username"
+							required
+						/>
+					</div>
+					<div class="entry-field">
+						<label class="entry-field-label" for="login-password">密码</label>
+						<input
+							id="login-password"
+							name="password"
+							type="password"
+							class="entry-field-input"
+							placeholder="请输入密码"
+							autocomplete="current-password"
+							required
+						/>
+					</div>
+					<div class="entry-actions">
+						<button type="submit" class="entry-btn entry-btn-primary">
+							登入后台
+						</button>
+						<a href="/" class="entry-btn entry-btn-ghost">返回首页</a>
+					</div>
+				</form>
+				` : ""}
+
+				${passwordEnabled && oauthEnabled ? `
+				<div class="entry-divider">或</div>
+				` : ""}
+
+				${oauthEnabled ? `
 				<div class="entry-actions">
 					<a
 						href="/api/auth/github"
 						class="entry-btn entry-btn-primary"
-						aria-disabled="${oauthEnabled ? "false" : "true"}"
-					>
+						${!passwordEnabled ? "" : 'style="background:transparent;color:var(--color-text);border:1px solid var(--color-border);"'}>
 						<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
 							<path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
 						</svg>
 						使用 GitHub 继续
 					</a>
+					${!passwordEnabled ? '<a href="/" class="entry-btn entry-btn-ghost">返回首页</a>' : ""}
+				</div>
+				` : ""}
+
+				${!passwordEnabled && !oauthEnabled ? `
+				<div class="entry-actions">
 					<a href="/" class="entry-btn entry-btn-ghost">返回首页</a>
 				</div>
+				` : ""}
 			</div>
 		</section>
 
