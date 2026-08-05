@@ -103,15 +103,15 @@ const hasToc = tocEntries.length > 0;
 	canonicalUrl={canonicalUrl}
 	backgroundOverride={backgroundOverride}
 >
-	<article class="article-shell">
+	<article class="article-shell h-entry">
 		<aside class:list={["article-sidebar", { "article-sidebar-with-toc": hasToc }]}>
-			<section class="article-profile glass-panel">
+			<section class="article-profile glass-panel p-author h-card">
 				<div class="article-profile-avatar-frame">
 					{articleSidebarAvatarPath ? (
 						<img
 							src={articleSidebarAvatarPath}
 							alt={`${sidebarName} 的头像`}
-							class="article-profile-avatar"
+							class="article-profile-avatar u-photo"
 							loading="lazy"
 							decoding="async"
 						/>
@@ -122,8 +122,9 @@ const hasToc = tocEntries.length > 0;
 					)}
 				</div>
 				<span class="article-profile-badge">{sidebarBadge}</span>
-				<strong class="article-profile-name">{sidebarName}</strong>
-				<p class="article-profile-bio">{sidebarBio}</p>
+				<strong class="article-profile-name p-name">{sidebarName}</strong>
+				<p class="article-profile-bio p-note">{sidebarBio}</p>
+				<a class="u-url" href={canonicalUrl || Astro.url.href} hidden>permalink</a>
 				<div class="article-profile-meta">
 					{formattedDate && (
 						<div class="article-profile-item">
@@ -192,16 +193,16 @@ const hasToc = tocEntries.length > 0;
 					</div>
 				</div>
 				<div class="article-kicker">精选文章</div>
-				<h1 class="article-title" transition:name={`title-${slug}`}>{title}</h1>
+				<h1 class="article-title p-name" transition:name={`title-${slug}`}>{title}</h1>
 				{description && (
-					<p class="article-summary" transition:name={`summary-${slug}`}>
+					<p class="article-summary p-summary" transition:name={`summary-${slug}`}>
 						{description}
 					</p>
 				)}
 				<div class="pill-row" transition:name={`meta-${slug}`}>
 					{formattedDate && (
 						<time
-							class="pill local-time-pending"
+							class="pill local-time-pending dt-published"
 							datetime={publishedAt}
 							data-local-time="date"
 						>
@@ -212,7 +213,7 @@ const hasToc = tocEntries.length > 0;
 					{categoryName && <span class="pill">{categoryName}</span>}
 				</div>
 			</header>
-				<div class="article-body glass-panel">
+			<div class="article-body glass-panel e-content">
 					<div class="prose article-prose">
 						<slot />
 					</div>

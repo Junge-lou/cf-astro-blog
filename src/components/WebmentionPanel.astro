@@ -38,12 +38,12 @@ const encodedTarget = encodeURIComponent(targetUrl);
 
 <script is:inline>
 	function initWebmentionPanel() {
-		const panels = document.querySelectorAll<HTMLElement>("[data-webmention-panel]");
+		const panels = document.querySelectorAll("[data-webmention-panel]");
 		if (panels.length === 0) return;
 
 		panels.forEach((panel) => {
-			const toggle = panel.querySelector<HTMLButtonElement>("[data-webmention-toggle]");
-			const body = panel.querySelector<HTMLElement>("[data-webmention-body]");
+			const toggle = panel.querySelector("[data-webmention-toggle]");
+			const body = panel.querySelector("[data-webmention-body]");
 			const targetUrl = panel.dataset.webmentionTarget;
 			if (!toggle || !body || !targetUrl) return;
 
@@ -261,6 +261,17 @@ const encodedTarget = encodeURIComponent(targetUrl);
 					}
 					html += "</ul></div>";
 				}
+
+				// Webmention 发送表单
+				html += '<div class="webmention-form-section">';
+				html += '<h4 class="webmention-group-title">📨 发送 Webmention</h4>';
+				html += '<p class="webmention-form-hint">如果你写了文章提及本文，可以在这里提交你的文章链接来通知我。</p>';
+				html += '<form class="webmention-form" action="/webmention" method="POST" target="_blank">';
+				html += '<input type="hidden" name="target" value="' + escapeAttr(targetUrl) + '" />';
+				html += '<input type="url" name="source" class="webmention-form-input" placeholder="https://你的博客/你的文章" required />';
+				html += '<button type="submit" class="webmention-form-submit">发送</button>';
+				html += '</form>';
+				html += '</div>';
 
 				body.innerHTML = html;
 			});
@@ -502,5 +513,59 @@ const encodedTarget = encodeURIComponent(targetUrl);
 		font-size: 0.85rem;
 		line-height: 1.5;
 		opacity: 0.85;
+	}
+
+	/* Webmention form */
+	.webmention-form-section {
+		margin-top: 1.2rem;
+		padding-top: 1rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.webmention-form-hint {
+		font-size: 0.8rem;
+		opacity: 0.6;
+		margin: 0.3rem 0 0.6rem;
+		line-height: 1.4;
+	}
+
+	.webmention-form {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.webmention-form-input {
+		flex: 1;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: var(--radius-sm, 6px);
+		background: rgba(255, 255, 255, 0.06);
+		color: inherit;
+		font-size: 0.85rem;
+		outline: none;
+		transition: border-color var(--transition);
+	}
+
+	.webmention-form-input:focus {
+		border-color: rgba(255, 255, 255, 0.35);
+	}
+
+	.webmention-form-submit {
+		padding: 0.5rem 1rem;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: var(--radius-sm, 6px);
+		background: rgba(255, 255, 255, 0.1);
+		color: inherit;
+		font-size: 0.85rem;
+		cursor: pointer;
+		transition:
+			background-color var(--transition),
+			border-color var(--transition);
+		white-space: nowrap;
+	}
+
+	.webmention-form-submit:hover {
+		background: rgba(255, 255, 255, 0.18);
+		border-color: rgba(255, 255, 255, 0.3);
 	}
 </style>
