@@ -14,7 +14,6 @@ import { postsRoutes } from "./routes/posts";
 import { shuoshuoRoutes } from "./routes/shuoshuo";
 import { publicAiRoutes } from "./routes/public-ai";
 import { publicAnalyticsRoutes } from "./routes/public-analytics";
-import { webmentionRoutes } from "./routes/webmention";
 
 const app = new Hono<AdminAppEnv>();
 
@@ -97,7 +96,6 @@ app.route("/admin/mentions", mentionsRoutes);
 app.route("/admin/media", mediaRoutes);
 app.route("/admin/analytics", analyticsRoutes);
 app.route("/friend-links", friendLinksRoutes);
-app.route("/webmention", webmentionRoutes);
 app.route("/comments", commentsProxyRoutes);
 
 app.get("/health", (c) =>
