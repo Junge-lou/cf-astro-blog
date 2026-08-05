@@ -4,37 +4,18 @@ interface Props {
 }
 
 const { targetUrl } = Astro.props;
-const encodedTarget = encodeURIComponent(targetUrl);
 ---
 
-<section
-	class="webmention-panel"
+<div
+	class="wm-section"
 	data-webmention-panel
 	data-webmention-target={targetUrl}
 >
-	<button
-		class="webmention-toggle"
-		type="button"
-		aria-expanded="false"
-		aria-controls="webmention-panel-body"
-		data-webmention-toggle
-	>
-		<span class="webmention-toggle-copy">
-			<strong>Webmention</strong>
-			<small>加载中…</small>
-		</span>
-		<span class="webmention-toggle-icon" aria-hidden="true">+</span>
-	</button>
-
-	<div
-		id="webmention-panel-body"
-		class="webmention-body"
-		data-webmention-body
-		hidden
-	>
-		<div class="webmention-loading">加载提及中…</div>
+	<h3 class="wm-title" data-wm-title>🔗 Webmentions</h3>
+	<div class="wm-list" data-wm-list>
+		<div class="wm-loading">加载中…</div>
 	</div>
-</section>
+</div>
 
 <script is:inline>
 	function initWebmentionPanel() {
@@ -42,530 +23,413 @@ const encodedTarget = encodeURIComponent(targetUrl);
 		if (panels.length === 0) return;
 
 		panels.forEach((panel) => {
-			const toggle = panel.querySelector("[data-webmention-toggle]");
-			const body = panel.querySelector("[data-webmention-body]");
+			const list = panel.querySelector("[data-wm-list]");
+			const titleEl = panel.querySelector("[data-wm-title]");
 			const targetUrl = panel.dataset.webmentionTarget;
-			if (!toggle || !body || !targetUrl) return;
-
-			// Only fetch once
-			if (panel.dataset.webmentionLoaded === "true") return;
-			panel.dataset.webmentionLoaded = "true";
+			if (!list || !targetUrl) return;
+			if (panel.dataset.wmLoaded === "true") return;
+			panel.dataset.wmLoaded = "true";
 
 			const encodedTarget = encodeURIComponent(targetUrl);
 
-			// Fetch from both webmention.io and local API
-			Promise.allSettled([
-				fetch(`https://webmention.io/api/mentions.jf2?target=${encodedTarget}`)
-					.then((r) => r.json())
-					.catch(() => null),
-				fetch(`/webmention/mentions?target=${encodedTarget}`)
-					.then((r) => r.json())
-					.catch(() => null),
-			]).then(([ioResult, localResult]) => {
-				const mentions = [];
-
-				// Parse webmention.io results (jf2 format)
-				if (ioResult.status === "fulfilled" && ioResult.value?.children) {
-					for (const child of ioResult.value.children) {
-						const prop = child["wm-property"];
-						mentions.push({
-							type: prop,
-							authorName: child.author?.name || "Anonymous",
-							authorPhoto: child.author?.photo || null,
-							authorUrl: child.author?.url || null,
-							url: child.url || null,
-							content: child.content?.text || child.content?.html || null,
-							published: child.published || null,
-							sourceTitle: child.name || null,
+			fetch("https://webmention.io/api/mentions.jf2?target=" + encodedTarget)
+				.then(function (r) { return r.json(); })
+				.then(function (data) {
+					var mentions = [];
+					if (data && data.children) {
+						data.children.forEach(function (child) {
+							mentions.push({
+								type: child["wm-property"] || "mention-of",
+								authorName: child.author ? child.author.name || "Anonymous" : "Anonymous",
+								authorPhoto: child.author ? child.author.photo || null : null,
+								authorUrl: child.author ? child.author.url || null : null,
+								url: child.url || null,
+								content: child.content ? (child.content.text || child.content.html || null) : null,
+								published: child.published || null,
+							});
 						});
 					}
-				}
 
-				// Parse local API results
-				if (localResult.status === "fulfilled" && localResult.value?.mentions) {
-					for (const m of localResult.value.mentions) {
-						// Local DB doesn't have wm-property; we treat all as "mention" type
-						mentions.push({
-							type: "mention-of",
-							authorName: m.sourceAuthor || "Anonymous",
-							authorPhoto: null,
-							authorUrl: m.sourceUrl || null,
-							url: m.sourceUrl || null,
-							content: m.sourceExcerpt || null,
-							published: m.sourcePublishedAt || m.createdAt || null,
-							sourceTitle: m.sourceTitle || null,
+					var html = "";
+					// Update heading count
+					if (titleEl) {
+						titleEl.textContent = "🔗 Webmentions (" + mentions.length + ")";
+					}
+
+					if (mentions.length === 0) {
+						html = '<div class="wm-empty">暂无 Webmentions</div>';
+					} else {
+						mentions.forEach(function (m) {
+							var typeLabel = getTypeLabel(m.type);
+							var name = escHtml(m.authorName);
+							var avatarHtml = m.authorPhoto
+								? '<img src="' + escAttr(m.authorPhoto) + '" alt="" class="wm-avatar" loading="lazy" />'
+								: '<span class="wm-avatar-fallback">' + escHtml(m.authorName.slice(0, 1).toUpperCase()) + '</span>';
+							var link = m.authorUrl || m.url || "#";
+							var text = m.content
+								? escHtml(truncate(stripHtml(m.content), 280))
+								: "";
+							var time = m.published ? fmtRelative(m.published) : "";
+
+							html += '<a href="' + escAttr(link) + '" target="_blank" rel="nofollow noopener" class="wm-card">';
+							html += '<div class="wm-card-head">' + avatarHtml + '<div class="wm-card-info"><span class="wm-author">' + name + '</span>';
+							if (time) html += '<span class="wm-meta">' + time + '</span>';
+							html += '</div><span class="wm-badge">' + typeLabel + '</span></div>';
+							if (text) html += '<div class="wm-content">' + text + '</div>';
+							html += '</a>';
 						});
 					}
-				}
 
-				// Group by type
-				const likes = mentions.filter((m) => m.type === "like-of");
-				const reposts = mentions.filter((m) => m.type === "repost-of");
-				const replies = mentions.filter(
-					(m) => m.type === "in-reply-to" || m.type === "mention-of",
-				);
-				const bookmarks = mentions.filter((m) => m.type === "bookmark-of");
+					html += '<div class="wm-hint">本站支持 <a href="https://www.w3.org/TR/webmention/" target="_blank" rel="noopener">Webmention</a>。如果你 <button type="button" class="wm-quote-btn" data-wm-quote>引用这篇文章</button>，可以通过下方表单通知我，互动会显示在这里。</div>';
+					html += '<div class="wm-form">';
+					html += '<div class="wm-form-label">发送 Webmention</div>';
+					html += '<div class="wm-form-row">';
+					html += '<input type="url" class="wm-input" placeholder="https://example.com/your-post" data-wm-source />';
+					html += '<input type="hidden" data-wm-target value="' + escAttr(targetUrl) + '" />';
+					html += '<button type="button" class="wm-submit" data-wm-send>发送</button>';
+					html += '</div><div class="wm-form-status" data-wm-status></div></div>';
 
-				const total = mentions.length;
+					list.innerHTML = html;
 
-				// Update toggle label
-				const small = toggle.querySelector("small");
-				if (small) {
-					small.textContent = total > 0 ? `${total} 条提及` : "暂无提及";
-				}
-
-				if (total === 0) {
-					body.innerHTML = '<div class="webmention-empty">暂无 Webmention 提及</div>';
-					return;
-				}
-
-				let html = "";
-
-				// Likes row - show avatars
-				if (likes.length > 0) {
-					html += '<div class="webmention-group">';
-					html += '<h4 class="webmention-group-title">❤️ 喜欢 (' + likes.length + ")</h4>";
-					html += '<div class="webmention-avatars">';
-					for (const like of likes) {
-						const name = escapeHtml(like.authorName);
-						const url = like.authorUrl || like.url || "#";
-						if (like.authorPhoto) {
-							html +=
-								'<a href="' +
-								escapeAttr(url) +
-								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
-								escapeAttr(name) +
-								'"><img src="' +
-								escapeAttr(like.authorPhoto) +
-								'" alt="' +
-								escapeAttr(name) +
-								'" class="webmention-avatar" loading="lazy" /></a>';
-						} else {
-							html +=
-								'<a href="' +
-								escapeAttr(url) +
-								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
-								escapeAttr(name) +
-								'"><span class="webmention-avatar-fallback">' +
-								escapeHtml(name.slice(0, 1).toUpperCase()) +
-								"</span></a>";
-						}
+					var sendBtn = list.querySelector("[data-wm-send]");
+					var sourceInput = list.querySelector("[data-wm-source]");
+					var targetInput = list.querySelector("[data-wm-target]");
+					var statusEl = list.querySelector("[data-wm-status]");
+					if (sendBtn && sourceInput && targetInput && statusEl) {
+						sendBtn.addEventListener("click", function () {
+							var source = sourceInput.value.trim();
+							if (!source) {
+								statusEl.textContent = "请输入你的文章 URL";
+								statusEl.className = "wm-form-status error";
+								return;
+							}
+							try { new URL(source); } catch (e) {
+								statusEl.textContent = "请输入有效的 URL";
+								statusEl.className = "wm-form-status error";
+								return;
+							}
+							sendBtn.disabled = true;
+							sendBtn.textContent = "发送中…";
+							statusEl.textContent = "";
+							statusEl.className = "wm-form-status";
+							var formData = new URLSearchParams();
+							formData.set("source", source);
+							formData.set("target", targetInput.value);
+							fetch("https://webmention.io/ffaff.fun/webmention", {
+								method: "POST",
+								headers: { "Content-Type": "application/x-www-form-urlencoded" },
+								body: formData.toString(),
+							}).then(function (resp) { return resp.text(); })
+								.then(function (result) {
+									statusEl.textContent = "发送成功！稍后刷新即可看到。";
+									statusEl.className = "wm-form-status";
+									sourceInput.value = "";
+									sendBtn.disabled = false;
+									sendBtn.textContent = "发送";
+								}).catch(function () {
+									statusEl.textContent = "网络错误，请稍后重试";
+									statusEl.className = "wm-form-status error";
+									sendBtn.disabled = false;
+									sendBtn.textContent = "发送";
+								});
+						});
 					}
-					html += "</div></div>";
-				}
 
-				// Reposts row
-				if (reposts.length > 0) {
-					html += '<div class="webmention-group">';
-					html += '<h4 class="webmention-group-title">🔁 转发 (' + reposts.length + ")</h4>";
-					html += '<div class="webmention-avatars">';
-					for (const repost of reposts) {
-						const name = escapeHtml(repost.authorName);
-						const url = repost.authorUrl || repost.url || "#";
-						if (repost.authorPhoto) {
-							html +=
-								'<a href="' +
-								escapeAttr(url) +
-								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
-								escapeAttr(name) +
-								'"><img src="' +
-								escapeAttr(repost.authorPhoto) +
-								'" alt="' +
-								escapeAttr(name) +
-								'" class="webmention-avatar" loading="lazy" /></a>';
-						} else {
-							html +=
-								'<a href="' +
-								escapeAttr(url) +
-								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
-								escapeAttr(name) +
-								'"><span class="webmention-avatar-fallback">' +
-								escapeHtml(name.slice(0, 1).toUpperCase()) +
-								"</span></a>";
-						}
+					// "引用这篇文章" 复制按钮
+					var quoteBtn = list.querySelector("[data-wm-quote]");
+					if (quoteBtn) {
+						quoteBtn.addEventListener("click", function () {
+							var title = document.title.replace(/ · .*$/, "");
+							var citation = title + " " + targetUrl;
+							if (navigator.clipboard) {
+								navigator.clipboard.writeText(citation).then(function () {
+									quoteBtn.textContent = "✓ 已复制";
+									setTimeout(function () { quoteBtn.textContent = "引用这篇文章"; }, 2000);
+								});
+							}
+						});
 					}
-					html += "</div></div>";
-				}
-
-				// Bookmarks
-				if (bookmarks.length > 0) {
-					html += '<div class="webmention-group">';
-					html +=
-						'<h4 class="webmention-group-title">🔖 收藏 (' + bookmarks.length + ")</h4>";
-					html += '<div class="webmention-avatars">';
-					for (const bm of bookmarks) {
-						const name = escapeHtml(bm.authorName);
-						const url = bm.authorUrl || bm.url || "#";
-						if (bm.authorPhoto) {
-							html +=
-								'<a href="' +
-								escapeAttr(url) +
-								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
-								escapeAttr(name) +
-								'"><img src="' +
-								escapeAttr(bm.authorPhoto) +
-								'" alt="' +
-								escapeAttr(name) +
-								'" class="webmention-avatar" loading="lazy" /></a>';
-						} else {
-							html +=
-								'<a href="' +
-								escapeAttr(url) +
-								'" target="_blank" rel="nofollow noopener" class="webmention-avatar-link" title="' +
-								escapeAttr(name) +
-								'"><span class="webmention-avatar-fallback">' +
-								escapeHtml(name.slice(0, 1).toUpperCase()) +
-								"</span></a>";
-						}
-					}
-					html += "</div></div>";
-				}
-
-				// Replies/comments/mentions
-				if (replies.length > 0) {
-					html += '<div class="webmention-group">';
-					html +=
-						'<h4 class="webmention-group-title">💬 回复与提及 (' +
-						replies.length +
-						")</h4>";
-					html += '<ul class="webmention-replies">';
-					for (const reply of replies) {
-						const name = escapeHtml(reply.authorName);
-						const url = reply.authorUrl || reply.url || "#";
-						const text = reply.content
-							? escapeHtml(truncateText(stripHtml(reply.content), 280))
-							: reply.sourceTitle
-								? escapeHtml(reply.sourceTitle)
-								: "(无内容)";
-						const time = reply.published ? formatRelativeTime(reply.published) : "";
-						html += '<li class="webmention-reply">';
-						html +=
-							'<a href="' +
-							escapeAttr(url) +
-							'" target="_blank" rel="nofollow noopener" class="webmention-reply-author">';
-						if (reply.authorPhoto) {
-							html +=
-								'<img src="' +
-								escapeAttr(reply.authorPhoto) +
-								'" alt="" class="webmention-reply-avatar" loading="lazy" />';
-						}
-						html += "<strong>" + name + "</strong>";
-						html += "</a>";
-						if (time) {
-							html +=
-								' <span class="webmention-reply-time">' + time + "</span>";
-						}
-						html +=
-							'<p class="webmention-reply-text">' + text + "</p>";
-						html += "</li>";
-					}
-					html += "</ul></div>";
-				}
-
-				// Webmention 发送表单
-				html += '<div class="webmention-form-section">';
-				html += '<h4 class="webmention-group-title">📨 发送 Webmention</h4>';
-				html += '<p class="webmention-form-hint">如果你写了文章提及本文，可以在这里提交你的文章链接来通知我。</p>';
-				html += '<form class="webmention-form" action="/webmention" method="POST" target="_blank">';
-				html += '<input type="hidden" name="target" value="' + escapeAttr(targetUrl) + '" />';
-				html += '<input type="url" name="source" class="webmention-form-input" placeholder="https://你的博客/你的文章" required />';
-				html += '<button type="submit" class="webmention-form-submit">发送</button>';
-				html += '</form>';
-				html += '</div>';
-
-				body.innerHTML = html;
-			});
-
-			// Toggle expand/collapse
-			toggle.addEventListener("click", () => {
-				const expanded = toggle.getAttribute("aria-expanded") === "true";
-				toggle.setAttribute("aria-expanded", String(!expanded));
-				body.hidden = !expanded;
-			});
+				})
+				.catch(function () {
+					list.innerHTML = '<div class="wm-empty">加载失败，请刷新页面重试</div>';
+				});
 		});
 	}
 
-	function escapeHtml(text) {
-		const div = document.createElement("div");
+	function getTypeLabel(type) {
+		if (type === "like-of") return "喜欢";
+		if (type === "repost-of") return "转发";
+		if (type === "in-reply-to") return "回复";
+		if (type === "bookmark-of") return "收藏";
+		return "提及";
+	}
+
+	function escHtml(text) {
+		var div = document.createElement("div");
 		div.appendChild(document.createTextNode(text));
 		return div.innerHTML;
 	}
 
-	function escapeAttr(text) {
-		return text
-			.replaceAll("&", "&amp;")
-			.replaceAll('"', "&quot;")
-			.replaceAll("<", "&lt;")
-			.replaceAll(">", "&gt;");
+	function escAttr(text) {
+		return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 	}
 
 	function stripHtml(html) {
-		const div = document.createElement("div");
+		var div = document.createElement("div");
 		div.innerHTML = html;
 		return div.textContent || div.innerText || "";
 	}
 
-	function truncateText(text, maxLen) {
-		if (text.length <= maxLen) return text;
-		return text.slice(0, maxLen) + "…";
+	function truncate(text, max) {
+		return text.length <= max ? text : text.slice(0, max) + "…";
 	}
 
-	function formatRelativeTime(dateStr) {
-		const date = new Date(dateStr);
-		if (Number.isNaN(date.getTime())) return "";
-		const now = new Date();
-		const diff = now.getTime() - date.getTime();
-		const seconds = Math.floor(diff / 1000);
-		const minutes = Math.floor(seconds / 60);
-		const hours = Math.floor(minutes / 60);
-		const days = Math.floor(hours / 24);
-		if (days > 365) return Math.floor(days / 365) + " 年前";
-		if (days > 30) return Math.floor(days / 30) + " 个月前";
-		if (days > 0) return days + " 天前";
-		if (hours > 0) return hours + " 小时前";
-		if (minutes > 0) return minutes + " 分钟前";
-		return "刚刚";
+	function fmtRelative(dateStr) {
+		var d = new Date(dateStr);
+		if (isNaN(d.getTime())) return "";
+		var diff = Date.now() - d.getTime();
+		var sec = Math.floor(diff / 1000);
+		if (sec < 60) return "刚刚";
+		var min = Math.floor(sec / 60);
+		if (min < 60) return min + " 分钟前";
+		var hr = Math.floor(min / 60);
+		if (hr < 24) return hr + " 小时前";
+		var days = Math.floor(hr / 24);
+		if (days < 30) return days + " 天前";
+		if (days < 365) return Math.floor(days / 30) + " 个月前";
+		return Math.floor(days / 365) + " 年前";
 	}
 
-	// Run on DOM ready and after Astro page transitions
 	document.addEventListener("astro:page-load", initWebmentionPanel);
 	document.addEventListener("DOMContentLoaded", initWebmentionPanel);
 	initWebmentionPanel();
 </script>
 
 <style>
-	.webmention-panel {
-		display: grid;
-		gap: 0;
-		overflow: hidden;
-		border-radius: var(--radius-inner);
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(255, 255, 255, 0.04);
+	.wm-section {
+		margin: 0;
 	}
 
-	.webmention-toggle {
+	.wm-title {
+		font-size: 0.9rem;
+		font-weight: 500;
+		letter-spacing: 0.05em;
+		text-align: center;
+		color: rgba(255, 255, 255, 0.4);
+		margin: 0 0 1rem;
+	}
+
+	.wm-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		max-width: 500px;
+		margin: 0 auto;
+	}
+
+	.wm-loading,
+	.wm-empty {
+		text-align: center;
+		color: rgba(255, 255, 255, 0.35);
+		font-size: 0.9rem;
+		padding: 1rem 0;
+	}
+
+	.wm-card {
+		display: block;
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: 8px;
+		padding: 0.9rem 1rem;
+		text-decoration: none;
+		color: inherit;
+		transition: border-color 0.2s ease;
+	}
+
+	.wm-card:hover {
+		border-color: rgba(255, 255, 255, 0.18);
+	}
+
+	.wm-card-head {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-md);
-		width: 100%;
-		padding: 1.05rem 1.2rem;
-		border: none;
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
-		text-align: left;
-		border-bottom: 1px solid transparent;
-		transition:
-			background-color var(--transition),
-			border-color var(--transition);
+		gap: 0.75rem;
 	}
 
-	.webmention-toggle:hover,
-	.webmention-toggle:focus-visible {
-		background: rgba(255, 255, 255, 0.05);
-		outline: none;
-	}
-
-	.webmention-toggle-copy {
-		display: grid;
-		gap: 0.2rem;
-	}
-
-	.webmention-toggle-copy strong {
-		font-size: 1rem;
-		font-weight: 600;
-	}
-
-	.webmention-toggle-copy small {
-		font-size: 0.8rem;
-		opacity: 0.65;
-	}
-
-	.webmention-toggle-icon {
-		font-size: 1.3rem;
-		font-weight: 300;
-		opacity: 0.55;
-		transition: transform var(--transition);
-	}
-
-	.webmention-toggle[aria-expanded="true"] .webmention-toggle-icon {
-		transform: rotate(45deg);
-	}
-
-	.webmention-body {
-		padding: 1.2rem;
-	}
-
-	.webmention-loading,
-	.webmention-empty {
-		text-align: center;
-		padding: 2rem 1rem;
-		opacity: 0.65;
-		font-size: 0.9rem;
-	}
-
-	/* Groups */
-	.webmention-group {
-		margin-bottom: 1.2rem;
-	}
-
-	.webmention-group:last-child {
-		margin-bottom: 0;
-	}
-
-	.webmention-group-title {
-		font-size: 0.85rem;
-		font-weight: 600;
-		margin: 0 0 0.6rem;
-		opacity: 0.85;
-	}
-
-	/* Avatar row */
-	.webmention-avatars {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-	}
-
-	.webmention-avatar-link {
-		display: block;
+	.wm-avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 1px solid rgba(255, 255, 255, 0.1);
 		flex-shrink: 0;
 	}
 
-	.webmention-avatar {
-		width: 2rem;
-		height: 2rem;
+	.wm-avatar-fallback {
+		width: 40px;
+		height: 40px;
 		border-radius: 50%;
-		object-fit: cover;
-		border: 1.5px solid rgba(255, 255, 255, 0.15);
-		transition: border-color var(--transition);
-	}
-
-	.webmention-avatar-link:hover .webmention-avatar {
-		border-color: rgba(255, 255, 255, 0.4);
-	}
-
-	.webmention-avatar-fallback {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 2rem;
-		height: 2rem;
-		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.1);
-		border: 1.5px solid rgba(255, 255, 255, 0.15);
-		font-size: 0.75rem;
+		font-size: 1.1rem;
 		font-weight: 600;
-		transition: border-color var(--transition);
+		flex-shrink: 0;
 	}
 
-	.webmention-avatar-link:hover .webmention-avatar-fallback {
-		border-color: rgba(255, 255, 255, 0.4);
+	.wm-card-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
 	}
 
-	/* Replies list */
-	.webmention-replies {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: grid;
-		gap: 0.8rem;
+	.wm-author {
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.9);
 	}
 
-	.webmention-reply {
-		padding: 0.6rem 0;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-	}
-
-	.webmention-reply:last-child {
-		border-bottom: none;
-	}
-
-	.webmention-reply-author {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		text-decoration: none;
-		color: inherit;
-		font-size: 0.85rem;
-	}
-
-	.webmention-reply-author:hover {
-		text-decoration: underline;
-	}
-
-	.webmention-reply-avatar {
-		width: 1.3rem;
-		height: 1.3rem;
-		border-radius: 50%;
-		object-fit: cover;
-	}
-
-	.webmention-reply-time {
-		font-size: 0.75rem;
-		opacity: 0.55;
-		margin-left: 0.4rem;
-	}
-
-	.webmention-reply-text {
-		margin: 0.3rem 0 0;
-		font-size: 0.85rem;
-		line-height: 1.5;
-		opacity: 0.85;
-	}
-
-	/* Webmention form */
-	.webmention-form-section {
-		margin-top: 1.2rem;
-		padding-top: 1rem;
-		border-top: 1px solid rgba(255, 255, 255, 0.08);
-	}
-
-	.webmention-form-hint {
+	.wm-meta {
 		font-size: 0.8rem;
-		opacity: 0.6;
-		margin: 0.3rem 0 0.6rem;
-		line-height: 1.4;
+		color: rgba(255, 255, 255, 0.38);
 	}
 
-	.webmention-form {
+	.wm-badge {
+		margin-left: auto;
+		flex-shrink: 0;
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.55);
+		font-size: 0.75rem;
+		padding: 0.15rem 0.6rem;
+		border-radius: 999px;
+		white-space: nowrap;
+	}
+
+	.wm-content {
+		margin: 0.6rem 0 0;
+		color: rgba(255, 255, 255, 0.65);
+		font-size: 0.95rem;
+		line-height: 1.6;
+	}
+
+	.wm-hint {
+		margin: 1rem 0 0;
+		text-align: center;
+		font-size: 0.85rem;
+		color: rgba(255, 255, 255, 0.35);
+		line-height: 1.6;
+	}
+
+	.wm-hint a {
+		color: rgba(255, 255, 255, 0.5);
+	}
+
+	.wm-quote-btn {
+		display: inline;
+		padding: 0.1rem 0.6rem;
+		margin: 0 0.15rem;
+		font-size: 0.8rem;
+		font-family: inherit;
+		color: rgba(255, 255, 255, 0.55);
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 4px;
+		cursor: pointer;
+		vertical-align: baseline;
+		transition: all 0.2s;
+	}
+
+	.wm-quote-btn:hover {
+		color: rgba(255, 255, 255, 0.85);
+		background: rgba(255, 255, 255, 0.14);
+	}
+
+	.wm-form {
+		margin-top: 0.75rem;
+		background: rgba(255, 255, 255, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		border-radius: 8px;
+		padding: 0.9rem 1rem;
+	}
+
+	.wm-form-label {
+		display: block;
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.55);
+		margin-bottom: 0.5rem;
+	}
+
+	.wm-form-row {
 		display: flex;
 		gap: 0.5rem;
 	}
 
-	.webmention-form-input {
+	.wm-input {
 		flex: 1;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		border-radius: var(--radius-sm, 6px);
-		background: rgba(255, 255, 255, 0.06);
-		color: inherit;
-		font-size: 0.85rem;
+		min-width: 0;
+		padding: 0.45rem 0.75rem;
+		font-size: 0.9rem;
+		font-family: inherit;
+		color: rgba(255, 255, 255, 0.85);
+		background: rgba(255, 255, 255, 0.08);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		border-radius: 6px;
 		outline: none;
-		transition: border-color var(--transition);
+		transition: border-color 0.2s;
 	}
 
-	.webmention-form-input:focus {
+	.wm-input:focus {
 		border-color: rgba(255, 255, 255, 0.35);
+		outline: 2px solid rgba(255, 255, 255, 0.12);
+		outline-offset: 1px;
 	}
 
-	.webmention-form-submit {
-		padding: 0.5rem 1rem;
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		border-radius: var(--radius-sm, 6px);
-		background: rgba(255, 255, 255, 0.1);
-		color: inherit;
-		font-size: 0.85rem;
+	.wm-input::placeholder {
+		color: rgba(255, 255, 255, 0.25);
+	}
+
+	.wm-submit {
+		flex-shrink: 0;
+		padding: 0.45rem 1.25rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+		font-family: inherit;
+		color: #fff;
+		background: #c0885a;
+		border: none;
+		border-radius: 6px;
 		cursor: pointer;
-		transition:
-			background-color var(--transition),
-			border-color var(--transition);
-		white-space: nowrap;
+		transition: background 0.2s;
 	}
 
-	.webmention-form-submit:hover {
-		background: rgba(255, 255, 255, 0.18);
-		border-color: rgba(255, 255, 255, 0.3);
+	.wm-submit:hover {
+		background: #d49860;
+	}
+
+	.wm-submit:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.wm-form-status {
+		margin-top: 0.5rem;
+		font-size: 0.85rem;
+		color: rgba(255, 255, 255, 0.45);
+	}
+
+	.wm-form-status.error {
+		color: #f87171;
+	}
+
+	@media (max-width: 480px) {
+		.wm-form-row {
+			flex-direction: column;
+		}
+		.wm-submit {
+			width: 100%;
+		}
 	}
 </style>
