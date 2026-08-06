@@ -80,7 +80,8 @@ const encodedSlug = encodeRouteParam(slug);
 
 {
 	variant === "compact" ? (
-		<article class="post-compact">
+		<article class="post-compact h-entry">
+			<a class="u-url" href={`/blog/${encodedSlug}`} hidden>permalink</a>
 			{hasCover && (
 				<a href={`/blog/${encodedSlug}`} class="post-compact-cover" data-astro-prefetch="hover">
 					<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
@@ -88,48 +89,50 @@ const encodedSlug = encodeRouteParam(slug);
 			)}
 			<div class="post-compact-body">
 				<div class="post-compact-meta">
-					{categoryName && <span class="post-compact-category">{categoryName}</span>}
+					{categoryName && <span class="post-compact-category p-category">{categoryName}</span>}
 					{formattedDate && (
-						<time class="post-compact-date local-time-pending" datetime={publishedAt ?? undefined} data-local-time="date">
+						<time class="post-compact-date local-time-pending dt-published" datetime={publishedAt ?? undefined} data-local-time="date">
 							{formattedDate}
 						</time>
 					)}
 				</div>
 				<a href={`/blog/${encodedSlug}`} class="post-compact-link" data-astro-prefetch="hover">
-					<h3 class="post-compact-title" transition:name={`title-${slug}`}>{title}</h3>
+					<h3 class="post-compact-title p-name" transition:name={`title-${slug}`}>{title}</h3>
 				</a>
 				{excerpt && (
-					<p class="post-compact-excerpt" transition:name={`summary-${slug}`}>{excerpt}</p>
+					<p class="post-compact-excerpt p-summary" transition:name={`summary-${slug}`}>{excerpt}</p>
 				)}
 			</div>
 		</article>
 	) : variant === "list" ? (
-		<article class="post-list-item">
+		<article class="post-list-item h-entry">
+			<a class="u-url" href={`/blog/${encodedSlug}`} hidden>permalink</a>
 			<div class="post-list-meta">
 				{formattedDate && (
 					<time
-						class="post-list-date local-time-pending"
+						class="post-list-date local-time-pending dt-published"
 						datetime={publishedAt ?? undefined}
 						data-local-time="date"
 					>
 						{formattedDate}
 					</time>
 				)}
-				{categoryName && <span class="post-list-category">{categoryName}</span>}
+				{categoryName && <span class="post-list-category p-category">{categoryName}</span>}
 			</div>
 			<div class="post-list-content">
 				<a href={`/blog/${encodedSlug}`} class="post-list-link" data-astro-prefetch="hover">
-					<h3 class="post-list-title" transition:name={`title-${slug}`}>{title}</h3>
+					<h3 class="post-list-title p-name" transition:name={`title-${slug}`}>{title}</h3>
 				</a>
 				{excerpt && (
-					<p class="post-list-excerpt" transition:name={`summary-${slug}`}>{excerpt}</p>
+					<p class="post-list-excerpt p-summary" transition:name={`summary-${slug}`}>{excerpt}</p>
 				)}
 			</div>
 		</article>
 	) : (
-		<article class={cardClassName}>
+		<article class={cardClassName + " h-entry"}>
+			<a class="u-url" href={`/blog/${encodedSlug}`} hidden>permalink</a>
 			{hasCover && (
-				<a href={`/blog/${encodedSlug}`} class="post-card-cover" data-astro-prefetch="hover">
+				<a href={`/blog/${encodedSlug}`} class="post-card-cover u-featured" data-astro-prefetch="hover">
 					<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
 				</a>
 			)}
@@ -138,27 +141,27 @@ const encodedSlug = encodeRouteParam(slug);
 					<div class="pill-row" transition:name={`meta-${slug}`}>
 						{formattedDate && (
 							<time
-								class="pill local-time-pending"
+								class="pill local-time-pending dt-published"
 								datetime={publishedAt ?? undefined}
 								data-local-time="date"
 							>
 								{formattedDate}
 							</time>
 						)}
-						{categoryName && <span class="pill">{categoryName}</span>}
+						{categoryName && <span class="pill p-category">{categoryName}</span>}
 			<span class="pill">{articleReadingTimeLabel} · {articleLengthLabel}</span>
 					</div>
 					<a href={`/blog/${encodedSlug}`} class="post-card-link" data-astro-prefetch="hover">
-						<h2 class="post-card-title" transition:name={`title-${slug}`}>{title}</h2>
+						<h2 class="post-card-title p-name" transition:name={`title-${slug}`}>{title}</h2>
 					</a>
 				</div>
 				{excerpt && (
-					<p class="post-card-excerpt" transition:name={`summary-${slug}`}>
+					<p class="post-card-excerpt p-summary" transition:name={`summary-${slug}`}>
 						{excerpt}
 					</p>
 				)}
 				<div class="post-card-meta">
-					<span>{authorName || siteConfig.author}</span>
+					<span class="p-author">{authorName || siteConfig.author}</span>
 					<a href={`/blog/${encodedSlug}`} class="post-card-readmore" data-astro-prefetch="hover">继续阅读</a>
 				</div>
 			</div>

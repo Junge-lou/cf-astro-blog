@@ -3,6 +3,7 @@ import CommentsPanel from "@/components/CommentsPanel.astro";
 import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
 import type { MarkdownTocItem } from "@/lib/security";
+import { siteConfig } from "@/lib/types";
 import Base from "./Base.astro";
 
 interface Props {
@@ -103,7 +104,8 @@ const hasToc = tocEntries.length > 0;
 	canonicalUrl={canonicalUrl}
 	backgroundOverride={backgroundOverride}
 >
-	<article class="article-shell h-entry">
+	<article class="article-shell h-entry" id="post-content">
+		<a class="u-url" href={canonicalUrl || Astro.url.href} hidden>permalink</a>
 		<aside class:list={["article-sidebar", { "article-sidebar-with-toc": hasToc }]}>
 			<section class="article-profile glass-panel p-author h-card">
 				<div class="article-profile-avatar-frame">
@@ -124,7 +126,7 @@ const hasToc = tocEntries.length > 0;
 				<span class="article-profile-badge">{sidebarBadge}</span>
 				<strong class="article-profile-name p-name">{sidebarName}</strong>
 				<p class="article-profile-bio p-note">{sidebarBio}</p>
-				<a class="u-url" href={canonicalUrl || Astro.url.href} hidden>permalink</a>
+				<a class="u-url" href={siteConfig.url} hidden>author home</a>
 				<div class="article-profile-meta">
 					{formattedDate && (
 						<div class="article-profile-item">
@@ -209,8 +211,8 @@ const hasToc = tocEntries.length > 0;
 							{formattedDate}
 						</time>
 					)}
-					{authorName && <span class="pill">{authorName}</span>}
-					{categoryName && <span class="pill">{categoryName}</span>}
+					{authorName && <span class="pill p-author">{authorName}</span>}
+					{categoryName && <span class="pill p-category">{categoryName}</span>}
 				</div>
 			</header>
 			<div class="article-body glass-panel e-content">

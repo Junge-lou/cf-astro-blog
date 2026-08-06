@@ -54,7 +54,7 @@ const { targetUrl } = Astro.props;
 			});
 			var queryString = queryParts.join("&");
 
-			fetch("https://webmention.io/api/mentions.jf2?" + queryString)
+			fetch("https://webmention.io/api/mentions.jf2?" + queryString + "&per-page=100")
 				.then(function (r) { return r.json(); })
 				.then(function (data) {
 					var mentions = [];
@@ -73,9 +73,14 @@ const { targetUrl } = Astro.props;
 							var contentText = child.content ? (child.content.text || "") : "";
 							var contextSnippet = extractContext(contentHtml, contentText, targetUrl);
 							var wmSource = child["wm-source"] || child.url || "";
+							var wmProperty = child["wm-property"] || "mention-of";
+
+							// Parse RSVP if present
+							var rsvp = child.rsvp || (child.properties && child.properties.rsvp ? child.properties.rsvp[0] : null);
 
 							mentions.push({
-								type: child["wm-property"] || "mention-of",
+								type: wmProperty,
+								rsvp: rsvp,
 								authorName: child.author ? child.author.name || "Anonymous" : "Anonymous",
 								authorPhoto: child.author ? child.author.photo || null : null,
 								authorUrl: child.author ? child.author.url || null : null,
@@ -83,44 +88,103 @@ const { targetUrl } = Astro.props;
 								content: contextSnippet || contentText,
 								published: child.published || child["wm-received"] || null,
 								source: wmSource,
+								// For reply threading: who they replied to
+								inReplyTo: child["in-reply-to"] || null,
 							});
 						});
 					}
 
-					if (countEl) countEl.textContent = mentions.length;
+					// Group by type for summary & rendering
+					var groups = { likes: [], reposts: [], replies: [], bookmarks: [], mentions: [], rsvps: [] };
+					mentions.forEach(function (m) {
+						if (m.type === "like-of") groups.likes.push(m);
+						else if (m.type === "repost-of") groups.reposts.push(m);
+						else if (m.type === "in-reply-to") groups.replies.push(m);
+						else if (m.type === "bookmark-of") groups.bookmarks.push(m);
+						else if (m.type === "rsvp") groups.rsvps.push(m);
+						else groups.mentions.push(m);
+					});
+
+					var total = mentions.length;
+					if (countEl) countEl.textContent = total;
 
 					var html = "";
 
-					if (mentions.length === 0) {
+					if (total === 0) {
 						list.style.display = "none";
 						if (emptyEl) emptyEl.style.display = "";
 					} else {
 						if (emptyEl) emptyEl.style.display = "none";
 						list.style.display = "flex";
-						mentions.forEach(function (m) {
+
+						// ── Summary bar ──
+						var summaryParts = [];
+						if (groups.likes.length) summaryParts.push('<span class="wm-summary-item">❤️ ' + groups.likes.length + ' 人喜欢</span>');
+						if (groups.reposts.length) summaryParts.push('<span class="wm-summary-item">🔄 ' + groups.reposts.length + ' 人转发</span>');
+						if (groups.replies.length) summaryParts.push('<span class="wm-summary-item">💬 ' + groups.replies.length + ' 条回复</span>');
+						if (groups.bookmarks.length) summaryParts.push('<span class="wm-summary-item">🔖 ' + groups.bookmarks.length + ' 人收藏</span>');
+						if (groups.rsvps.length) summaryParts.push('<span class="wm-summary-item">📅 ' + groups.rsvps.length + ' 人回应</span>');
+						if (groups.mentions.length) summaryParts.push('<span class="wm-summary-item">💭 ' + groups.mentions.length + ' 次提及</span>');
+						if (summaryParts.length) {
+							html += '<div class="wm-summary">' + summaryParts.join("") + '</div>';
+						}
+
+						// ── Facepile: likes + reposts + bookmarks ──
+						var facepileMentions = groups.likes.concat(groups.reposts).concat(groups.bookmarks).concat(groups.rsvps);
+						// deduplicate by author URL
+						var seenAuthors = {};
+						var uniqueFacepile = [];
+						facepileMentions.forEach(function (m) {
+							var key = m.authorUrl || m.authorName || m.source;
+							if (!seenAuthors[key]) {
+								seenAuthors[key] = true;
+								uniqueFacepile.push(m);
+							}
+						});
+						if (uniqueFacepile.length) {
+							html += '<div class="wm-facepile">';
+							uniqueFacepile.forEach(function (m, i) {
+								var link = m.authorUrl || m.url || m.source || "#";
+								var photoHtml = m.authorPhoto
+									? '<img src="' + escAttr(m.authorPhoto) + '" alt="' + escAttr(m.authorName) + '" class="wm-facepile-avatar" loading="lazy" decoding="async" referrerpolicy="no-referrer" />'
+									: '<span class="wm-facepile-avatar wm-facepile-fallback">' + escHtml(m.authorName.slice(0, 1).toUpperCase()) + '</span>';
+								var typeIcon = m.type === "like-of" ? "❤️" : m.type === "repost-of" ? "🔄" : m.type === "bookmark-of" ? "🔖" : m.type === "rsvp" ? getRsvpEmoji(m.rsvp) : "💭";
+								var title = escAttr(m.authorName + " " + getTypeLabel(m.type));
+								html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-facepile-item" title="' + title + '" style="z-index:' + (uniqueFacepile.length - i) + '">';
+								html += photoHtml;
+								html += '<span class="wm-facepile-icon">' + typeIcon + '</span>';
+								html += '</a>';
+							});
+							html += '</div>';
+						}
+
+						// ── Cards: replies + generic mentions ──
+						var cardMentions = groups.replies.concat(groups.mentions);
+						cardMentions.forEach(function (m) {
 							var typeLabel = getTypeLabel(m.type);
 							var name = escHtml(m.authorName);
 							var domain = getDomain(m.source || m.url || "");
 							var avatarHtml = m.authorPhoto
-								? '<img src="' + escAttr(m.authorPhoto) + '" alt="" class="wm-avatar" loading="lazy" decoding="async" />'
+								? '<img src="' + escAttr(m.authorPhoto) + '" alt="" class="wm-avatar" loading="lazy" decoding="async" referrerpolicy="no-referrer" />'
 								: '<span class="wm-avatar-fallback">' + escHtml(m.authorName.slice(0, 1).toUpperCase()) + '</span>';
-							var link = m.url || m.source || "#";
+							var link = m.authorUrl || m.url || m.source || "#";
 							var text = m.content || "";
 							var time = m.published ? fmtRelative(m.published) : "";
 							var fullDate = m.published ? fmtFullDate(m.published) : "";
 
-							html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-card"';
-							if (fullDate) html += ' title="' + escAttr(fullDate) + '"';
-							html += '>';
-							html += '<div class="wm-card-head">' + avatarHtml;
-							html += '<span>';
-							html += '<span class="wm-author">' + name + '</span>';
+							html += '<div class="wm-card">';
+							html += '<div class="wm-card-head">';
+							// avatar links to author's site if available, otherwise to source
+							html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-avatar-link">' + avatarHtml + '</a>';
+							html += '<span class="wm-card-meta">';
+							html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-author-link"><span class="wm-author">' + name + '</span></a>';
 							if (domain || time) html += '<span class="wm-meta"> · ' + [domain, time].filter(Boolean).join(" · ") + '</span>';
 							html += '</span>';
 							html += '<span class="wm-badge">' + typeLabel + '</span>';
 							html += '</div>';
-							if (text) html += '<p class="wm-content">' + text + '</p>';
-							html += '</a>';
+							if (text) html += '<div class="wm-content">' + text + '</div>';
+							if (fullDate) html += '<a href="' + escAttr(m.url || m.source || "#") + '" target="_blank" rel="noopener noreferrer" class="wm-time-link"><time class="wm-time" datetime="' + escAttr(m.published || "") + '" title="' + escAttr(fullDate) + '">' + escHtml(fullDate) + '</time></a>';
+							html += '</div>';
 						});
 					}
 
@@ -202,12 +266,29 @@ const { targetUrl } = Astro.props;
 		try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
 	}
 
-	function getTypeLabel(type) {
+	function getTypeLabel(type, rsvp) {
 		if (type === "like-of") return "❤️ 喜欢";
 		if (type === "repost-of") return "🔄 转发";
 		if (type === "in-reply-to") return "💬 回复";
 		if (type === "bookmark-of") return "🔖 收藏";
+		if (type === "rsvp") return getRsvpLabel(rsvp);
 		return "💭 提及";
+	}
+
+	function getRsvpLabel(rsvp) {
+		if (rsvp === "yes") return "✅ 参加";
+		if (rsvp === "no") return "❌ 不参加";
+		if (rsvp === "maybe") return "🤔 可能";
+		if (rsvp === "interested") return "⭐ 感兴趣";
+		return "📅 RSVP";
+	}
+
+	function getRsvpEmoji(rsvp) {
+		if (rsvp === "yes") return "✅";
+		if (rsvp === "no") return "❌";
+		if (rsvp === "maybe") return "🤔";
+		if (rsvp === "interested") return "⭐";
+		return "📅";
 	}
 
 	function escHtml(text) {
@@ -475,4 +556,119 @@ const { targetUrl } = Astro.props;
 		.wm-form-row { flex-direction: column; }
 		.wm-submit { width: 100%; }
 	}
-</style>
+
+	/* ── 摘要栏 ── */
+	.wm-summary {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		padding: 0.5rem 0;
+		border-bottom: 1px solid rgba(var(--card-surface-rgb), 0.4);
+		margin-bottom: 0.25rem;
+	}
+
+	.wm-summary-item {
+		font-size: 0.82rem;
+		color: var(--color-text-secondary);
+	}
+
+	/* ── 头像墙 ── */
+	.wm-facepile {
+		display: flex;
+		flex-wrap: wrap;
+		padding: 0.25rem 0 0.5rem;
+	}
+
+	.wm-facepile-item {
+		position: relative;
+		display: inline-flex;
+		margin-right: -6px;
+		text-decoration: none;
+		transition: transform 0.15s, z-index 0s;
+	}
+
+	.wm-facepile-item:hover {
+		transform: translateY(-3px);
+		z-index: 100 !important;
+	}
+
+	.wm-facepile-avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 2px solid var(--color-bg);
+		background: var(--color-bg);
+	}
+
+	.wm-facepile-fallback {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--color-accent-soft);
+		color: var(--color-accent-hover);
+		font-size: 0.75rem;
+		font-weight: 700;
+	}
+
+	.wm-facepile-icon {
+		position: absolute;
+		bottom: -2px;
+		right: -2px;
+		font-size: 10px;
+		line-height: 1;
+		background: var(--color-bg);
+		border-radius: 50%;
+		padding: 1px;
+	}
+
+	/* ── 作者链接 ── */
+	.wm-avatar-link {
+		flex-shrink: 0;
+		text-decoration: none;
+	}
+
+	.wm-author-link {
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.wm-author-link:hover .wm-author {
+		text-decoration: underline;
+		color: var(--color-accent-hover);
+	}
+
+	.wm-time-link {
+		display: block;
+		text-decoration: none;
+	}
+
+	.wm-time {
+		font-size: 0.73rem;
+		color: var(--color-text-muted);
+		margin-top: 0.4rem;
+		display: inline-block;
+	}
+
+	.wm-time-link:hover .wm-time {
+		color: var(--color-accent-hover);
+	}
+
+	/* ── 卡片微调：non-link card ── */
+	.wm-card {
+		display: block;
+		background-color: rgba(var(--card-surface-rgb), 0.65);
+		border: 1px solid rgba(var(--card-surface-rgb), 0.55);
+		border-radius: 8px;
+		padding: 0.85rem 1rem;
+		text-decoration: none;
+		color: inherit;
+		transition: border-color 0.2s, background-color 0.2s;
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+	}
+
+	.wm-card:hover {
+		border-color: var(--color-accent);
+		background-color: rgba(var(--card-surface-rgb), 0.85);
+	}
