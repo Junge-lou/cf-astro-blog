@@ -1,4 +1,4 @@
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import matter from "gray-matter";
@@ -25,9 +25,11 @@ function clampInt(value, min, max, fallback) {
 
 function runD1(command, mode) {
   const modeFlag = mode === "remote" ? "--remote" : "--local";
-  const stdout = execSync(
-    `${NPX} wrangler d1 execute DB ${modeFlag} --command "${command.replaceAll('"', '\\"')}" --json`,
-    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], shell: true },
+  // 用 execFileSync 传参数组，避免 shell 解释文章内容中的元字符（反引号、$ 等）
+  const stdout = execFileSync(
+    NPX,
+    ["wrangler", "d1", "execute", "DB", modeFlag, "--command", command, "--json"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
   );
 
   const jsonStart = stdout.indexOf("[");
