@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync, unlinkSync, rmdirSync } from "node:fs";
 import { basename, extname, join } from "node:path";
+import { tmpdir } from "node:os";
 import matter from "gray-matter";
 
 const POSTS_DIR = join(process.cwd(), "content", "posts");
@@ -25,22 +26,29 @@ function clampInt(value, min, max, fallback) {
 
 function runD1(command, mode) {
   const modeFlag = mode === "remote" ? "--remote" : "--local";
-  // 用 execFileSync 传参数组，避免 shell 解释文章内容中的元字符（反引号、$ 等）
-  const stdout = execFileSync(
-    NPX,
-    ["wrangler", "d1", "execute", "DB", modeFlag, "--command", command, "--json"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
-  );
-
-  const jsonStart = stdout.indexOf("[");
-  const jsonEnd = stdout.lastIndexOf("]");
-  if (jsonStart < 0 || jsonEnd < jsonStart) {
-    throw new Error("wrangler 输出中未找到可解析的 JSON 结果: " + stdout.slice(0, 500));
+  // 将 SQL 写入临时文件，避免命令行参数过长或 shell 转义问题
+  const tmpDir = mkdtempSync(join(tmpdir(), "d1-sync-"));
+  const sqlFile = join(tmpDir, "query.sql");
+  try {
+    writeFileSync(sqlFile, command, "utf8");
+    const stdout = execFileSync(
+      NPX,
+      ["wrangler", "d1", "execute", "DB", modeFlag, "--file", sqlFile, "--json"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
+    );
+    // 继续解析 JSON...
+    const jsonStart = stdout.indexOf("[");
+    const jsonEnd = stdout.lastIndexOf("]");
+    if (jsonStart < 0 || jsonEnd < jsonStart) {
+      throw new Error("wrangler 输出中未找到可解析的 JSON 结果: " + stdout.slice(0, 500));
+    }
+    const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
+    const rows = Array.isArray(parsed) ? parsed[0]?.results : [];
+    return Array.isArray(rows) ? rows : [];
+  } finally {
+    try { unlinkSync(sqlFile); } catch {}
+    try { rmdirSync(tmpDir); } catch {}
   }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
-  const rows = Array.isArray(parsed) ? parsed[0]?.results : [];
-  return Array.isArray(rows) ? rows : [];
 }
 
 function escapeSql(value) {
