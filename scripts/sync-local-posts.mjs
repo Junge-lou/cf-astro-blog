@@ -1,7 +1,6 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync, unlinkSync, rmdirSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join } from "node:path";
-import { tmpdir } from "node:os";
 import matter from "gray-matter";
 
 const POSTS_DIR = join(process.cwd(), "content", "posts");
@@ -24,31 +23,31 @@ function clampInt(value, min, max, fallback) {
   return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
 }
 
+// 转义 shell 双引号字符串内的所有元字符：\  "  $  `
+function escapeShellArg(str) {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\$/g, '\\$')
+    .replace(/`/g, '\\`');
+}
+
 function runD1(command, mode) {
   const modeFlag = mode === "remote" ? "--remote" : "--local";
-  // 将 SQL 写入临时文件，避免命令行参数过长或 shell 转义问题
-  const tmpDir = mkdtempSync(join(tmpdir(), "d1-sync-"));
-  const sqlFile = join(tmpDir, "query.sql");
-  try {
-    writeFileSync(sqlFile, command, "utf8");
-    const stdout = execFileSync(
-      NPX,
-      ["wrangler", "d1", "execute", "DB", modeFlag, "--file", sqlFile, "--json"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
-    );
-    // 继续解析 JSON...
-    const jsonStart = stdout.indexOf("[");
-    const jsonEnd = stdout.lastIndexOf("]");
-    if (jsonStart < 0 || jsonEnd < jsonStart) {
-      throw new Error("wrangler 输出中未找到可解析的 JSON 结果: " + stdout.slice(0, 500));
-    }
-    const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
-    const rows = Array.isArray(parsed) ? parsed[0]?.results : [];
-    return Array.isArray(rows) ? rows : [];
-  } finally {
-    try { unlinkSync(sqlFile); } catch {}
-    try { rmdirSync(tmpDir); } catch {}
+  const stdout = execSync(
+    `${NPX} wrangler d1 execute DB ${modeFlag} --command "${escapeShellArg(command)}" --json`,
+    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"], shell: true },
+  );
+
+  const jsonStart = stdout.indexOf("[");
+  const jsonEnd = stdout.lastIndexOf("]");
+  if (jsonStart < 0 || jsonEnd < jsonStart) {
+    throw new Error("wrangler 输出中未找到可解析的 JSON 结果: " + stdout.slice(0, 500));
   }
+
+  const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
+  const rows = Array.isArray(parsed) ? parsed[0]?.results : [];
+  return Array.isArray(rows) ? rows : [];
 }
 
 function escapeSql(value) {
