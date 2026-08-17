@@ -64,6 +64,8 @@ export const blogPosts = sqliteTable(
 		canonicalUrl: text("canonical_url"),
 		categoryId: integer("category_id").references(() => blogCategories.id),
 		authorName: text("author_name").default("Admin"),
+		source: text("source").notNull().default("admin"),
+		deletedAt: text("deleted_at"),
 		viewCount: integer("view_count").default(0),
 		createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 		updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
@@ -76,6 +78,8 @@ export const blogPosts = sqliteTable(
 			table.pinnedOrder,
 			table.publishedAt,
 		),
+		index("posts_source_idx").on(table.source),
+		index("posts_deleted_idx").on(table.deletedAt),
 	],
 );
 

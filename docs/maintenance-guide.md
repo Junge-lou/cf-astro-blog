@@ -69,3 +69,10 @@ npm run db:migrate:remote
 
 - D1 的业务数据不会因为普通代码部署被清空。
 - 仅在执行 migration 时才会发生结构变更。
+
+## 6. 文章生命周期（来源与回收站）
+
+- `blog_posts` 表有 `source`（`file` / `admin` / `mcp`）与 `deleted_at` 两个字段（迁移 `0023_post_lifecycle.sql`）。
+- 后台「删除」是软删除（移入回收站），「彻底删除」才是物理删除。
+- `sync:posts` 只管理 `source='file'` 的文章：删除仓库里的 `.md` 文件会在下次部署时把对应文章移入回收站；重新编辑文件则恢复。
+- 上线本次改动后，需执行一次 `npm run db:migrate:remote` 应用 `0023` 迁移。

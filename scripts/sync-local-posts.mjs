@@ -284,17 +284,35 @@ function sync() {
   // Batch-check which slugs already exist in D1, with updated_at and status for merge
   const slugList = posts.map((p) => `'${escapeSql(p.slug)}'`).join(", ");
   const existingRows = runD1(
-    `SELECT slug, updated_at, status FROM blog_posts WHERE slug IN (${slugList})`,
+    `SELECT slug, updated_at, status, source, deleted_at FROM blog_posts WHERE slug IN (${slugList})`,
     mode,
   );
   const dbInfoMap = new Map(
-    existingRows.map((r) => [r.slug, { updatedAt: r.updated_at || "", status: r.status || "draft" }]),
+    existingRows.map((r) => [
+      r.slug,
+      {
+        updatedAt: r.updated_at || "",
+        status: r.status || "draft",
+        source: r.source || "admin",
+        deletedAt: r.deleted_at || null,
+      },
+    ]),
   );
+
+  // 将「与本地文件同 slug」的历史文章标记为文件来源（收养），
+  // 这样后续删除文件时才能正确下架对应文章。仅影响 source 字段，不改动内容/状态。
+  if (slugList && !dryRun) {
+    runD1(
+      `UPDATE blog_posts SET source = 'file' WHERE slug IN (${slugList}) AND source = 'admin' AND deleted_at IS NULL`,
+      mode,
+    );
+  }
 
   const now = new Date().toISOString();
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
+  let trashed = 0;
 
   for (const post of posts) {
     const dbInfo = dbInfoMap.get(post.slug);
@@ -306,6 +324,25 @@ function sync() {
       : null;
 
     if (exists) {
+      // ── 回收站恢复检查 ──────────────────────────────────────────────
+      // 文章已在回收站（后台/同步删除）：仅当本地文件比删除时间更新时恢复，
+      // 即「重新编辑文件」才代表明确的恢复信号，否则保持删除状态。
+      if (dbInfo.deletedAt) {
+        const dbDeletedMs = parseDate(dbInfo.deletedAt)
+          ? new Date(parseDate(dbInfo.deletedAt)).getTime()
+          : 0;
+        const shouldRestore =
+          forceOverwrite ||
+          (dbDeletedMs > 0 && post.fileMtimeMs > dbDeletedMs);
+        if (!shouldRestore) {
+          console.warn(
+            `  [跳过] ${post.file} → slug="${post.slug}" —— 已在回收站。重新编辑文件或使用 --force 才会恢复`,
+          );
+          skipped++;
+          continue;
+        }
+      }
+
       // ── 时间戳智能合并 ──────────────────────────────────────────────
       // 比较本地文件的修改时间 vs 数据库中该文章的 updated_at：
       //   本地更新 → 正常覆盖（日常写作场景）
@@ -371,6 +408,8 @@ function sync() {
           `canonical_url = ${sqlString(post.canonicalUrl)},`,
           `category_id = ${categoryId !== null ? categoryId : "NULL"},`,
           `author_name = ${sqlString(post.authorName)},`,
+          `source = 'file',`,
+          `deleted_at = NULL,`,
           `updated_at = ${sqlString(now)}`,
           `WHERE slug = ${sqlString(post.slug)}`,
         ].join(" "),
@@ -388,9 +427,9 @@ function sync() {
       runD1(
         [
           "INSERT INTO blog_posts",
-          "(title, slug, content, excerpt, status, publish_at, published_at, featured_image_key, featured_image_alt, background_mode, background_image_key, background_opacity, background_blur, background_scale, background_position_x, background_position_y, is_pinned, pinned_order, meta_title, meta_description, meta_keywords, canonical_url, category_id, author_name, created_at, updated_at)",
+          "(title, slug, content, excerpt, status, publish_at, published_at, featured_image_key, featured_image_alt, background_mode, background_image_key, background_opacity, background_blur, background_scale, background_position_x, background_position_y, is_pinned, pinned_order, meta_title, meta_description, meta_keywords, canonical_url, category_id, author_name, source, created_at, updated_at)",
           "VALUES",
-          `(${sqlString(post.title)}, ${sqlString(post.slug)}, ${sqlString(post.content)}, ${sqlString(post.excerpt)}, ${sqlString(post.status)}, ${sqlString(post.publishAt)}, ${sqlString(post.publishedAt)}, ${sqlString(post.featuredImageKey)}, ${sqlString(post.featuredImageAlt)}, ${sqlString(post.backgroundMode)}, ${sqlString(post.backgroundImageKey)}, ${post.backgroundOpacity}, ${post.backgroundBlur}, ${post.backgroundScale}, ${post.backgroundPositionX}, ${post.backgroundPositionY}, ${post.isPinned}, ${post.pinnedOrder}, ${sqlString(post.metaTitle)}, ${sqlString(post.metaDescription)}, ${sqlString(post.metaKeywords)}, ${sqlString(post.canonicalUrl)}, ${categoryId !== null ? categoryId : "NULL"}, ${sqlString(post.authorName)}, ${sqlString(now)}, ${sqlString(now)})`,
+          `(${sqlString(post.title)}, ${sqlString(post.slug)}, ${sqlString(post.content)}, ${sqlString(post.excerpt)}, ${sqlString(post.status)}, ${sqlString(post.publishAt)}, ${sqlString(post.publishedAt)}, ${sqlString(post.featuredImageKey)}, ${sqlString(post.featuredImageAlt)}, ${sqlString(post.backgroundMode)}, ${sqlString(post.backgroundImageKey)}, ${post.backgroundOpacity}, ${post.backgroundBlur}, ${post.backgroundScale}, ${post.backgroundPositionX}, ${post.backgroundPositionY}, ${post.isPinned}, ${post.pinnedOrder}, ${sqlString(post.metaTitle)}, ${sqlString(post.metaDescription)}, ${sqlString(post.metaKeywords)}, ${sqlString(post.canonicalUrl)}, ${categoryId !== null ? categoryId : "NULL"}, ${sqlString(post.authorName)}, 'file', ${sqlString(now)}, ${sqlString(now)})`,
         ].join(" "),
         mode,
       );
@@ -414,8 +453,33 @@ function sync() {
     console.log(`  ${action} ${post.file} → slug="${post.slug}" (${post.status})`);
   }
 
+  // ── 孤儿清理：文件来源文章在本地已被删除 → 移入回收站（软删除） ──
+  // 仅处理 source='file' 且未删除的文章，避免误伤后台/MCP 创建的文章。
+  {
+    const currentSlugs = new Set(posts.map((p) => p.slug));
+    const fileManagedRows = runD1(
+      `SELECT slug FROM blog_posts WHERE source = 'file' AND deleted_at IS NULL`,
+      mode,
+    );
+    for (const row of fileManagedRows) {
+      if (!currentSlugs.has(row.slug)) {
+        if (dryRun) {
+          console.log(`  [预览-下架] slug="${row.slug}" —— 本地文件已删除`);
+          trashed++;
+          continue;
+        }
+        runD1(
+          `UPDATE blog_posts SET deleted_at = ${sqlString(new Date().toISOString())} WHERE slug = ${sqlString(row.slug)} AND source = 'file'`,
+          mode,
+        );
+        console.log(`  [下架] slug="${row.slug}" —— 本地文件已删除，已移入回收站`);
+        trashed++;
+      }
+    }
+  }
+
   console.log(
-    `\n完成: ${inserted} 篇新建, ${updated} 篇更新, ${skipped} 篇跳过, 共 ${posts.length} 篇`,
+    `\n完成: ${inserted} 篇新建, ${updated} 篇更新, ${skipped} 篇跳过, ${trashed} 篇下架, 共 ${posts.length} 篇`,
   );
   if (skipped > 0) {
     console.log(

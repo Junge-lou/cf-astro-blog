@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { generatePostSeoWithInternalAi } from "@/admin/lib/ai-post-seo";
 import { triggerDeployHook } from "@/admin/lib/deploy-hook";
@@ -534,6 +534,12 @@ function resolvePostsAlert(status: string | null) {
 			return { type: "error", message: "分类仍有关联文章，无法删除" } as const;
 		case "tag-in-use":
 			return { type: "error", message: "标签仍有关联文章，无法删除" } as const;
+		case "post-deleted":
+			return { type: "success", message: "文章已移入回收站" } as const;
+		case "post-restored":
+			return { type: "success", message: "文章已恢复" } as const;
+		case "post-purged":
+			return { type: "success", message: "文章已彻底删除" } as const;
 		case "invalid-id":
 			return { type: "error", message: "参数不合法" } as const;
 		case "csrf-failed":
@@ -549,7 +555,7 @@ async function getCategoryRows(db: BlogDb): Promise<TaxonomyRow[]> {
 			id: blogCategories.id,
 			name: blogCategories.name,
 			slug: blogCategories.slug,
-			postCount: sql<number>`count(${blogPosts.id})`,
+			postCount: sql<number>`count(case when ${blogPosts.deletedAt} is null then ${blogPosts.id} end)`,
 		})
 		.from(blogCategories)
 		.leftJoin(blogPosts, eq(blogPosts.categoryId, blogCategories.id))
@@ -563,10 +569,11 @@ async function getTagRows(db: BlogDb): Promise<TaxonomyRow[]> {
 			id: blogTags.id,
 			name: blogTags.name,
 			slug: blogTags.slug,
-			postCount: sql<number>`count(${blogPostTags.postId})`,
+			postCount: sql<number>`count(case when ${blogPosts.deletedAt} is null then ${blogPostTags.postId} end)`,
 		})
 		.from(blogTags)
 		.leftJoin(blogPostTags, eq(blogPostTags.tagId, blogTags.id))
+		.leftJoin(blogPosts, eq(blogPostTags.postId, blogPosts.id))
 		.groupBy(blogTags.id)
 		.orderBy(asc(blogTags.name));
 }
@@ -589,15 +596,31 @@ posts.get("/", async (c) => {
 				publishedAt: blogPosts.publishedAt,
 				viewCount: blogPosts.viewCount,
 				createdAt: blogPosts.createdAt,
+				source: blogPosts.source,
 				categoryName: blogCategories.name,
 			})
 			.from(blogPosts)
 			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
+			.where(isNull(blogPosts.deletedAt))
 			.orderBy(
 				desc(blogPosts.isPinned),
 				asc(blogPosts.pinnedOrder),
 				desc(blogPosts.createdAt),
 			);
+
+		const trashedPosts = await db
+			.select({
+				id: blogPosts.id,
+				title: blogPosts.title,
+				slug: blogPosts.slug,
+				status: blogPosts.status,
+				source: blogPosts.source,
+				deletedAt: blogPosts.deletedAt,
+			})
+			.from(blogPosts)
+			.where(isNotNull(blogPosts.deletedAt))
+			.orderBy(desc(blogPosts.deletedAt));
+
 		const [categories, tags] = await Promise.all([
 			getCategoryRows(db),
 			getTagRows(db),
@@ -606,6 +629,7 @@ posts.get("/", async (c) => {
 		return c.html(
 			postsListPage(
 				allPosts,
+				trashedPosts,
 				categories,
 				tags,
 				session.csrfToken,
@@ -614,7 +638,7 @@ posts.get("/", async (c) => {
 		);
 	} catch {
 		return c.html(
-			postsListPage([], [], [], session.csrfToken, resolvePostsAlert(status)),
+			postsListPage([], [], [], [], session.csrfToken, resolvePostsAlert(status)),
 		);
 	}
 });
@@ -707,6 +731,7 @@ posts.post("/", async (c) => {
 			canonicalUrl: postInput.canonicalUrl,
 			categoryId,
 			authorName: postInput.authorName,
+			source: "admin",
 			createdAt: now,
 			updatedAt: now,
 		})
@@ -999,7 +1024,13 @@ posts.post("/:id/delete", async (c) => {
 		.from(blogPosts)
 		.where(eq(blogPosts.id, id))
 		.limit(1);
-	await db.delete(blogPosts).where(eq(blogPosts.id, id));
+
+	// 软删除：移入回收站，保留数据可恢复
+	await db
+		.update(blogPosts)
+		.set({ deletedAt: new Date().toISOString() })
+		.where(eq(blogPosts.id, id));
+
 	if (existing && isPostPublic(existing.status, existing.publishAt)) {
 		await triggerDeployHook(c.env, {
 			event: "post-deleted",
@@ -1008,7 +1039,66 @@ posts.post("/:id/delete", async (c) => {
 			postStatus: existing.status,
 		});
 	}
-	return c.redirect("/api/admin/posts");
+	return c.redirect("/api/admin/posts?status=post-deleted");
+});
+
+posts.post("/:id/restore", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.text("CSRF 校验失败", 403);
+	}
+
+	const id = parseOptionalPositiveInt(c.req.param("id"));
+	if (!id) {
+		return c.redirect("/api/admin/posts");
+	}
+	const db = getDb(c.env.DB);
+
+	await db
+		.update(blogPosts)
+		.set({ deletedAt: null })
+		.where(eq(blogPosts.id, id));
+
+	const [existing] = await db
+		.select({
+			slug: blogPosts.slug,
+			status: blogPosts.status,
+			publishAt: blogPosts.publishAt,
+		})
+		.from(blogPosts)
+		.where(eq(blogPosts.id, id))
+		.limit(1);
+
+	if (existing && isPostPublic(existing.status, existing.publishAt)) {
+		await triggerDeployHook(c.env, {
+			event: "post-restored",
+			postId: id,
+			postSlug: existing.slug,
+			postStatus: existing.status,
+		});
+	}
+	return c.redirect("/api/admin/posts?status=post-restored");
+});
+
+posts.post("/:id/purge", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.text("CSRF 校验失败", 403);
+	}
+
+	const id = parseOptionalPositiveInt(c.req.param("id"));
+	if (!id) {
+		return c.redirect("/api/admin/posts?status=trash");
+	}
+	const db = getDb(c.env.DB);
+
+	// 彻底删除：物理删除文章及其标签关联
+	await db.delete(blogPostTags).where(eq(blogPostTags.postId, id));
+	await db.delete(blogPosts).where(eq(blogPosts.id, id));
+
+	return c.redirect("/api/admin/posts?status=post-purged");
 });
 
 posts.post("/:id/cancel-schedule", async (c) => {

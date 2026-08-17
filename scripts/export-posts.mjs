@@ -176,7 +176,9 @@ function exportPosts() {
   const modeLabel = mode === "remote" ? "远程 D1" : "本地 D1";
   const dryRun = hasFlag("--dry-run");
   const forceOverwrite = hasFlag("--force");
-  const statusFilter = hasFlag("--all") ? "" : "WHERE p.status IN ('published', 'scheduled')";
+  const statusFilter = hasFlag("--all")
+    ? "WHERE p.deleted_at IS NULL"
+    : "WHERE p.status IN ('published', 'scheduled') AND p.deleted_at IS NULL";
 
   console.log(`导出模式: ${modeLabel}`);
   if (dryRun) console.log("⚠ 预览模式（--dry-run）：不会实际写入文件");

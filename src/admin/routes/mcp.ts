@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { and, desc, eq, inArray, like, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, or } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import * as z from "zod/v3";
 import { triggerDeployHook } from "@/admin/lib/deploy-hook";
@@ -914,7 +914,7 @@ async function getPostTagsMap(db: BlogDb, postIds: number[]) {
 
 async function listPostsFromMcpInput(env: Env, input: ListPostsInput) {
 	const db = getDb(env.DB);
-	const conditions = [];
+	const conditions = [isNull(blogPosts.deletedAt)];
 
 	if (input.status) {
 		conditions.push(eq(blogPosts.status, input.status));
@@ -1005,9 +1005,12 @@ async function listPostsFromMcpInput(env: Env, input: ListPostsInput) {
 
 async function getPostFromMcpInput(env: Env, input: GetPostInput) {
 	const db = getDb(env.DB);
-	const whereCondition = input.id
-		? eq(blogPosts.id, input.id)
-		: eq(blogPosts.slug, input.slug as string);
+	const whereCondition = and(
+		input.id
+			? eq(blogPosts.id, input.id)
+			: eq(blogPosts.slug, input.slug as string),
+		isNull(blogPosts.deletedAt),
+	);
 
 	const [row] = await db
 		.select({
@@ -1084,6 +1087,7 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 			canonicalUrl: input.canonicalUrl,
 			categoryId,
 			authorName: input.authorName,
+			source: "mcp",
 			createdAt: now,
 			updatedAt: now,
 		})
@@ -1125,6 +1129,52 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 		url: `/blog/${encodeRouteParam(slug)}`,
 		publishedAt,
 		publishAt,
+	};
+}
+
+async function deletePostFromMcpInput(
+	env: Env,
+	input: { id?: number; slug?: string },
+) {
+	const db = getDb(env.DB);
+	const whereCondition = input.id
+		? eq(blogPosts.id, input.id)
+		: eq(blogPosts.slug, input.slug as string);
+
+	const [existing] = await db
+		.select({
+			id: blogPosts.id,
+			slug: blogPosts.slug,
+			status: blogPosts.status,
+			publishAt: blogPosts.publishAt,
+		})
+		.from(blogPosts)
+		.where(whereCondition)
+		.limit(1);
+
+	if (!existing) {
+		return null;
+	}
+
+	const deletedAt = new Date().toISOString();
+	await db
+		.update(blogPosts)
+		.set({ deletedAt })
+		.where(eq(blogPosts.id, existing.id));
+
+	if (isPostPublic(existing.status, existing.publishAt)) {
+		await triggerDeployHook(env, {
+			event: "post-deleted",
+			postId: existing.id,
+			postSlug: existing.slug,
+			postStatus: existing.status,
+		});
+	}
+
+	return {
+		id: existing.id,
+		slug: existing.slug,
+		deletedAt,
 	};
 }
 
@@ -1530,6 +1580,75 @@ function createMcpServer(env: Env): McpServer {
 								error instanceof Error
 									? error.message
 									: "读取文章失败，请稍后重试",
+						},
+					],
+				};
+			}
+		},
+	);
+
+	server.registerTool(
+		"delete_post",
+		{
+			title: "删除博客文章（移入回收站）",
+			description:
+				"按 id 或 slug 将文章移入回收站（软删除）。删除已发布文章后会触发站点重新部署。",
+			inputSchema: {
+				id: z.number().int().positive().optional().describe("文章 ID，可选"),
+				slug: z.string().optional().describe("文章 slug，可选"),
+			},
+		},
+		async (args) => {
+			const input =
+				args && typeof args === "object"
+					? (args as Record<string, unknown>)
+					: {};
+			const idRaw = Number(input.id);
+			const id = Number.isInteger(idRaw) && idRaw > 0 ? idRaw : undefined;
+			const slug = sanitizePlainText(input.slug, 120) || undefined;
+			if (!id && !slug) {
+				return {
+					isError: true,
+					content: [{ type: "text", text: "请提供 id 或 slug" }],
+				};
+			}
+
+			try {
+				const deleted = await deletePostFromMcpInput(env, { id, slug });
+				if (!deleted) {
+					return {
+						isError: true,
+						content: [{ type: "text", text: "文章不存在" }],
+					};
+				}
+
+				return {
+					content: [
+						{
+							type: "text",
+							text: JSON.stringify(
+								{
+									success: true,
+									message: "文章已移入回收站",
+									post: deleted,
+								},
+								null,
+								2,
+							),
+						},
+					],
+				};
+			} catch (error) {
+				console.error("[MCP delete_post] 删除失败", error);
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text:
+								error instanceof Error
+									? error.message
+									: "删除文章失败，请稍后重试",
 						},
 					],
 				};

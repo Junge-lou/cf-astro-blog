@@ -1,4 +1,4 @@
-import { desc, sql } from "drizzle-orm";
+import { desc, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { analyticsEvents, analyticsSessions, blogPosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
@@ -24,7 +24,8 @@ dashboard.get("/", async (c) => {
 				published: sql<number>`sum(case when status = 'published' then 1 else 0 end)`,
 				drafts: sql<number>`sum(case when status = 'draft' then 1 else 0 end)`,
 			})
-			.from(blogPosts);
+			.from(blogPosts)
+			.where(isNull(blogPosts.deletedAt));
 
 		const [sessionStats] = await db
 			.select({ total: sql<number>`count(*)` })
@@ -44,6 +45,7 @@ dashboard.get("/", async (c) => {
 				createdAt: blogPosts.createdAt,
 			})
 			.from(blogPosts)
+			.where(isNull(blogPosts.deletedAt))
 			.orderBy(desc(blogPosts.createdAt))
 			.limit(5);
 

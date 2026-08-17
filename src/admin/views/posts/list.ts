@@ -17,7 +17,17 @@ interface PostRow {
 	publishedAt: string | null;
 	viewCount: number | null;
 	createdAt: string;
+	source: string | null;
 	categoryName: string | null;
+}
+
+interface TrashedPostRow {
+	id: number;
+	title: string;
+	slug: string;
+	status: string;
+	source: string | null;
+	deletedAt: string | null;
 }
 
 interface TaxonomyRow {
@@ -86,6 +96,7 @@ function renderTaxonomyRows(options: {
 
 export function postsListPage(
 	posts: PostRow[],
+	trashedPosts: TrashedPostRow[],
 	categories: TaxonomyRow[],
 	tags: TaxonomyRow[],
 	csrfToken: string,
@@ -110,6 +121,7 @@ export function postsListPage(
 						<th>置顶</th>
 						<th>浏览量</th>
 						<th>日期</th>
+						<th>来源</th>
 						<th>操作</th>
 					</tr>
 				</thead>
@@ -126,6 +138,7 @@ export function postsListPage(
 						<td>${post.isPinned ? `置顶 #${post.pinnedOrder}` : "-"}</td>
 						<td>${post.viewCount ?? 0}</td>
 						<td>${post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : new Date(post.createdAt).toLocaleDateString()}</td>
+						<td>${post.source === "file" ? '<span class="form-help" title="该文章由本地 Markdown 文件管理，删除文件后下次部署会同步下架">📄 文件管理</span>' : ""}</td>
 						<td class="table-actions">
 							<a href="/api/admin/posts/${post.id}/edit" class="btn btn-sm">编辑</a>
 							<a href="/blog/${encodeRouteParam(post.slug)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">查看</a>
@@ -149,6 +162,49 @@ export function postsListPage(
 			</table></div>`
 				: '<p class="empty-state">当前还没有文章，<a href="/api/admin/posts/new">立即创建第一篇</a>。</p>'
 		}
+
+		<section style="margin-top: 1.5rem;">
+			<h2 style="margin-bottom: 0.7rem;">🗑 回收站</h2>
+			<p class="form-help" style="margin-bottom: 0.7rem;">删除的文章会先移入这里，可恢复或彻底删除。彻底删除后无法找回。</p>
+			${
+				trashedPosts.length > 0
+					? `<div class="table-card"><table class="data-table">
+					<thead>
+						<tr>
+							<th>标题</th>
+							<th>状态</th>
+							<th>来源</th>
+							<th>删除时间</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody>
+							${trashedPosts
+								.map(
+									(post) => `
+						<tr>
+							<td>${escapeHtml(post.title)}</td>
+							<td><span class="badge badge-${normalizeDisplayStatus(post.status)}">${escapeHtml(getPostStatusLabel(post.status))}</span></td>
+							<td>${post.source === "file" ? "📄 文件管理" : post.source === "mcp" ? "MCP" : "后台"}</td>
+							<td>${post.deletedAt ? new Date(post.deletedAt).toLocaleDateString() : "-"}</td>
+							<td class="table-actions">
+								<form method="post" action="/api/admin/posts/${post.id}/restore">
+									<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+									<button type="submit" class="btn btn-sm">恢复</button>
+								</form>
+								<form method="post" action="/api/admin/posts/${post.id}/purge" data-confirm-message="${escapeAttribute("确认彻底删除这篇文章吗？此操作无法撤销。")}">
+									<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+									<button type="submit" class="btn btn-sm btn-danger">彻底删除</button>
+								</form>
+							</td>
+						</tr>`,
+								)
+								.join("")}
+					</tbody>
+				</table></div>`
+					: '<p class="empty-state">回收站是空的。</p>'
+			}
+		</section>
 
 		<section style="margin-top: 1.25rem;">
 			<h2 style="margin-bottom: 0.7rem;">历史分类管理</h2>
