@@ -15,8 +15,6 @@ describe("后台界面风格保护", () => {
 		assert.doesNotMatch(html, /主页同款视觉/u);
 		assert.match(html, /class="admin-toolbar"/u);
 		assert.match(html, /href="\/api\/admin\/posts" class="active"/u);
-		assert.match(html, /href="\/api\/admin\/mentions"/u);
-		assert.match(html, />提及</u);
 		assert.match(html, /退出登录/u);
 	});
 
@@ -50,10 +48,6 @@ describe("后台界面风格保护", () => {
 		assert.match(source, /heroSignalChip1/u);
 		assert.match(source, /heroSignalChip2/u);
 		assert.match(source, /heroSignalChip3/u);
-		assert.match(source, /articleSidebarAvatarPath/u);
-		assert.match(source, /articleSidebarName/u);
-		assert.match(source, /articleSidebarBadge/u);
-		assert.match(source, /articleSidebarBio/u);
 		assert.match(source, /aiInternalEnabled/u);
 		assert.match(source, /aiInternalBaseUrl/u);
 		assert.match(source, /aiInternalApiKey/u);
@@ -376,10 +370,9 @@ describe("后台界面风格保护", () => {
 		);
 	});
 
-	test("友链与提及审核页使用结构化卡片布局，避免信息遮挡", async () => {
-		const [friendsSource, mentionsSource, layoutSource] = await Promise.all([
+	test("友链审核页使用结构化卡片布局，避免信息遮挡", async () => {
+		const [friendsSource, layoutSource] = await Promise.all([
 			readFile("src/admin/routes/friends.ts", "utf8"),
-			readFile("src/admin/routes/mentions.ts", "utf8"),
 			readFile("src/admin/views/layout.ts", "utf8"),
 		]);
 
@@ -387,13 +380,10 @@ describe("后台界面风格保护", () => {
 			friendsSource,
 			/<details class="appearance-panel review-card friend-review-item">/u,
 		);
-		assert.match(mentionsSource, /class="appearance-panel review-card"/u);
 		assert.match(friendsSource, /friend-review-summary/u);
 		assert.match(friendsSource, /friend-review-content/u);
 		assert.match(friendsSource, /review-card-body/u);
-		assert.match(mentionsSource, /review-card-body/u);
 		assert.match(friendsSource, /toLocaleString\("zh-CN"/u);
-		assert.match(mentionsSource, /toLocaleString\("zh-CN"/u);
 		assert.doesNotMatch(friendsSource, /待审核（/u);
 		assert.doesNotMatch(friendsSource, /已通过（/u);
 		assert.doesNotMatch(friendsSource, /已拒绝（/u);

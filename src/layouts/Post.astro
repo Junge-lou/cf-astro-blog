@@ -3,7 +3,6 @@ import CommentsPanel from "@/components/CommentsPanel.astro";
 import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
 import type { MarkdownTocItem } from "@/lib/security";
-import { siteConfig } from "@/lib/types";
 import Base from "./Base.astro";
 
 interface Props {
@@ -15,10 +14,6 @@ interface Props {
 	publishedAt?: string;
 	authorName?: string;
 	categoryName?: string;
-	articleSidebarAvatarPath?: string;
-	articleSidebarName?: string;
-	articleSidebarBadge?: string;
-	articleSidebarBio?: string;
 	cjkCharCount?: number;
 	latinWordCount?: number;
 	estimatedReadingMinutes?: number;
@@ -42,10 +37,6 @@ const {
 	publishedAt,
 	authorName,
 	categoryName,
-	articleSidebarAvatarPath,
-	articleSidebarName,
-	articleSidebarBadge,
-	articleSidebarBio,
 	cjkCharCount,
 	latinWordCount,
 	estimatedReadingMinutes,
@@ -54,10 +45,6 @@ const {
 } = Astro.props;
 
 const formattedDate = publishedAt ? formatDate(publishedAt) : null;
-const sidebarName = articleSidebarName?.trim() || authorName?.trim() || "博主";
-const sidebarBadge = articleSidebarBadge?.trim() || "文章作者";
-const sidebarBio = articleSidebarBio?.trim() || "在这里记录技术、生活和折腾。";
-const sidebarAvatarInitial = sidebarName.slice(0, 1).toUpperCase();
 const safeCjkCharCount =
 	Number.isFinite(cjkCharCount) && Number(cjkCharCount) > 0
 		? Math.trunc(Number(cjkCharCount))
@@ -104,66 +91,26 @@ const hasToc = tocEntries.length > 0;
 	canonicalUrl={canonicalUrl}
 	backgroundOverride={backgroundOverride}
 >
-	<article class="article-shell h-entry" id="post-content">
+	<article
+		class:list={["article-shell", "h-entry", { "article-shell-no-sidebar": !hasToc }]}
+		id="post-content"
+	>
 		<a class="u-url" href={canonicalUrl || Astro.url.href} hidden>permalink</a>
-		<aside class:list={["article-sidebar", { "article-sidebar-with-toc": hasToc }]}>
-			<section class="article-profile glass-panel p-author h-card">
-				<div class="article-profile-avatar-frame">
-					{articleSidebarAvatarPath ? (
-						<img
-							src={articleSidebarAvatarPath}
-							alt={`${sidebarName} 的头像`}
-							class="article-profile-avatar u-photo"
-							loading="lazy"
-							decoding="async"
-						/>
-					) : (
-						<span class="article-profile-avatar-fallback" aria-hidden="true">
-							{sidebarAvatarInitial}
-						</span>
-					)}
-				</div>
-				<span class="article-profile-badge">{sidebarBadge}</span>
-				<strong class="article-profile-name p-name">{sidebarName}</strong>
-				<p class="article-profile-bio p-note">{sidebarBio}</p>
-				<a class="u-url" href={siteConfig.url} hidden>author home</a>
-				<div class="article-profile-meta">
-					{formattedDate && (
-						<div class="article-profile-item">
-							<span>发布时间</span>
-							<strong>
-								<time
-									class="local-time-pending"
-									datetime={publishedAt}
-									data-local-time="date"
-								>
-									{formattedDate}
-								</time>
-							</strong>
-						</div>
-					)}
-					{categoryName && (
-						<div class="article-profile-item">
-							<span>文章分类</span>
-							<strong>{categoryName}</strong>
-						</div>
-					)}
-				</div>
-			</section>
-				{hasToc && (
-					<nav class="article-toc glass-panel" aria-label="文章目录">
-						<div class="article-toc-head">
-							<span>目录</span>
-							<button
-								type="button"
-								class="article-transparency-toggle article-transparency-toggle-compact"
-								data-article-transparency-toggle="true"
-								aria-pressed="false"
-							>
-								取消透明度
-							</button>
-						</div>
-						<div class="article-toc-body">
+		{hasToc && (
+			<aside class="article-sidebar">
+				<nav class="article-toc glass-panel" aria-label="文章目录">
+					<div class="article-toc-head">
+						<span>目录</span>
+						<button
+							type="button"
+							class="article-transparency-toggle article-transparency-toggle-compact"
+							data-article-transparency-toggle="true"
+							aria-pressed="false"
+						>
+							取消透明度
+						</button>
+					</div>
+					<div class="article-toc-body">
 						<ol class="article-toc-list">
 							{tocEntries.map((item) => (
 								<li class={`article-toc-item level-${item.level}`}>
@@ -175,8 +122,8 @@ const hasToc = tocEntries.length > 0;
 						</ol>
 					</div>
 				</nav>
-			)}
-		</aside>
+			</aside>
+		)}
 		<div class="article-main">
 			<header class="article-hero glass-panel">
 				<div class="article-hero-tools">
@@ -231,7 +178,6 @@ const hasToc = tocEntries.length > 0;
 	<script is:inline src="/code-block-enhance.js"></script>
 	<script is:inline src="/diagram-render.js"></script>
 	<script is:inline src="/article-transparency-toggle.js"></script>
-	<script is:inline src="/article-sidebar-sticky.js"></script>
 	<script is:inline src="/article-toc-highlight.js"></script>
 </Base>
 
@@ -243,6 +189,10 @@ const hasToc = tocEntries.length > 0;
 		align-items: start;
 	}
 
+	.article-shell-no-sidebar {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
 	.article-main {
 		display: grid;
 		gap: var(--space-xl);
@@ -250,118 +200,23 @@ const hasToc = tocEntries.length > 0;
 
 	.article-sidebar {
 		--article-sidebar-sticky-top: 6.5rem;
-		--article-sidebar-gap: 0.8rem;
-		--article-profile-height: 0px;
-		--article-profile-shift: 0px;
 		align-self: stretch;
 		display: grid;
 		align-content: start;
 		grid-auto-rows: max-content;
-		gap: 0.8rem;
 	}
 
-	.article-profile {
-		display: grid;
-		gap: 0.8rem;
-		padding: 1.05rem;
-	}
-
-	.article-sidebar-with-toc .article-profile {
-		position: sticky;
-		top: calc(
-			var(--article-sidebar-sticky-top) -
-			var(--article-profile-height) -
-			var(--article-sidebar-gap)
-		);
-		transform: translateY(var(--article-profile-shift));
-	}
-
-	.article-profile-avatar-frame {
-		width: 100%;
-		aspect-ratio: 1 / 1;
-		border-radius: calc(var(--radius-inner) - 2px);
-		overflow: hidden;
-		background:
-			linear-gradient(145deg, rgba(10, 132, 255, 0.22), rgba(10, 132, 255, 0.06)),
-			rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.16);
-		display: grid;
-		place-items: center;
-	}
-
-	.article-profile-avatar {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		object-position: center;
-	}
-
-	.article-profile-avatar-fallback {
-		font-size: clamp(2.2rem, 1.7rem + 1.8vw, 3rem);
-		font-weight: 700;
-		letter-spacing: 0.02em;
-		color: var(--color-accent-hover);
-	}
-
-	.article-profile-badge {
-		width: fit-content;
-		padding: 0.34rem 0.68rem;
-		border-radius: var(--radius-pill);
-		background: rgba(10, 132, 255, 0.12);
-		border: 1px solid rgba(10, 132, 255, 0.2);
-		font-size: 0.74rem;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--color-accent-hover);
-	}
-
-	.article-profile-name {
-		font-size: 1.1rem;
-		line-height: 1.3;
-		color: var(--color-text);
-	}
-
-	.article-profile-bio {
-		font-size: 0.92rem;
-		line-height: 1.7;
-		color: var(--color-text-secondary);
-	}
-
-	.article-profile-meta {
-		display: grid;
-		gap: 0.55rem;
-	}
-
-	.article-profile-item {
-		display: grid;
-		gap: 0.2rem;
-		padding: 0.58rem 0.66rem;
-		border-radius: calc(var(--radius-inner) - 10px);
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.12);
-	}
-
-	.article-profile-item span {
-		font-size: 0.74rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--color-text-muted);
-	}
-
-	.article-profile-item strong {
-		font-size: 0.9rem;
-		font-weight: 650;
-		color: var(--color-text);
-	}
-
+	/*
+	 * 目录：借鉴 claude.css 大纲的树状结构（引导竖线 + 圆点标记 + 悬停/激活反馈）。
+	 * 高度超出视口时内部滚动，与大纲面板的阅读习惯一致。
+	 */
 	.article-toc {
 		display: flex;
 		flex-direction: column;
 		gap: 0;
-		padding: 1rem;
+		padding: 1.1rem 1.15rem 0.9rem;
 		position: sticky;
 		top: var(--article-sidebar-sticky-top);
-		/* 固定后容器从导航栏下方延伸至屏幕底部，减去 sticky top 和底部留白 */
 		max-height: calc(100vh - var(--article-sidebar-sticky-top) - 1.2rem);
 	}
 
@@ -371,26 +226,27 @@ const hasToc = tocEntries.length > 0;
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.6rem;
-		padding-bottom: 0.7rem;
+		padding-bottom: 0.72rem;
+		margin-bottom: 0.6rem;
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.article-toc-body {
-		/* flex 子元素必须 min-height: 0 才能收缩触发 overflow-y 滚动 */
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow-y: auto;
 		overflow-x: hidden;
 		/* 细滚动条 */
 		scrollbar-width: thin;
-		scrollbar-color: rgba(10, 132, 255, 0.3) transparent;
-		padding-bottom: 0.25rem;
+		scrollbar-color: var(--color-accent) transparent;
+		padding: 0.2rem 0.1rem 0.25rem 0;
 	}
 
 	.article-toc-head > span {
 		display: block;
 		font-size: 0.78rem;
 		line-height: 1.5;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		font-weight: 700;
 		font-family: var(--font-strong);
@@ -404,52 +260,96 @@ const hasToc = tocEntries.length > 0;
 		white-space: nowrap;
 	}
 
+	/* 树状目录主体：单根竖线 + 逐项圆点 */
 	.article-toc-list {
+		position: relative;
 		margin: 0;
 		padding: 0;
 		list-style: none;
 		display: grid;
-		gap: 0.28rem;
+		gap: 0.14rem;
+	}
+
+	/* 左侧引导竖线（两端渐隐） */
+	.article-toc-list::before {
+		content: "";
+		position: absolute;
+		left: 8px;
+		top: 0.45rem;
+		bottom: 0.45rem;
+		width: 1px;
+		background: linear-gradient(
+			180deg,
+			transparent,
+			var(--color-accent) 5%,
+			var(--color-accent) 95%,
+			transparent
+		);
+		opacity: 0.4;
 	}
 
 	.article-toc-item {
+		position: relative;
 		margin: 0;
+		padding-left: 1.4rem;
 	}
 
 	.article-toc-item.level-3 {
-		padding-left: 0.75rem;
+		padding-left: 2.1rem;
 	}
 
 	.article-toc-item.level-4 {
-		padding-left: 1.35rem;
+		padding-left: 2.8rem;
+	}
+
+	/* 目录项圆点 */
+	.article-toc-item::before {
+		content: "";
+		position: absolute;
+		left: 5px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--color-accent);
+		opacity: 0.38;
+		transition:
+			opacity var(--duration-normal) ease,
+			box-shadow var(--duration-normal) ease,
+			transform var(--duration-normal) ease;
+	}
+
+	.article-toc-item:hover::before,
+	.article-toc-item:has(.article-toc-link.active)::before {
+		opacity: 1;
+		transform: translateY(-50%) scale(1.1);
+		box-shadow: 0 0 0 4px var(--color-accent-soft);
 	}
 
 	.article-toc-link {
 		display: block;
-		padding: 0.3rem 0.5rem;
-		border-left: 2px solid transparent;
-		border-radius: 0.3rem;
+		padding: 0.3rem 0.55rem;
+		border-radius: 0.45rem;
 		font-size: 0.875rem;
-		line-height: 1.5;
+		line-height: 1.55;
 		font-family: var(--font-strong);
 		font-weight: 450;
-		color: var(--color-text);
+		color: var(--color-text-secondary);
 		transition:
 			color var(--duration-normal) ease,
-			background-color var(--duration-normal) ease,
-			border-color var(--duration-normal) ease;
+			background-color var(--duration-normal) ease;
 	}
 
-	/* hover：仅颜色变化，不填充背景，避免与 .active 视觉混淆 */
+	/* hover：强调色文字 + 轻微底色，仿 claude.css outline 悬停反馈 */
 	.article-toc-link:hover {
 		color: var(--color-accent);
-		border-left-color: var(--color-accent);
+		background: var(--color-accent-soft);
 	}
 
 	/* 当前阅读章节高亮（由 article-toc-highlight.js 动态添加 .active 类） */
 	.article-toc-link.active {
 		color: var(--color-accent);
-		border-left-color: var(--color-accent);
 		background: var(--color-accent-soft);
 		font-weight: 550;
 	}
@@ -613,12 +513,6 @@ const hasToc = tocEntries.length > 0;
 			align-self: start;
 			position: static;
 			top: auto;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-
-		.article-profile {
-			position: static;
-			top: auto;
 		}
 
 		.article-toc {
@@ -629,10 +523,6 @@ const hasToc = tocEntries.length > 0;
 
 		.article-toc-body {
 			overflow-y: visible;
-		}
-
-		.article-profile-avatar-frame {
-			width: min(12rem, 100%);
 		}
 	}
 

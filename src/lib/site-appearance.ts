@@ -63,10 +63,6 @@ export interface SiteAppearance {
 	heroSignalChip1: string;
 	heroSignalChip2: string;
 	heroSignalChip3: string;
-	articleSidebarAvatarPath: string | null;
-	articleSidebarName: string;
-	articleSidebarBio: string;
-	articleSidebarBadge: string;
 	mcpEnabled: boolean;
 }
 
@@ -147,10 +143,6 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 	heroSignalChip1: "Mouse Sync",
 	heroSignalChip2: "Soft Orbit",
 	heroSignalChip3: "Card Lift",
-	articleSidebarAvatarPath: null,
-	articleSidebarName: "Junge-lou",
-	articleSidebarBio: "在比特海里未雨绸缪，身后养着一只叫晖的狐狸。",
-	articleSidebarBadge: "文章作者",
 	mcpEnabled: true,
 };
 
@@ -637,24 +629,6 @@ export function normalizeSiteAppearanceInput(
 			24,
 			DEFAULT_SITE_APPEARANCE.heroSignalChip3,
 		),
-		articleSidebarAvatarPath:
-			normalizeOptionalImagePath(input.articleSidebarAvatarPath) ??
-			DEFAULT_SITE_APPEARANCE.articleSidebarAvatarPath,
-		articleSidebarName: normalizeText(
-			input.articleSidebarName,
-			36,
-			DEFAULT_SITE_APPEARANCE.articleSidebarName,
-		),
-		articleSidebarBio: normalizeLongText(
-			input.articleSidebarBio,
-			320,
-			DEFAULT_SITE_APPEARANCE.articleSidebarBio,
-		),
-		articleSidebarBadge: normalizeText(
-			input.articleSidebarBadge,
-			24,
-			DEFAULT_SITE_APPEARANCE.articleSidebarBadge,
-		),
 		mcpEnabled: normalizeBoolean(
 			input.mcpEnabled,
 			DEFAULT_SITE_APPEARANCE.mcpEnabled,
@@ -751,10 +725,6 @@ async function fetchSiteAppearance(db: Database): Promise<SiteAppearance> {
 			heroSignalChip1: siteAppearanceSettings.heroSignalChip1,
 			heroSignalChip2: siteAppearanceSettings.heroSignalChip2,
 			heroSignalChip3: siteAppearanceSettings.heroSignalChip3,
-			articleSidebarAvatarPath: siteAppearanceSettings.articleSidebarAvatarPath,
-			articleSidebarName: siteAppearanceSettings.articleSidebarName,
-			articleSidebarBio: siteAppearanceSettings.articleSidebarBio,
-			articleSidebarBadge: siteAppearanceSettings.articleSidebarBadge,
 			mcpEnabled: siteAppearanceSettings.mcpEnabled,
 		})
 		.from(siteAppearanceSettings)
@@ -915,10 +885,6 @@ export async function saveSiteAppearance(
 			heroSignalChip1: normalized.heroSignalChip1,
 			heroSignalChip2: normalized.heroSignalChip2,
 			heroSignalChip3: normalized.heroSignalChip3,
-			articleSidebarAvatarPath: normalized.articleSidebarAvatarPath,
-			articleSidebarName: normalized.articleSidebarName,
-			articleSidebarBio: normalized.articleSidebarBio,
-			articleSidebarBadge: normalized.articleSidebarBadge,
 			mcpEnabled: normalized.mcpEnabled,
 		})
 		.onConflictDoUpdate({
@@ -961,10 +927,6 @@ export async function saveSiteAppearance(
 				heroSignalChip1: normalized.heroSignalChip1,
 				heroSignalChip2: normalized.heroSignalChip2,
 				heroSignalChip3: normalized.heroSignalChip3,
-				articleSidebarAvatarPath: normalized.articleSidebarAvatarPath,
-				articleSidebarName: normalized.articleSidebarName,
-				articleSidebarBio: normalized.articleSidebarBio,
-				articleSidebarBadge: normalized.articleSidebarBadge,
 				mcpEnabled: normalized.mcpEnabled,
 			},
 		});

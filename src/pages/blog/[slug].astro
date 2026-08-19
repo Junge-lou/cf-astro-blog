@@ -12,11 +12,6 @@ import {
 	sanitizePlainText,
 	sanitizeSlug,
 } from "@/lib/security";
-import {
-	DEFAULT_SITE_APPEARANCE,
-	getSiteAppearance,
-} from "@/lib/site-appearance";
-
 const VIEW_COUNT_DEDUP_TTL_SECONDS = 60 * 60;
 
 function getClientIpFromRequest(request: Request): string | null {
@@ -104,42 +99,36 @@ let post: {
 	backgroundPositionY: number;
 	categoryName: string | null;
 } | null = null;
-let siteAppearance = DEFAULT_SITE_APPEARANCE;
 
 try {
 	const db = getDb(env.DB);
 
-	// 两个独立查询并发执行，减少串行 D1 往返延迟
-	const [appearanceResult, postRows] = await Promise.all([
-		getSiteAppearance(db),
-		db
-			.select({
-				title: blogPosts.title,
-				content: blogPosts.content,
-				excerpt: blogPosts.excerpt,
-				publishedAt: blogPosts.publishedAt,
-				authorName: blogPosts.authorName,
-				metaTitle: blogPosts.metaTitle,
-				metaDescription: blogPosts.metaDescription,
-				canonicalUrl: blogPosts.canonicalUrl,
-				featuredImageKey: blogPosts.featuredImageKey,
-				featuredImageAlt: blogPosts.featuredImageAlt,
-				backgroundMode: blogPosts.backgroundMode,
-				backgroundImageKey: blogPosts.backgroundImageKey,
-				backgroundOpacity: blogPosts.backgroundOpacity,
-				backgroundBlur: blogPosts.backgroundBlur,
-				backgroundScale: blogPosts.backgroundScale,
-				backgroundPositionX: blogPosts.backgroundPositionX,
-				backgroundPositionY: blogPosts.backgroundPositionY,
-				categoryName: blogCategories.name,
-			})
-			.from(blogPosts)
-			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-			.where(getPublicPostBySlugCondition(slug))
-			.limit(1),
-	]);
+	const postRows = await db
+		.select({
+			title: blogPosts.title,
+			content: blogPosts.content,
+			excerpt: blogPosts.excerpt,
+			publishedAt: blogPosts.publishedAt,
+			authorName: blogPosts.authorName,
+			metaTitle: blogPosts.metaTitle,
+			metaDescription: blogPosts.metaDescription,
+			canonicalUrl: blogPosts.canonicalUrl,
+			featuredImageKey: blogPosts.featuredImageKey,
+			featuredImageAlt: blogPosts.featuredImageAlt,
+			backgroundMode: blogPosts.backgroundMode,
+			backgroundImageKey: blogPosts.backgroundImageKey,
+			backgroundOpacity: blogPosts.backgroundOpacity,
+			backgroundBlur: blogPosts.backgroundBlur,
+			backgroundScale: blogPosts.backgroundScale,
+			backgroundPositionX: blogPosts.backgroundPositionX,
+			backgroundPositionY: blogPosts.backgroundPositionY,
+			categoryName: blogCategories.name,
+		})
+		.from(blogPosts)
+		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
+		.where(getPublicPostBySlugCondition(slug))
+		.limit(1);
 
-	siteAppearance = appearanceResult;
 	const [row] = postRows;
 
 	if (row) {
@@ -209,10 +198,6 @@ const postBackgroundOverride = postBackgroundImageKey
 	publishedAt={post.publishedAt || undefined}
 	authorName={post.authorName || undefined}
 	categoryName={post.categoryName || undefined}
-	articleSidebarAvatarPath={siteAppearance.articleSidebarAvatarPath || undefined}
-	articleSidebarName={siteAppearance.articleSidebarName}
-	articleSidebarBadge={siteAppearance.articleSidebarBadge}
-	articleSidebarBio={siteAppearance.articleSidebarBio}
 	cjkCharCount={readingStats.cjkCharCount}
 	latinWordCount={readingStats.latinWordCount}
 	estimatedReadingMinutes={readingStats.estimatedReadingMinutes}

@@ -114,26 +114,6 @@ describe("站点外观设置", () => {
 		assert.equal(normalized.heroSignalChip3, "卡片抬升");
 	});
 
-	test("normalizeSiteAppearanceInput 支持文章页左侧栏头像与简介", () => {
-		const normalized = normalizeSiteAppearanceInput({
-			articleSidebarAvatarPath: "appearance/profile/avatar.webp",
-			articleSidebarName: "Junge-lou",
-			articleSidebarBadge: "站点作者",
-			articleSidebarBio: "这里放作者简介，用于文章页左侧信息栏展示。",
-		});
-
-		assert.equal(
-			normalized.articleSidebarAvatarPath,
-			"/media/appearance/profile/avatar.webp",
-		);
-		assert.equal(normalized.articleSidebarName, "Junge-lou");
-		assert.equal(normalized.articleSidebarBadge, "站点作者");
-		assert.equal(
-			normalized.articleSidebarBio,
-			"这里放作者简介，用于文章页左侧信息栏展示。",
-		);
-	});
-
 	test("normalizeSiteAppearanceInput 支持 MCP 开关并回退默认值", () => {
 		const enabled = normalizeSiteAppearanceInput({
 			mcpEnabled: "1",

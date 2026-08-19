@@ -722,45 +722,6 @@ function renderAppearancePage(options: {
 					</div>
 				</section>
 				<section class="appearance-panel">
-					<h2>文章页左侧信息栏</h2>
-					<div class="form-group">
-						<label for="articleSidebarAvatarPath">头像路径（可选）</label>
-						<input
-							id="articleSidebarAvatarPath"
-							name="articleSidebarAvatarPath"
-							class="form-input appearance-key-input"
-							value="${escapeAttribute(settings.articleSidebarAvatarPath ?? "")}"
-							maxlength="320"
-							placeholder="/media/appearance/profile/avatar.webp"
-						/>
-						<p class="appearance-note">支持 /media/...、站内绝对路径或 https:// 外链。</p>
-					</div>
-					<div class="form-group">
-						<label for="articleSidebarName">侧栏名称</label>
-						<input
-							id="articleSidebarName"
-							name="articleSidebarName"
-							class="form-input"
-							value="${escapeAttribute(settings.articleSidebarName)}"
-							maxlength="36"
-						/>
-					</div>
-					<div class="form-group">
-						<label for="articleSidebarBadge">侧栏徽标文案</label>
-						<input
-							id="articleSidebarBadge"
-							name="articleSidebarBadge"
-							class="form-input"
-							value="${escapeAttribute(settings.articleSidebarBadge)}"
-							maxlength="24"
-						/>
-					</div>
-					<div class="form-group">
-						<label for="articleSidebarBio">侧栏简介</label>
-						<textarea id="articleSidebarBio" name="articleSidebarBio" class="form-textarea" maxlength="320">${escapeHtml(settings.articleSidebarBio)}</textarea>
-					</div>
-				</section>
-				<section class="appearance-panel">
 					<h2>AI 模型接口（OpenAI 兼容）</h2>
 					<p class="appearance-note">内部接口用于自动摘要与 SEO 生成；公开接口用于访客对话，默认叠加限流、配额与 Turnstile 校验防刷。</p>
 					<div class="appearance-content-fieldset">
@@ -1029,10 +990,6 @@ appearance.post("/", async (c) => {
 			getBodyTexts(body, "heroActionLabel"),
 			getBodyTexts(body, "heroActionHref"),
 		),
-		articleSidebarAvatarPath: getBodyText(body, "articleSidebarAvatarPath"),
-		articleSidebarName: getBodyText(body, "articleSidebarName"),
-		articleSidebarBadge: getBodyText(body, "articleSidebarBadge"),
-		articleSidebarBio: getBodyText(body, "articleSidebarBio"),
 		mcpEnabled: getBodyText(body, "mcpEnabled"),
 	});
 	await saveAiSettings(db, {

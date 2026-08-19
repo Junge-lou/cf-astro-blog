@@ -295,42 +295,27 @@ describe("源码回归保护", () => {
 		);
 	});
 
-	test("文章详情页支持左侧作者信息栏、目录导航并提供阅读去透明度开关", async () => {
-		const [
-			postLayoutSource,
-			postPageSource,
-			articleToggleScript,
-			sidebarStickyScript,
-		] = await Promise.all([
-			readFile("src/layouts/Post.astro", "utf8"),
-			readFile("src/pages/blog/[slug].astro", "utf8"),
-			readFile("public/article-transparency-toggle.js", "utf8"),
-			readFile("public/article-sidebar-sticky.js", "utf8"),
-		]);
+	test("文章详情页支持目录导航并提供阅读去透明度开关", async () => {
+		const [postLayoutSource, postPageSource, articleToggleScript] =
+			await Promise.all([
+				readFile("src/layouts/Post.astro", "utf8"),
+				readFile("src/pages/blog/[slug].astro", "utf8"),
+				readFile("public/article-transparency-toggle.js", "utf8"),
+			]);
 
+		assert.ok(postLayoutSource.includes("article-shell"));
+		assert.ok(postLayoutSource.includes("article-shell-no-sidebar"));
 		assert.ok(postLayoutSource.includes("article-sidebar"));
-		assert.ok(postLayoutSource.includes("article-sidebar-with-toc"));
-		assert.ok(postLayoutSource.includes("article-profile-avatar"));
 		assert.ok(postLayoutSource.includes("article-toc"));
 		assert.ok(postLayoutSource.includes("align-self: stretch;"));
 		assert.ok(postLayoutSource.includes("align-content: start;"));
 		assert.ok(postLayoutSource.includes("grid-auto-rows: max-content;"));
-		assert.ok(postLayoutSource.includes("--article-profile-height: 0px;"));
-		assert.ok(postLayoutSource.includes("--article-profile-shift: 0px;"));
 		assert.ok(postLayoutSource.includes("data-article-transparency-toggle"));
 		assert.ok(postLayoutSource.includes("article-transparency-toggle-compact"));
 		assert.ok(postLayoutSource.includes("/article-transparency-toggle.js"));
-		assert.ok(postLayoutSource.includes("/article-sidebar-sticky.js"));
 		assert.ok(postLayoutSource.includes("article-opaque-mode"));
-		assert.match(
-			postLayoutSource,
-			/\.article-sidebar-with-toc\s+\.article-profile\s*\{[^}]*position:\s*sticky/u,
-		);
-		assert.ok(postLayoutSource.includes("var(--article-sidebar-sticky-top) -"));
-		assert.ok(postLayoutSource.includes("var(--article-profile-height)"));
-		assert.ok(
-			postLayoutSource.includes("translateY(var(--article-profile-shift))"),
-		);
+		assert.doesNotMatch(postLayoutSource, /article-profile/u);
+		assert.doesNotMatch(postLayoutSource, /article-sidebar-sticky\.js/u);
 		assert.match(
 			postLayoutSource,
 			/\.article-toc\s*\{[^}]*position:\s*sticky/u,
@@ -343,13 +328,20 @@ describe("源码回归保护", () => {
 			postLayoutSource,
 			/\.article-toc\s*\{[^}]*overflow:\s*auto/u,
 		);
+		assert.match(postLayoutSource, /\.article-toc\s*\{[^}]*max-height/u);
+		assert.match(
+			postLayoutSource,
+			/\.article-toc-body\s*\{[^}]*overflow-y:\s*auto/u,
+		);
+		assert.ok(postLayoutSource.includes(".article-toc-item::before"));
+		assert.ok(postLayoutSource.includes(".article-toc-list::before"));
 		assert.doesNotMatch(
 			postLayoutSource,
 			/\.article-sidebar\s*\{[^}]*position:\s*sticky/u,
 		);
 		assert.ok(postLayoutSource.includes("orientation: portrait"));
-		assert.ok(postPageSource.includes("articleSidebarAvatarPath"));
-		assert.ok(postPageSource.includes("getSiteAppearance"));
+		assert.doesNotMatch(postPageSource, /articleSidebar/u);
+		assert.doesNotMatch(postPageSource, /getSiteAppearance/u);
 		assert.ok(postPageSource.includes("renderSafeMarkdownWithToc"));
 		assert.ok(postPageSource.includes("toc={toc}"));
 		assert.ok(articleToggleScript.includes("articleOpaqueMode"));
@@ -360,13 +352,6 @@ describe("源码回归保护", () => {
 			articleToggleScript.includes("data-article-transparency-switching"),
 		);
 		assert.ok(articleToggleScript.includes("clipPath"));
-		assert.ok(sidebarStickyScript.includes("article-sidebar-with-toc"));
-		assert.ok(sidebarStickyScript.includes("article-toc"));
-		assert.ok(sidebarStickyScript.includes("--article-profile-height"));
-		assert.ok(sidebarStickyScript.includes("--article-profile-shift"));
-		assert.ok(sidebarStickyScript.includes('window.addEventListener("scroll"'));
-		assert.ok(sidebarStickyScript.includes("ResizeObserver"));
-		assert.ok(sidebarStickyScript.includes("astro:page-load"));
 	});
 
 	test("文章代码块启用 Mac 终端样式增强与复制按钮脚本", async () => {

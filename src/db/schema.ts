@@ -129,34 +129,6 @@ export const friendLinks = sqliteTable(
 	(table) => [index("friend_links_status_idx").on(table.status)],
 );
 
-// ─── Webmention 提及与审核 ──────────────────────────────────────────────────
-
-export const webMentions = sqliteTable(
-	"web_mentions",
-	{
-		id: integer("id").primaryKey({ autoIncrement: true }),
-		sourceUrl: text("source_url").notNull(),
-		targetUrl: text("target_url").notNull(),
-		sourceTitle: text("source_title"),
-		sourceExcerpt: text("source_excerpt"),
-		sourceAuthor: text("source_author"),
-		sourcePublishedAt: text("source_published_at"),
-		status: text("status").notNull().default("pending"),
-		reviewNote: text("review_note"),
-		reviewedAt: text("reviewed_at"),
-		lastCheckedAt: text("last_checked_at"),
-		createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
-		updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
-	},
-	(table) => [
-		index("web_mentions_status_idx").on(table.status, table.createdAt),
-		uniqueIndex("web_mentions_source_target_unique").on(
-			table.sourceUrl,
-			table.targetUrl,
-		),
-	],
-);
-
 // ─── 站点外观设置 ────────────────────────────────────────────────────────────
 
 export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
@@ -214,16 +186,6 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	heroSignalChip1: text("hero_signal_chip_1").notNull().default("Mouse Sync"),
 	heroSignalChip2: text("hero_signal_chip_2").notNull().default("Soft Orbit"),
 	heroSignalChip3: text("hero_signal_chip_3").notNull().default("Card Lift"),
-	articleSidebarAvatarPath: text("article_sidebar_avatar_path"),
-	articleSidebarName: text("article_sidebar_name")
-		.notNull()
-		.default("KIWI"),
-	articleSidebarBio: text("article_sidebar_bio")
-		.notNull()
-		.default("在比特海里未雨绸缪，身后养着一只叫晖的狐狸。"),
-	articleSidebarBadge: text("article_sidebar_badge")
-		.notNull()
-		.default("文章作者"),
 	friendApplyNotice: text("friend_apply_notice").notNull().default(""),
 	aiInternalEnabled: integer("ai_internal_enabled", { mode: "boolean" })
 		.notNull()
@@ -343,9 +305,6 @@ export type NewShuoshuoPost = typeof shuoshuoPosts.$inferInsert;
 
 export type FriendLink = typeof friendLinks.$inferSelect;
 export type NewFriendLink = typeof friendLinks.$inferInsert;
-
-export type WebMention = typeof webMentions.$inferSelect;
-export type NewWebMention = typeof webMentions.$inferInsert;
 
 export type SiteAppearanceSetting = typeof siteAppearanceSettings.$inferSelect;
 export type NewSiteAppearanceSetting =

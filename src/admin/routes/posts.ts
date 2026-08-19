@@ -20,7 +20,6 @@ import {
 	DEFAULT_AI_SETTINGS,
 	DEFAULT_SITE_APPEARANCE,
 	getResolvedAiSettings,
-	getSiteAppearance,
 } from "@/lib/site-appearance";
 import { siteConfig } from "@/lib/types";
 import {
@@ -130,15 +129,8 @@ function renderPostErrorPage(csrfToken: string, message: string) {
 	);
 }
 
-async function getDefaultPostAuthorName(db: BlogDb): Promise<string> {
-	try {
-		const appearance = await getSiteAppearance(db);
-		return (
-			sanitizePlainText(appearance.articleSidebarName, 120) || siteConfig.author
-		);
-	} catch {
-		return siteConfig.author;
-	}
+async function getDefaultPostAuthorName(_db: BlogDb): Promise<string> {
+	return siteConfig.author;
 }
 
 function parsePostInput(
