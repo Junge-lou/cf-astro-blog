@@ -1857,6 +1857,22 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	box-shadow: var(--shadow-soft);
 }
 
+/* 正文文字滑入动画（仿 Momo AOS fade-up）：由 article-reveal.js 驱动。
+ * 仅当 JS 给 .article-prose 加上 .js-reveal 后才隐藏，避免无 JS 时内容不可见。 */
+.article-prose.js-reveal > * {
+	opacity: 0;
+	transform: translateY(26px);
+	transition:
+		opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+		transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+	will-change: opacity, transform;
+}
+
+.article-prose.js-reveal > *.is-revealed {
+	opacity: 1;
+	transform: translateY(0);
+}
+
 .sr-only {
 	position: absolute;
 	width: 1px;

@@ -489,4 +489,14 @@ function isLinkActive(href: string) {
 		width: min(100%, var(--max-width-prose));
 		margin-inline: auto;
 	}
+
+	/* 移动端滚动隐藏导航（仿 Momo #main-header）：下滚隐藏、上滚恢复。
+	 * 由 header-scroll-hide.js 驱动 data-header-hidden 属性。 */
+	:global(html[data-header-hidden]) .site-header {
+		top: -6rem;
+	}
+
+	:global(html[data-header-hidden][data-nav-condensed]) .site-header {
+		top: -6rem;
+	}
 </style>

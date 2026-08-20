@@ -1,5 +1,6 @@
 ---
 import CommentsPanel from "@/components/CommentsPanel.astro";
+import FabMenu from "@/components/FabMenu.astro";
 import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
 import type { MarkdownTocItem } from "@/lib/security";
@@ -176,10 +177,12 @@ const hasToc = tocEntries.length > 0;
 				</div>
 			</div>
 		</article>
+	<FabMenu tocEntries={tocEntries} />
 	<script is:inline src="/code-block-enhance.js"></script>
 	<script is:inline src="/diagram-render.js"></script>
 	<script is:inline src="/article-transparency-toggle.js"></script>
 	<script is:inline src="/article-toc-highlight.js"></script>
+	<script is:inline src="/article-reveal.js"></script>
 </Base>
 
 <style>
@@ -218,7 +221,8 @@ const hasToc = tocEntries.length > 0;
 		padding: 1.1rem 1.15rem 0.9rem;
 		position: sticky;
 		top: var(--article-sidebar-sticky-top);
-		max-height: calc(100vh - var(--article-sidebar-sticky-top) - 1.2rem);
+		/* 目录高度上限 50vh（对齐 Momo 的 h-[50vh]），同时不超过视口 */
+		max-height: min(50vh, calc(100vh - var(--article-sidebar-sticky-top) - 1.2rem));
 	}
 
 	.article-toc-head {
@@ -238,9 +242,12 @@ const hasToc = tocEntries.length > 0;
 		overflow-y: auto;
 		overflow-x: hidden;
 		/* 细滚动条 */
-		scrollbar-width: thin;
-		scrollbar-color: var(--color-accent) transparent;
+		scrollbar-width: none;
 		padding: 0.2rem 0.1rem 0.25rem 0;
+	}
+
+	.article-toc-body::-webkit-scrollbar {
+		display: none;
 	}
 
 	.article-toc-head > span {

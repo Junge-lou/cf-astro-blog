@@ -1,0 +1,508 @@
+---
+/**
+ * FabMenu —— 仿 Momo 博客的浮动操作菜单（保留本站玻璃质感）。
+ *
+ * 功能：
+ * 1. 回到顶部（带圆形滚动进度环）
+ * 2. 目录（仅移动端触发，桌面端有侧栏目录）
+ * 3. 前往评论区
+ *
+ * 行为：滚动超过 data-scroll-distance(100px) 后显示；点击外部关闭；
+ * 平滑滚动并预留导航栏偏移；尊重 prefers-reduced-motion。
+ */
+
+interface TocEntry {
+	id: string;
+	text: string;
+	level: number;
+}
+
+interface Props {
+	tocEntries?: TocEntry[];
+}
+
+const { tocEntries = [] } = Astro.props;
+const hasToc = tocEntries.length > 0;
+---
+
+<div class="article-fab" data-fab-menu data-scroll-distance="100">
+	<!-- 展开项：回到顶部 / 目录 / 评论区 -->
+	<div class="article-fab-items" data-fab-items>
+		<button
+			type="button"
+			class="article-fab-item"
+			data-fab-back-top
+			title="回到顶部"
+			aria-label="回到顶部"
+		>
+			<svg class="article-fab-progress" viewBox="0 0 40 40" aria-hidden="true">
+				<circle cx="20" cy="20" r="19" data-fab-progress />
+			</svg>
+			<svg viewBox="0 0 384 512" class="article-fab-icon" aria-hidden="true">
+				<path
+					fill="currentColor"
+					d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.3l105.4 105.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"
+				/>
+			</svg>
+		</button>
+
+		{hasToc && (
+			<button
+				type="button"
+				class="article-fab-item article-fab-toc-trigger"
+				data-fab-toc-trigger
+				title="目录"
+				aria-label="目录"
+			>
+				<svg viewBox="0 0 512 512" class="article-fab-icon" aria-hidden="true">
+					<path
+						fill="currentColor"
+						d="M40 48C17.9 48 0 65.9 0 88s17.9 40 40 40 40-17.9 40-40S62.1 48 40 48zm192 0c-13.3 0-24 10.7-24 24s10.7 24 24 24H472c13.3 0 24-10.7 24-24s-10.7-24-24-24H232zm0 160c-13.3 0-24 10.7-24 24s10.7 24 24 24H472c13.3 0 24-10.7 24-24s-10.7-24-24-24H232zm0 160c-13.3 0-24 10.7-24 24s10.7 24 24 24H472c13.3 0 24-10.7 24-24s-10.7-24-24-24H232zM40 288c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40zm0-160c-22.1 0-40 17.9-40 40s17.9 40 40 40 40-17.9 40-40-17.9-40-40-40z"
+					/>
+				</svg>
+			</button>
+		)}
+
+		<button
+			type="button"
+			class="article-fab-item"
+			data-fab-comments
+			title="前往评论区"
+			aria-label="前往评论区"
+		>
+			<svg viewBox="0 0 512 512" class="article-fab-icon" aria-hidden="true">
+				<path
+					fill="currentColor"
+					d="M256 32C114.6 32 0 125.1 0 240c0 49.6 21.4 95 57 130.7C44.5 421.1 2.7 466 2.2 466.5c-2.2 2.3-2.8 5.7-1.5 8.7S4.8 480 8 480c66.3 0 116-31.8 140.6-51.4 32.7 12.3 69 19.4 107.4 19.4 141.4 0 256-93.1 256-208S397.4 32 256 32z"
+				/>
+			</svg>
+		</button>
+	</div>
+
+	<!-- 移动端目录面板 -->
+	{hasToc && (
+		<div class="article-fab-toc" data-fab-toc-panel role="dialog" aria-label="目录">
+			<button
+				type="button"
+				class="article-fab-toc-close"
+				data-fab-toc-close
+				aria-label="关闭目录"
+			>
+				<svg viewBox="0 0 384 512" class="article-fab-icon" aria-hidden="true">
+					<path
+						fill="currentColor"
+						d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3l105.4 105.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256l105.3-105.4z"
+					/>
+				</svg>
+			</button>
+			<div class="article-fab-toc-title">目录</div>
+			<nav class="article-fab-toc-body">
+				{tocEntries.map((item) => (
+					<a
+						href={`#${item.id}`}
+						class="article-fab-toc-link"
+						style={`--toc-level: ${Math.max(0, item.level - 2)}`}
+						data-fab-toc-link
+					>
+						{item.text}
+					</a>
+				))}
+			</nav>
+		</div>
+	)}
+
+	<!-- 主按钮 -->
+	<button
+		type="button"
+		class="article-fab-toggle"
+		data-fab-toggle
+		aria-label="更多操作"
+		aria-expanded="false"
+	>
+		<svg viewBox="0 0 448 512" class="article-fab-icon article-fab-icon-toggle" aria-hidden="true">
+			<path
+				fill="currentColor"
+				d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm160 0a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm160 0a56 56 0 1 0 0 112 56 56 0 1 0 0-112z"
+			/>
+		</svg>
+	</button>
+</div>
+
+<script is:inline>
+	(function () {
+		if (window.__articleFabBooted) return;
+		window.__articleFabBooted = true;
+
+		const init = () => {
+			const container = document.querySelector("[data-fab-menu]");
+			if (!container) return;
+			const trigger = container.querySelector("[data-fab-toggle]");
+			const backTop = container.querySelector("[data-fab-back-top]");
+			const comments = container.querySelector("[data-fab-comments]");
+			const tocTrigger = container.querySelector("[data-fab-toc-trigger]");
+			const tocClose = container.querySelector("[data-fab-toc-close]");
+			const progress = container.querySelector("[data-fab-progress]");
+			const tocLinks = Array.from(
+				container.querySelectorAll("[data-fab-toc-link]"),
+			);
+
+			const threshold = parseInt(container.dataset.scrollDistance, 10) || 100;
+			const reducedMotion = window.matchMedia(
+				"(prefers-reduced-motion: reduce)",
+			).matches;
+			const scrollOpts = reducedMotion ? "auto" : "smooth";
+			const RING_CIRCUMFERENCE = 2 * Math.PI * 19;
+			let isOpen = false;
+			let isTocOpen = false;
+			let scrollPosOnTocOpen = 0;
+
+			const closeAll = () => {
+				isOpen = false;
+				isTocOpen = false;
+				container.classList.remove("is-active", "toc-active");
+				trigger?.setAttribute("aria-expanded", "false");
+			};
+
+			const handleScroll = () => {
+				const y = window.scrollY || document.documentElement.scrollTop;
+				const docHeight =
+					document.documentElement.scrollHeight -
+					document.documentElement.clientHeight;
+
+				if (y > threshold) {
+					container.classList.add("is-visible");
+				} else {
+					container.classList.remove("is-visible");
+					closeAll();
+				}
+
+				// 滑动页面时平滑关闭目录（50px 缓冲，防误触）
+				if (isTocOpen && Math.abs(y - scrollPosOnTocOpen) > 50) {
+					isTocOpen = false;
+					container.classList.remove("toc-active");
+				}
+
+				// 更新回顶进度环
+				if (progress && docHeight > 0) {
+					const pct = Math.min(100, (y / docHeight) * 100);
+					const filled = (pct / 100) * RING_CIRCUMFERENCE;
+					progress.style.strokeDasharray =
+						`${filled.toFixed(2)} ${RING_CIRCUMFERENCE.toFixed(2)}`;
+				}
+			};
+
+			// 主按钮切换
+			trigger?.addEventListener("click", (e) => {
+				e.stopPropagation();
+				isOpen = !isOpen;
+				container.classList.toggle("is-active", isOpen);
+				trigger.setAttribute("aria-expanded", String(isOpen));
+				if (!isOpen) {
+					isTocOpen = false;
+					container.classList.remove("toc-active");
+				}
+			});
+
+			// 目录触发（仅移动端显示该按钮）
+			tocTrigger?.addEventListener("click", (e) => {
+				e.stopPropagation();
+				isTocOpen = !isTocOpen;
+				container.classList.toggle("toc-active", isTocOpen);
+				if (isTocOpen) scrollPosOnTocOpen = window.scrollY;
+			});
+
+			tocClose?.addEventListener("click", (e) => {
+				e.stopPropagation();
+				isTocOpen = false;
+				container.classList.remove("toc-active");
+			});
+
+			const scrollToId = (id) => {
+				const el = document.getElementById(id);
+				if (!el) return;
+				const top = el.getBoundingClientRect().top + window.scrollY - 96;
+				window.scrollTo({ top: Math.max(0, top), behavior: scrollOpts });
+				closeAll();
+			};
+
+			tocLinks.forEach((link) => {
+				link.addEventListener("click", (e) => {
+					e.preventDefault();
+					const id = link.getAttribute("href").slice(1);
+					scrollToId(id);
+				});
+			});
+
+			backTop?.addEventListener("click", () => {
+				window.scrollTo({ top: 0, behavior: scrollOpts });
+				closeAll();
+			});
+
+			comments?.addEventListener("click", () => {
+				const target = document.querySelector(".article-comments-card");
+				if (target) {
+					target.scrollIntoView({ behavior: scrollOpts, block: "start" });
+				}
+				closeAll();
+			});
+
+			// 点击外部关闭
+			document.addEventListener("click", (e) => {
+				if (!container.contains(e.target)) closeAll();
+			});
+
+			window.addEventListener("scroll", handleScroll, { passive: true });
+			handleScroll();
+		};
+
+		document.addEventListener("astro:page-load", init);
+		init();
+	})();
+</script>
+
+<style>
+	.article-fab {
+		position: fixed;
+		right: max(1.25rem, calc((100vw - var(--max-width)) / 2 + 1.25rem));
+		bottom: calc(5vh + env(safe-area-inset-bottom));
+		z-index: 45;
+		opacity: 0;
+		pointer-events: none;
+		transform: translateY(12px);
+		transition:
+			opacity var(--transition),
+			transform var(--transition);
+	}
+
+	.article-fab.is-visible {
+		opacity: 1;
+		pointer-events: auto;
+		transform: translateY(0);
+	}
+
+	.article-fab-toggle,
+	.article-fab-item {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.9rem;
+		height: 2.9rem;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		background: rgba(var(--card-surface-rgb), 0.84);
+		box-shadow: var(--shadow-card);
+		backdrop-filter: blur(14px) saturate(140%);
+		-webkit-backdrop-filter: blur(14px) saturate(140%);
+		color: var(--color-text-secondary);
+		cursor: pointer;
+		transition:
+			color var(--transition),
+			background-color var(--transition),
+			border-color var(--transition),
+			transform var(--transition),
+			opacity 0.28s ease;
+	}
+
+	.article-fab-toggle:hover,
+	.article-fab-item:hover {
+		color: var(--color-text);
+		background: rgba(var(--card-surface-rgb), 0.96);
+		border-color: rgba(135, 190, 255, 0.42);
+	}
+
+	.article-fab-toggle:active,
+	.article-fab-item:active {
+		transform: scale(0.92);
+	}
+
+	.article-fab-icon {
+		width: 1.05rem;
+		height: 1.05rem;
+	}
+
+	.article-fab-icon-toggle {
+		width: 1.2rem;
+		height: 1.2rem;
+	}
+
+	/* 展开项：默认隐藏，is-active 时逐个上滑淡入 */
+	.article-fab-items {
+		position: absolute;
+		bottom: calc(100% + 0.7rem);
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.6rem;
+	}
+
+	.article-fab-items .article-fab-item {
+		opacity: 0;
+		transform: translateY(10px) scale(0.9);
+		pointer-events: none;
+	}
+
+	.article-fab.is-active .article-fab-items .article-fab-item {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		pointer-events: auto;
+	}
+
+	.article-fab.is-active .article-fab-items .article-fab-item:nth-child(1) {
+		transition-delay: 0.04s;
+	}
+
+	.article-fab.is-active .article-fab-items .article-fab-item:nth-child(2) {
+		transition-delay: 0.09s;
+	}
+
+	.article-fab.is-active .article-fab-items .article-fab-item:nth-child(3) {
+		transition-delay: 0.14s;
+	}
+
+	/* 回到顶部：圆形滚动进度环 */
+	.article-fab-progress {
+		position: absolute;
+		inset: -1px;
+		width: calc(100% + 2px);
+		height: calc(100% + 2px);
+		transform: rotate(-90deg);
+		overflow: visible;
+		pointer-events: none;
+	}
+
+	.article-fab-progress circle {
+		fill: none;
+		stroke: var(--color-accent);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-dasharray: 0 119.38;
+	}
+
+	.article-fab-item[data-fab-back-top] > .article-fab-icon {
+		position: relative;
+		z-index: 1;
+	}
+
+	/* 目录触发与面板仅移动端显示（桌面端有侧栏目录） */
+	.article-fab-toc-trigger {
+		display: none;
+	}
+
+	.article-fab-toc {
+		display: none;
+	}
+
+	@media (max-width: 900px) {
+		.article-fab-toc-trigger {
+			display: inline-flex;
+		}
+
+		.article-fab-toc {
+			display: grid;
+		}
+	}
+
+	/* 移动端目录面板（玻璃浮层，位于 FAB 上方） */
+	.article-fab-toc {
+		position: absolute;
+		right: 0;
+		bottom: calc(100% + 3.4rem);
+		width: min(19rem, calc(100vw - 2.5rem));
+		max-height: min(60vh, 26rem);
+		grid-template-rows: auto 1fr;
+		gap: 0.5rem;
+		padding: 0.95rem 0.95rem 0.8rem;
+		border-radius: var(--radius-card);
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		background: rgba(var(--card-surface-rgb), 0.92);
+		box-shadow: var(--shadow-card);
+		backdrop-filter: blur(16px) saturate(140%);
+		-webkit-backdrop-filter: blur(16px) saturate(140%);
+		opacity: 0;
+		transform: translateY(12px) scale(0.96);
+		transform-origin: bottom right;
+		pointer-events: none;
+		transition:
+			opacity var(--transition),
+			transform var(--transition);
+	}
+
+	.article-fab.toc-active .article-fab-toc {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		pointer-events: auto;
+	}
+
+	.article-fab-toc-title {
+		font-family: var(--font-strong);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-text-muted);
+	}
+
+	.article-fab-toc-close {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.7rem;
+		height: 1.7rem;
+		border: none;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		transition:
+			color var(--transition),
+			background-color var(--transition);
+	}
+
+	.article-fab-toc-close:hover {
+		color: var(--color-text);
+		background: var(--color-accent-soft);
+	}
+
+	.article-fab-toc-close .article-fab-icon {
+		width: 0.8rem;
+		height: 0.8rem;
+	}
+
+	.article-fab-toc-body {
+		overflow-y: auto;
+		scrollbar-width: none;
+		min-height: 0;
+		max-height: min(60vh, 26rem);
+		padding-right: 0.15rem;
+	}
+
+	.article-fab-toc-body::-webkit-scrollbar {
+		display: none;
+	}
+
+	.article-fab-toc-link {
+		display: block;
+		padding: 0.42rem 0.55rem;
+		padding-left: calc(0.55rem + var(--toc-level, 0) * 0.9rem);
+		border-radius: 0.5rem;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		color: var(--color-text-secondary);
+		transition:
+			color var(--transition),
+			background-color var(--transition);
+	}
+
+	.article-fab-toc-link:hover,
+	.article-fab-toc-link:focus-visible {
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+		outline: none;
+	}
+</style>
