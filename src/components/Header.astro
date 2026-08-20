@@ -477,4 +477,16 @@ function isLinkActive(href: string) {
 		background: var(--color-bg);
 		transition: none;
 	}
+
+	/* 文章页：导航与正文阅读列(752px)对齐，仅 body[data-page="article"] 生效。
+	 * 覆写 --nav-shell-max-width 后，压缩态玻璃胶囊(::before)与
+	 * .site-nav-shell-scroll 的宽度公式自动同步为阅读列宽，边缘对齐。 */
+	:global(body[data-page="article"]) .site-nav {
+		--nav-shell-max-width: var(--max-width-prose);
+	}
+
+	:global(body[data-page="article"]) .site-nav-shell-scroll {
+		width: min(100%, var(--max-width-prose));
+		margin-inline: auto;
+	}
 </style>
