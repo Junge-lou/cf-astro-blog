@@ -281,6 +281,24 @@ img {
 	display: block;
 }
 
+/*
+ * momo 评论组件头像修正：
+ * 组件注入的 Tailwind 工具类（.h-10/.w-10/.object-cover/.rounded-full 等）位于
+ * @layer utilities，会被本文件未分层的 img 规则（height:auto、max-width:100% 等）
+ * 以更高优先级覆盖，导致头像高度被拉成 auto、object-cover 裁剪失效。
+ * 此处用更高优先级的 ID/类 + 属性选择器在评论组件作用域内显式固定 40×40 圆形裁剪。
+ */
+#momo-comment img[alt="avatar"],
+.comments-host img[alt="avatar"] {
+	width: 2.5rem;
+	height: 2.5rem;
+	max-width: 2.5rem;
+	object-fit: cover;
+	border-radius: 9999px;
+	flex-shrink: 0;
+	display: block;
+}
+
 button,
 input,
 textarea,
