@@ -18,7 +18,6 @@ interface Props {
 	description?: string;
 	image?: string;
 	canonicalUrl?: string;
-	isArticlePage?: boolean;
 	backgroundOverride?: {
 		imageKey: string;
 		opacity: number;
@@ -48,7 +47,6 @@ const {
 	image,
 	canonicalUrl,
 	backgroundOverride,
-	isArticlePage,
 } = Astro.props;
 const isAdminPreview = Astro.url.searchParams.get("adminPreview") === "1";
 let siteAppearance = DEFAULT_SITE_APPEARANCE;
@@ -140,7 +138,6 @@ const resolvedDescription =
 				"site-shell",
 				{ "site-shell-has-background-image": Boolean(backgroundImageUrl) },
 			]}
-			data-page={isArticlePage ? "article" : undefined}
 			style={surfaceStyle}
 		>
 		<div class="site-background" aria-hidden="true">

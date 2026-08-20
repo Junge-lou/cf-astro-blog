@@ -91,7 +91,7 @@
 			return;
 		}
 		const MIN_INSET_PX = 13; // ~0.8rem 保证与屏幕边缘的最小间距
-		const NAV_MAX_W = 1060; // 与 CSS --nav-shell-max-width 对应
+		const NAV_MAX_W = 752; // 与 CSS --nav-shell-max-width 对应（--max-width-prose 47rem = 752px）
 		const vw = window.innerWidth;
 		// 计算默认胶囊宽度（当前 CSS 公式的 JS 等价）
 		const defaultInset = Math.max(MIN_INSET_PX, (vw - NAV_MAX_W) / 2);

@@ -67,7 +67,7 @@
 	--nav-motion-main: 520ms cubic-bezier(0.22, 1, 0.36, 1);
 	--nav-motion-surface: 420ms cubic-bezier(0.33, 1, 0.68, 1);
 	--nav-motion-transform: 560ms cubic-bezier(0.16, 1, 0.3, 1);
-	--nav-shell-max-width: 1060px;
+	--nav-shell-max-width: var(--max-width-prose);
 	--nav-shell-condensed-inset-desktop: 0.8rem;
 	--nav-shell-condensed-inset-mobile: 0.5rem;
 	--nav-shell-condensed-radius: 999px;
