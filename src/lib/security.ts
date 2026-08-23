@@ -1196,7 +1196,8 @@ function parseChatConfig(yamlBlock: string): ChatConfig {
 		if (!trimmed) continue;
 
 		// 嵌套属性（如 avatars: 下的缩进行）—— 用原始行检查缩进
-		const nestedMatch = trimmed.match(/^(\w+):\s*(.+)/);
+		// 头像名可能含中文（如 `老者:`），\w 无法匹配 CJK，需与消息名解析一致
+		const nestedMatch = trimmed.match(/^([\w\u4e00-\u9fff]+):\s*(.+)/);
 		if (nestedMatch && /^\s/.test(line) && currentKey === "avatars") {
 			const avatarName = nestedMatch[1]!.trim();
 			// 去除行内 # 注释

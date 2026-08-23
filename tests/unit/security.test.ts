@@ -385,14 +385,54 @@ describe("安全工具", () => {
 
 	test("renderSafeMarkdown 支持 Chat 聊天", async () => {
 		const html = await renderSafeMarkdown(
-			"```chat\n%% left\n**Alice** 你好！\n%% right\n**Bob** 嗨！\n```",
+			[
+				"```chat",
+				"---",
+				"senderNickname: Bob",
+				"---",
+				"",
+				"Alice: 你好！",
+				"",
+				"Bob: 嗨！",
+				"```",
+			].join("\n"),
 		);
 
 		assert.match(html, /<div class="prose-chat">/u);
-		assert.match(html, /prose-chat-left/u);
-		assert.match(html, /prose-chat-right/u);
-		assert.match(html, /Alice/u);
-		assert.match(html, /Bob/u);
+		// Alice 为接收方（显示昵称），Bob 为发送方
+		assert.match(html, /prose-chat-receive/u);
+		assert.match(html, /prose-chat-send/u);
+		assert.match(html, /prose-chat-nickname">Alice</u);
+		assert.match(html, /prose-chat-text">你好！</u);
+		assert.match(html, /prose-chat-text">嗨！</u);
+	});
+
+	test("renderSafeMarkdown 支持中文头像名渲染为图片", async () => {
+		const html = await renderSafeMarkdown(
+			[
+				"```chat",
+				"---",
+				"showAvatar: true",
+				"senderNickname: 老者",
+				"timeNickname: time",
+				"avatars:",
+				"  老者: https://example.com/avatar.png",
+				"---",
+				"",
+				"问者: 老先生为何哭泣？",
+				"",
+				"老者: 我求官未遇，故悲从中来。",
+				"```",
+			].join("\n"),
+		);
+
+		// 中文头像名应命中 avatars 配置并渲染为图片
+		assert.match(
+			html,
+			/<img class="prose-chat-avatar" src="https:\/\/example\.com\/avatar\.png"[^>]*alt="老者"/u,
+		);
+		// 未配置头像的角色仍显示首字母占位
+		assert.match(html, /prose-chat-avatar-font">问</u);
 	});
 
 	test("renderSafeMarkdown 支持 Timeline 时间线", async () => {
