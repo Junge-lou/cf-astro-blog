@@ -1,8 +1,9 @@
 import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { generatePostSeoWithInternalAi } from "@/admin/lib/ai-post-seo";
-import { triggerDeployHook } from "@/admin/lib/deploy-hook";
 import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
+import { bumpContentCacheVersion } from "@/lib/content-version";
 import { getDb } from "@/lib/db";
 import { isOpenAICompatibleEndpointReady } from "@/lib/openai-compatible";
 import {
@@ -22,6 +23,7 @@ import {
 	getResolvedAiSettings,
 } from "@/lib/site-appearance";
 import { siteConfig } from "@/lib/types";
+import { sendWebmentionsForPost } from "@/lib/webmention";
 import {
 	type AdminAppEnv,
 	assertCsrfToken,
@@ -35,6 +37,26 @@ import { postsListPage } from "../views/posts/list";
 
 const posts = new Hono<AdminAppEnv>();
 type BlogDb = ReturnType<typeof getDb>;
+
+// 公开内容发生变化（发布/更新/删除/恢复）：
+// 1. 递增 KV 内容版本号，让边缘缓存立即失效（SSR 页面直读 D1，无需重新部署）
+// 2. 若文章即将公开可见，异步发送 Webmention（不再触发整站重新构建部署）
+async function handlePublicContentChange(
+	c: Context<AdminAppEnv>,
+	webmentionTarget: { slug: string; content: string } | null,
+): Promise<void> {
+	await bumpContentCacheVersion(c.env);
+
+	if (!webmentionTarget) {
+		return;
+	}
+
+	try {
+		c.executionCtx.waitUntil(sendWebmentionsForPost(c.env, webmentionTarget));
+	} catch {
+		// executionCtx 不可用（如本地测试环境）时跳过异步发送
+	}
+}
 
 interface ParsedPostInput {
 	title: string;
@@ -678,11 +700,9 @@ posts.post("/", async (c) => {
 	}
 
 	if (isPostPublic(postInput.status, publishAt)) {
-		await triggerDeployHook(c.env, {
-			event: "post-created",
-			postId: inserted?.id,
-			postSlug: slug,
-			postStatus: postInput.status,
+		await handlePublicContentChange(c, {
+			slug,
+			content: postInput.content,
 		});
 	}
 
@@ -907,12 +927,7 @@ posts.post("/:id", async (c) => {
 	const wasPublic = isPostPublic(existing.status, existing.publishAt);
 	const willBePublic = isPostPublic(postInput.status, publishAt);
 	if (wasPublic || willBePublic) {
-		await triggerDeployHook(c.env, {
-			event: "post-updated",
-			postId: id,
-			postSlug: slug,
-			postStatus: postInput.status,
-		});
+		await handlePublicContentChange(c, willBePublic ? { slug, content: postInput.content } : null);
 	}
 
 	return c.redirect("/api/admin/posts");
@@ -947,12 +962,7 @@ posts.post("/:id/delete", async (c) => {
 		.where(eq(blogPosts.id, id));
 
 	if (existing && isPostPublic(existing.status, existing.publishAt)) {
-		await triggerDeployHook(c.env, {
-			event: "post-deleted",
-			postId: id,
-			postSlug: existing.slug,
-			postStatus: existing.status,
-		});
+		await handlePublicContentChange(c, null);
 	}
 	return c.redirect("/api/admin/posts?status=post-deleted");
 });
@@ -983,12 +993,7 @@ posts.post("/:id/restore", async (c) => {
 		.limit(1);
 
 	if (existing && isPostPublic(existing.status, existing.publishAt)) {
-		await triggerDeployHook(c.env, {
-			event: "post-restored",
-			postId: id,
-			postSlug: existing.slug,
-			postStatus: existing.status,
-		});
+		await handlePublicContentChange(c, null);
 	}
 	return c.redirect("/api/admin/posts?status=post-restored");
 });
@@ -1046,12 +1051,7 @@ posts.post("/:id/cancel-schedule", async (c) => {
 		})
 		.where(and(eq(blogPosts.id, id), eq(blogPosts.status, "scheduled")));
 	if (existing && isPostPublic(existing.status, existing.publishAt)) {
-		await triggerDeployHook(c.env, {
-			event: "post-schedule-cancelled",
-			postId: id,
-			postSlug: existing.slug,
-			postStatus: "draft",
-		});
+		await handlePublicContentChange(c, null);
 	}
 	return c.redirect("/api/admin/posts?status=schedule-cancelled");
 });

@@ -76,8 +76,8 @@
 
 ### 🔍 搜索
 
-- **Pagefind 静态搜索**：构建时生成索引，支持中文分词
-- **搜索页面**：`/search` 提供全站搜索
+- **服务端实时搜索**：`/search` 直查 D1 数据库，发文后立即可检索
+- **多维筛选**：关键词、分类、标签、发布日期范围
 
 ### 📡 SEO 与 Feed
 
@@ -88,7 +88,7 @@
 
 ### 🛠️ 运维工具
 
-- **自动部署 Webhook**：支持 GitHub / 外部触发自动部署
+- **发文免部署**：内容存于 D1，SSR 直读 + 内容版本号缓存失效，发文秒级生效
 - **构建分析**：`npm run build:analyze` 输出各模块体积
 - **数据库迁移**：Drizzle Kit 管理 D1 schema 版本
 - **种子数据**：`npm run db:seed:remote` 初始化基础数据
@@ -109,7 +109,7 @@
 | **样式** | 原生 CSS（无框架依赖） |
 | **字体** | Lora、Cormorant Garamond、思源宋体、Space Grotesk、霞鹜文楷 |
 | **数学** | KaTeX |
-| **搜索** | Pagefind |
+| **搜索** | D1 服务端检索（SSR） |
 | **检查** | Biome（lint + format） |
 | **类型** | TypeScript + `@astrojs/check` |
 
@@ -313,15 +313,13 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 
 > MCP 服务部署在 `/api/mcp`，可通过 VS Code、Claude Desktop 等 MCP 客户端连接。Bearer Token 建议使用 `openssl rand -hex 32` 生成。
 
-###### 🚀 自动部署 Webhook（可选，从管理后台触发 GitHub Actions 部署）
+###### 🚀 发文免部署（内容与代码解耦）
 
-| 变量名 | 说明 | 必需 |
-|--------|------|:----:|
-| `AUTO_DEPLOY_WEBHOOK_URL` | GitHub Repository Dispatch 的 Webhook URL | 可选 |
-| `AUTO_DEPLOY_WEBHOOK_SECRET` | Webhook 请求签名密钥 | 可选 |
-| `AUTO_DEPLOY_GITHUB_EVENT_TYPE` | 自定义事件类型（默认 `rebuild-search-index`） | 可选 |
+内容存于 D1，公开页面由 Worker SSR 直读数据库。发文 / 改文 / 删文时：
 
-> 配置后可在管理后台一键触发重建与部署，无需推送代码。
+1. Worker 递增 KV 中的内容版本号，边缘缓存键随版本号变化，旧缓存立即失效（秒级生效）
+2. Webmention 由 Worker 在发文时异步发送（`waitUntil`）
+3. 部署只发生在代码变更（git push）时，无需为内容重建站点
 
 ---
 
@@ -407,10 +405,10 @@ const COMMENTS_ORIGIN = "https://comments.你的域名.com";
 | 触发方式 | 说明 |
 |----------|------|
 | `push` 到 `main` 分支 | 推送代码自动部署 |
-| `repository_dispatch`（`rebuild-search-index`） | 从管理后台触发 |
+| `repository_dispatch`（`rebuild-search-index`） | 手动重建入口（保留兼容） |
 | `workflow_dispatch` | 在 GitHub Actions 页面手动触发 |
 
-> 如果需要从管理后台触发自动部署，需额外配置 `AUTO_DEPLOY_WEBHOOK_URL` 和 `AUTO_DEPLOY_WEBHOOK_SECRET`（见 5.3.2 自动部署 Webhook 部分）。
+> 发文不再触发部署：内容变更由 Worker 即时生效（见 5.3.2 发文免部署）。
 
 ---
 
@@ -447,8 +445,6 @@ SITE_URL=http://localhost:4321
 # AI_INTERNAL_API_KEY=
 # AI_PUBLIC_API_KEY=
 # MCP_BEARER_TOKEN=
-# AUTO_DEPLOY_WEBHOOK_URL=
-# AUTO_DEPLOY_WEBHOOK_SECRET=
 ```
 
 本地开发：
@@ -664,13 +660,10 @@ cf-astro-blog/
 
 ### Q: 搜索结果不显示最新文章
 
-搜索索引在部署时构建。确保部署命令包含搜索索引步骤：
+搜索由服务端实时查询 D1，发文后立即可检索。如果结果滞后：
 
-```bash
-npm run search:index:remote
-```
-
-如果是 GitHub Actions 自动部署，检查工作流中的 `repository_dispatch` 事件类型是否与 `AUTO_DEPLOY_GITHUB_EVENT_TYPE` 一致。
+1. 检查文章状态是否为「已发布」（定时文章需到达发布时间）
+2. 边缘缓存最多滞后 15 秒（内容版本号刷新窗口），可稍后重试
 
 ### Q: GitHub Actions 部署报"缺少可用凭据"
 

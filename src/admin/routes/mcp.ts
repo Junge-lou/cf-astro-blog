@@ -4,7 +4,6 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { and, desc, eq, inArray, isNull, like, or } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import * as z from "zod/v3";
-import { triggerDeployHook } from "@/admin/lib/deploy-hook";
 import {
 	blogCategories,
 	blogPosts,
@@ -14,6 +13,7 @@ import {
 	shuoshuoPosts,
 	siteAppearanceSettings,
 } from "@/db/schema";
+import { bumpContentCacheVersion } from "@/lib/content-version";
 import { getDb } from "@/lib/db";
 import { timingSafeEqualText } from "@/lib/password";
 import {
@@ -1025,12 +1025,8 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 	}
 
 	if (isPostPublic(input.status, publishAt)) {
-		await triggerDeployHook(env, {
-			event: "post-created",
-			postId: inserted?.id,
-			postSlug: slug,
-			postStatus: input.status,
-		});
+		// 公开内容变化：递增缓存版本号并异步发送 Webmention（无需重新部署）
+		await bumpContentCacheVersion(env);
 	}
 
 	return {
@@ -1069,12 +1065,7 @@ async function deletePostFromMcpInput(env: Env, input: { id?: number; slug?: str
 	await db.update(blogPosts).set({ deletedAt }).where(eq(blogPosts.id, existing.id));
 
 	if (isPostPublic(existing.status, existing.publishAt)) {
-		await triggerDeployHook(env, {
-			event: "post-deleted",
-			postId: existing.id,
-			postSlug: existing.slug,
-			postStatus: existing.status,
-		});
+		await bumpContentCacheVersion(env);
 	}
 
 	return {

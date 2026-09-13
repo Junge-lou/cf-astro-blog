@@ -1,13 +1,22 @@
 ---
 import { env } from "cloudflare:workers";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import "@/styles/post-card.css";
+import PostCard from "@/components/PostCard.astro";
 import SearchBox from "@/components/Search.astro";
-import { blogCategories, blogTags } from "@/db/schema";
+import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
+import { estimateArticleReadStats } from "@/lib/format";
+import {
+	getPublicPostKeywordCondition,
+	getPublicPostVisibilityCondition,
+} from "@/lib/public-content";
 import { sanitizeSlug } from "@/lib/security";
 
-function normalizeDateInput(value: string | null) {
+const SEARCH_RESULT_LIMIT = 50;
+
+function normalizeDateInput(value: string | null): string {
 	if (!value) {
 		return "";
 	}
@@ -54,6 +63,20 @@ const hasSearchCriteria = Boolean(
 
 let categories: Array<{ slug: string; name: string }> = [];
 let tags: Array<{ slug: string; name: string }> = [];
+let results: Array<{
+	title: string;
+	slug: string;
+	excerpt: string | null;
+	publishedAt: string | null;
+	authorName: string | null;
+	categoryName: string | null;
+	featuredImageKey: string | null;
+	featuredImageAlt: string | null;
+	cjkCharCount: number;
+	latinWordCount: number;
+	estimatedReadingMinutes: number;
+}> = [];
+let totalResults = 0;
 
 try {
 	const db = getDb(env.DB);
@@ -67,8 +90,87 @@ try {
 
 	categories = allCategories;
 	tags = allTags;
+
+	if (hasSearchCriteria) {
+		const conditions = [getPublicPostVisibilityCondition()];
+
+		// 去除 LIKE 通配符，避免用户输入干扰匹配语义
+		const keyword = query.replace(/[%_]/gu, " ").trim();
+		if (keyword) {
+			conditions.push(getPublicPostKeywordCondition(`%${keyword}%`));
+		}
+
+		if (selectedCategory) {
+			conditions.push(eq(blogCategories.slug, selectedCategory));
+		}
+
+		if (selectedDateFrom) {
+			conditions.push(gte(blogPosts.publishedAt, `${selectedDateFrom}T00:00:00.000Z`));
+		}
+		if (selectedDateTo) {
+			conditions.push(lte(blogPosts.publishedAt, `${selectedDateTo}T23:59:59.999Z`));
+		}
+
+		if (selectedTags.length > 0) {
+			conditions.push(
+				inArray(
+					blogPosts.id,
+					db
+						.select({ postId: blogPostTags.postId })
+						.from(blogPostTags)
+						.innerJoin(blogTags, eq(blogPostTags.tagId, blogTags.id))
+						.where(inArray(blogTags.slug, selectedTags)),
+				),
+			);
+		}
+
+		const whereCondition = and(...conditions);
+
+		const [countResult] = await db
+			.select({ count: sql<number>`count(*)` })
+			.from(blogPosts)
+			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
+			.where(whereCondition);
+		totalResults = countResult?.count ?? 0;
+
+		const rows = await db
+			.select({
+				title: blogPosts.title,
+				slug: blogPosts.slug,
+				content: blogPosts.content,
+				excerpt: blogPosts.excerpt,
+				publishedAt: blogPosts.publishedAt,
+				authorName: blogPosts.authorName,
+				categoryName: blogCategories.name,
+				featuredImageKey: blogPosts.featuredImageKey,
+				featuredImageAlt: blogPosts.featuredImageAlt,
+			})
+			.from(blogPosts)
+			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
+			.where(whereCondition)
+			.orderBy(desc(blogPosts.publishedAt))
+			.limit(SEARCH_RESULT_LIMIT);
+
+		results = rows.map((row) => {
+			const readingStats = estimateArticleReadStats(row.content);
+
+			return {
+				title: row.title,
+				slug: row.slug,
+				excerpt: row.excerpt,
+				publishedAt: row.publishedAt,
+				authorName: row.authorName,
+				categoryName: row.categoryName,
+				featuredImageKey: row.featuredImageKey,
+				featuredImageAlt: row.featuredImageAlt,
+				cjkCharCount: readingStats.cjkCharCount,
+				latinWordCount: readingStats.latinWordCount,
+				estimatedReadingMinutes: readingStats.estimatedReadingMinutes,
+			};
+		});
+	}
 } catch {
-	// D1 未绑定时回退为空选项
+	// D1 未绑定时回退为空选项与空结果
 }
 
 const activeFilters = [
@@ -81,7 +183,7 @@ const activeFilters = [
 ].filter(Boolean);
 ---
 
-<Base title="搜索" description="使用 Pagefind 在浏览器本地检索文章内容">
+<Base title="搜索" description="实时检索站内已发布文章的标题、摘要与正文">
 	<section
 		class="search-hero search-hero-depth glass-panel"
 		data-tilt-card
@@ -91,7 +193,7 @@ const activeFilters = [
 		<span class="section-kicker">站内检索</span>
 		<h1 class="page-title">搜索</h1>
 		<p class="page-intro">
-			本页搜索由 Pagefind 在浏览器内执行，不依赖服务端检索 API。
+			搜索由服务端实时查询数据库完成，发文后立即可检索，无需等待索引重建。
 		</p>
 		<div class="search-entry-stage" transition:name="search-entry">
 			<SearchBox
@@ -106,7 +208,7 @@ const activeFilters = [
 		</div>
 	</section>
 
-	<section class="search-results-block" id="search-results-section" style={hasSearchCriteria ? undefined : "display:none"}>
+	<section class="search-results-block" id="search-results-section">
 		<div class="section-head">
 			<div>
 				<h2 class="section-heading">搜索结果</h2>
@@ -114,131 +216,150 @@ const activeFilters = [
 					{activeFilters.length > 0 ? activeFilters.join(" · ") : "输入关键词后开始检索"}
 				</p>
 			</div>
-			<p id="pagefind-results-summary" class="results-summary">
-				{hasSearchCriteria ? "正在加载搜索结果..." : "输入关键词或筛选条件后开始搜索"}
+			<p id="search-results-summary" class="results-summary">
+				{hasSearchCriteria
+					? totalResults > 0
+						? `共找到 ${totalResults} 篇文章${totalResults > results.length ? `，仅显示前 ${results.length} 篇` : ""}`
+						: "没有找到相关文章，试试换个关键词或放宽筛选条件"
+					: "输入关键词或筛选条件后开始搜索"}
 			</p>
 		</div>
-		<div id="pagefind-search-results" class="search-grid" />
+		<div id="search-results-list" class="search-grid">
+			{results.map((post) => (
+				<PostCard
+					title={post.title}
+					slug={post.slug}
+					excerpt={post.excerpt}
+					publishedAt={post.publishedAt}
+					categoryName={post.categoryName}
+					authorName={post.authorName}
+					featuredImageKey={post.featuredImageKey}
+					featuredImageAlt={post.featuredImageAlt}
+					cjkCharCount={post.cjkCharCount}
+					latinWordCount={post.latinWordCount}
+					estimatedReadingMinutes={post.estimatedReadingMinutes}
+					variant="list"
+				/>
+			))}
+		</div>
 	</section>
-
-	<script is:inline type="module" src="/pagefind-search.js"></script>
 </Base>
 
-<style>
-	.search-hero {
-		--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);
-		--glass-panel-blur: var(--hero-card-blur, 18px);
-		display: grid;
-		gap: 1rem;
-		padding: clamp(1.5rem, 1rem + 2vw, 2.6rem);
-	}
-
-	.search-hero-depth {
-		position: relative;
-		overflow: hidden;
-		transform:
-			perspective(1200px)
-			rotateX(var(--tilt-rotate-x, 0deg))
-			rotateY(var(--tilt-rotate-y, 0deg))
-			scale3d(1.002, 1.002, 1.002);
-		transform-style: preserve-3d;
-		transition:
-			transform var(--nav-motion-surface),
-			box-shadow var(--nav-motion-surface);
-	}
-
-	.search-hero-depth::before {
-		content: "";
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background:
-			radial-gradient(
-				circle at 18% 24%,
-				rgba(10, 132, 255, 0.22),
-				transparent 38%
-			),
-			linear-gradient(
-				135deg,
-				rgba(255, 255, 255, 0.16),
-				rgba(255, 255, 255, 0.02) 58%,
-				transparent
-			);
-		opacity: 0.72;
-		pointer-events: none;
-		transform: translate3d(
-			calc(var(--tilt-shift-x, 0) * -8px),
-			calc(var(--tilt-shift-y, 0) * -8px),
-			0
-		);
-		transition: transform var(--nav-motion-surface);
-	}
-
-	.search-hero-depth .section-kicker,
-	.search-hero-depth .page-title,
-	.search-hero-depth .page-intro {
-		position: relative;
-		z-index: 1;
-		transform: translate3d(
-			calc(var(--tilt-shift-x, 0) * 2px),
-			calc(var(--tilt-shift-y, 0) * 2px),
-			14px
-		);
-		transition: transform var(--nav-motion-surface);
-	}
-
-	.search-results-block {
-		display: grid;
-		gap: 1.2rem;
-	}
-
-	.search-entry-stage {
-		width: 100%;
-	}
-
-	.search-hero-depth .search-entry-stage {
-		position: relative;
-		z-index: 1;
-		transform: translate3d(
-			calc(var(--tilt-shift-x, 0) * 4px),
-			calc(var(--tilt-shift-y, 0) * 4px),
-			24px
-		);
-		transition: transform var(--nav-motion-surface);
-	}
-
-	.section-head {
-		display: flex;
-		align-items: end;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
-	.results-summary {
-		color: var(--color-text-muted);
-		font-size: 0.92rem;
-	}
-
-	.search-grid {
-		display: grid;
-		gap: 1rem;
-	}
-
-	@media (max-width: 840px) {
-		.section-head {
-			flex-direction: column;
-			align-items: start;
+	<style>
+		.search-hero {
+			--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);
+			--glass-panel-blur: var(--hero-card-blur, 18px);
+			display: grid;
+			gap: 1rem;
+			padding: clamp(1.5rem, 1rem + 2vw, 2.6rem);
 		}
-	}
 
-	@media (hover: none), (pointer: coarse) {
-		.search-hero-depth,
-		.search-hero-depth::before,
+		.search-hero-depth {
+			position: relative;
+			overflow: hidden;
+			transform:
+				perspective(1200px)
+				rotateX(var(--tilt-rotate-x, 0deg))
+				rotateY(var(--tilt-rotate-y, 0deg))
+				scale3d(1.002, 1.002, 1.002);
+			transform-style: preserve-3d;
+			transition:
+				transform var(--nav-motion-surface),
+				box-shadow var(--nav-motion-surface);
+		}
+
+		.search-hero-depth::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			border-radius: inherit;
+			background:
+				radial-gradient(
+					circle at 18% 24%,
+					rgba(10, 132, 255, 0.22),
+					transparent 38%
+				),
+				linear-gradient(
+					135deg,
+					rgba(255, 255, 255, 0.16),
+					rgba(255, 255, 255, 0.02) 58%,
+					transparent
+				);
+			opacity: 0.72;
+			pointer-events: none;
+			transform: translate3d(
+				calc(var(--tilt-shift-x, 0) * -8px),
+				calc(var(--tilt-shift-y, 0) * -8px),
+				0
+			);
+			transition: transform var(--nav-motion-surface);
+		}
+
 		.search-hero-depth .section-kicker,
 		.search-hero-depth .page-title,
-		.search-hero-depth .page-intro,
-		.search-hero-depth .search-entry-stage {
-			transform: none;
+		.search-hero-depth .page-intro {
+			position: relative;
+			z-index: 1;
+			transform: translate3d(
+				calc(var(--tilt-shift-x, 0) * 2px),
+				calc(var(--tilt-shift-y, 0) * 2px),
+				14px
+			);
+			transition: transform var(--nav-motion-surface);
 		}
-	}
-</style>
+
+		.search-results-block {
+			display: grid;
+			gap: 1.2rem;
+		}
+
+		.search-entry-stage {
+			width: 100%;
+		}
+
+		.search-hero-depth .search-entry-stage {
+			position: relative;
+			z-index: 1;
+			transform: translate3d(
+				calc(var(--tilt-shift-x, 0) * 4px),
+				calc(var(--tilt-shift-y, 0) * 4px),
+				24px
+			);
+			transition: transform var(--nav-motion-surface);
+		}
+
+		.section-head {
+			display: flex;
+			align-items: end;
+			justify-content: space-between;
+			gap: 1rem;
+		}
+
+		.results-summary {
+			color: var(--color-text-muted);
+			font-size: 0.92rem;
+		}
+
+		.search-grid {
+			display: grid;
+			gap: 1rem;
+		}
+
+		@media (max-width: 840px) {
+			.section-head {
+				flex-direction: column;
+				align-items: start;
+			}
+		}
+
+		@media (hover: none), (pointer: coarse) {
+			.search-hero-depth,
+			.search-hero-depth::before,
+			.search-hero-depth .section-kicker,
+			.search-hero-depth .page-title,
+			.search-hero-depth .page-intro,
+			.search-hero-depth .search-entry-stage {
+				transform: none;
+			}
+		}
+	</style>

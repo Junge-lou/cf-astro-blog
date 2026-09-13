@@ -28,10 +28,11 @@ describe("前端本地时间渲染保护", () => {
 		assert.match(homePageSource, /data-local-time="date"/u);
 	});
 
-	test("搜索结果日期使用浏览器默认本地化格式", async () => {
-		const searchScriptSource = await readFile("public/pagefind-search.js", "utf8");
+	test("搜索结果日期由 PostCard 本地时间脚本渲染", async () => {
+		const searchPageSource = await readFile("src/pages/search.astro", "utf8");
 
-		assert.match(searchScriptSource, /toLocaleDateString\(\)/u);
-		assert.doesNotMatch(searchScriptSource, /toLocaleDateString\("zh-CN"\)/u);
+		// 搜索结果直接复用 PostCard，日期标签由 local-time.js 统一本地化
+		assert.match(searchPageSource, /<PostCard/u);
+		assert.match(searchPageSource, /variant="list"/u);
 	});
 });

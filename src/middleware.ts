@@ -1,6 +1,28 @@
 import { defineMiddleware } from "astro:middleware";
+import { getContentCacheVersion } from "@/lib/content-version";
 
 const EDGE_CACHE_TTL_SECONDS = 300;
+const CONTENT_VERSION_MEMO_TTL_MS = 15_000;
+
+// 内容版本号进程级缓存：避免每次请求都读 KV。
+// 15 秒的窗口意味着发文后全球各节点最多 15 秒内切换到新缓存键。
+let contentVersionMemo: { value: string; expiresAt: number } | null = null;
+
+async function resolveContentVersion(): Promise<string> {
+	const now = Date.now();
+	if (contentVersionMemo && contentVersionMemo.expiresAt > now) {
+		return contentVersionMemo.value;
+	}
+
+	try {
+		const { env } = await import("cloudflare:workers");
+		const value = await getContentCacheVersion(env);
+		contentVersionMemo = { value, expiresAt: now + CONTENT_VERSION_MEMO_TTL_MS };
+		return value;
+	} catch {
+		return "0";
+	}
+}
 
 function normalizePathname(pathname: string): string {
 	if (!pathname || pathname === "/") {
@@ -25,7 +47,7 @@ function resolveEdgeCacheTtl(pathname: string): number {
 	}
 }
 
-function buildEdgeCacheKeyUrl(url: URL): URL {
+function buildEdgeCacheKeyUrl(url: URL, contentVersion: string): URL {
 	const cacheUrl = new URL(url.toString());
 	const pathname = normalizePathname(cacheUrl.pathname);
 	cacheUrl.pathname = pathname;
@@ -33,10 +55,7 @@ function buildEdgeCacheKeyUrl(url: URL): URL {
 
 	if (pathname === "/" || pathname === "/friends") {
 		cacheUrl.search = "";
-		return cacheUrl;
-	}
-
-	if (pathname === "/blog") {
+	} else if (pathname === "/blog") {
 		const page = Number.parseInt(cacheUrl.searchParams.get("page") || "", 10);
 		cacheUrl.search = "";
 		if (Number.isInteger(page) && page > 1 && page <= 500) {
@@ -48,6 +67,9 @@ function buildEdgeCacheKeyUrl(url: URL): URL {
 	if (pathname.startsWith("/blog/")) {
 		cacheUrl.search = "";
 	}
+
+	// 缓存键携带内容版本号：发文后版本号变化，旧缓存在所有节点立即失效
+	cacheUrl.searchParams.set("__cv", contentVersion);
 
 	return cacheUrl;
 }
@@ -101,17 +123,13 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 
 	if (!normalizedPath.startsWith("/api/")) {
 		const frameAncestors = isAdminPreview ? "'self'" : "'none'";
-		// 'wasm-unsafe-eval' 须在所有非 API 页面上生效：
 		// Astro ClientRouter (View Transitions) 客户端导航时不会刷新文档级 CSP，
-		// 任何页面都可能成为 Pagefind WASM 的宿主文档。
-		// WebAssembly.instantiate(bytes) 必须有此指令，否则 WASM 编译被 CSP 拦截。
-		// 同时 ClientRouter 在页面切换时会执行内联脚本片段，未放行时会在控制台持续报错。
+		// 且在页面切换时会执行内联脚本片段，未放行时会在控制台持续报错。
 		const scriptSources = [
 			"'self'",
 			"'unsafe-inline'",
 			"https://challenges.cloudflare.com",
 			"https://static.cloudflareinsights.com",
-			"'wasm-unsafe-eval'",
 		];
 		response.headers.set(
 			"Content-Security-Policy",
@@ -148,7 +166,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 	});
 	const edgeCache = getEdgeCache();
 	const edgeCacheTtl = resolveEdgeCacheTtl(pathname);
-	const cacheKeyUrl = buildEdgeCacheKeyUrl(context.url);
+	const contentVersion = shouldUseEdgeCache ? await resolveContentVersion() : "0";
+	const cacheKeyUrl = buildEdgeCacheKeyUrl(context.url, contentVersion);
 	const cacheKey = new Request(cacheKeyUrl.toString(), { method: "GET" });
 
 	if (shouldUseEdgeCache && edgeCache) {

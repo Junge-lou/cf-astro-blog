@@ -38,10 +38,6 @@ export interface ValidatedEnv {
 	MCP_RATE_LIMIT_PER_MINUTE?: string;
 	MCP_AUTH_FAIL_LIMIT_PER_MINUTE?: string;
 	MCP_AUTH_BLOCK_SECONDS?: string;
-
-	AUTO_DEPLOY_WEBHOOK_URL?: string;
-	AUTO_DEPLOY_WEBHOOK_SECRET?: string;
-	AUTO_DEPLOY_GITHUB_EVENT_TYPE?: string;
 }
 
 // ─── 校验规则 ────────────────────────────────────────────────────────────────
@@ -109,9 +105,6 @@ const ENV_RULES: EnvRule[] = [
 	{ key: "MCP_RATE_LIMIT_PER_MINUTE", required: false },
 	{ key: "MCP_AUTH_FAIL_LIMIT_PER_MINUTE", required: false },
 	{ key: "MCP_AUTH_BLOCK_SECONDS", required: false },
-	{ key: "AUTO_DEPLOY_WEBHOOK_URL", required: false },
-	{ key: "AUTO_DEPLOY_WEBHOOK_SECRET", required: false },
-	{ key: "AUTO_DEPLOY_GITHUB_EVENT_TYPE", required: false },
 ];
 
 // ─── 校验逻辑 ────────────────────────────────────────────────────────────────

@@ -60,7 +60,7 @@ describe("公开内容保护", () => {
 });
 
 describe("源码回归保护", () => {
-	test("公开文章详情页使用发布态过滤，搜索页改为 Pagefind 客户端检索", async () => {
+	test("公开文章详情页使用发布态过滤，搜索页由服务端直查 D1 实时检索", async () => {
 		const [postPageSource, searchPageSource] = await Promise.all([
 			readFile("src/pages/blog/[slug].astro", "utf8"),
 			readFile("src/pages/search.astro", "utf8"),
@@ -75,8 +75,10 @@ describe("源码回归保护", () => {
 		assert.match(postPageSource, /viewCount:\s*sql`\$\{blogPosts\.viewCount\}\s*\+\s*1`/u);
 		assert.match(postPageSource, /backgroundMode:\s*blogPosts\.backgroundMode/u);
 		assert.match(postPageSource, /backgroundOverride=\{postBackgroundOverride\}/u);
-		assert.match(searchPageSource, /pagefind-search\.js/u);
-		assert.match(searchPageSource, /pagefind-search-results/u);
+		// 搜索页不再依赖 Pagefind 客户端索引，改为 SSR 直查 D1
+		assert.match(searchPageSource, /getPublicPostVisibilityCondition/u);
+		assert.match(searchPageSource, /getPublicPostKeywordCondition/u);
+		assert.ok(!searchPageSource.includes("pagefind"));
 	});
 
 	test("主题切换组件不再包含内联脚本，并改由外置脚本接管", async () => {
@@ -199,8 +201,8 @@ describe("源码回归保护", () => {
 		const source = await readFile("src/middleware.ts", "utf8");
 		assert.ok(source.includes("https://challenges.cloudflare.com"));
 		assert.ok(source.includes('!normalizedPath.startsWith("/api/")'));
-		assert.ok(source.includes("任何页面都可能成为 Pagefind WASM 的宿主文档"));
-		assert.ok(source.includes("'wasm-unsafe-eval'"));
+		// Pagefind WASM 已移除，CSP 不再放行 wasm-unsafe-eval
+		assert.ok(!source.includes("'wasm-unsafe-eval'"));
 	});
 
 	test("公共页面中间件会对首页/归档/友链启用边缘缓存", async () => {
@@ -352,23 +354,26 @@ describe("源码回归保护", () => {
 		assert.ok(globalStyleSource.includes(".prose strong {"));
 	});
 
-	test("后台文章变更会触发可选部署钩子", async () => {
-		const [postRouteSource, deployHookSource, workflowSource] = await Promise.all([
-			readFile("src/admin/routes/posts.ts", "utf8"),
-			readFile("src/admin/lib/deploy-hook.ts", "utf8"),
-			readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
-		]);
+	test("后台文章变更即时生效：递增缓存版本号并异步发送 Webmention", async () => {
+		const [postRouteSource, workflowSource, middlewareSource, contentVersionSource] =
+			await Promise.all([
+				readFile("src/admin/routes/posts.ts", "utf8"),
+				readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
+				readFile("src/middleware.ts", "utf8"),
+				readFile("src/lib/content-version.ts", "utf8"),
+			]);
 
-		assert.ok(postRouteSource.includes("triggerDeployHook"));
-		assert.ok(postRouteSource.includes("post-created"));
-		assert.ok(postRouteSource.includes("post-updated"));
-		assert.ok(postRouteSource.includes("post-deleted"));
-		assert.ok(deployHookSource.includes("AUTO_DEPLOY_WEBHOOK_URL"));
-		assert.ok(deployHookSource.includes("x-deploy-token"));
-		assert.ok(deployHookSource.includes("authorization"));
-		assert.ok(deployHookSource.includes("Bearer"));
+		// 发文/改文/删文不再触发整站部署，改为缓存版本号失效 + Worker 内 Webmention
+		assert.ok(postRouteSource.includes("handlePublicContentChange"));
+		assert.ok(postRouteSource.includes("bumpContentCacheVersion"));
+		assert.ok(postRouteSource.includes("sendWebmentionsForPost"));
+		assert.ok(!postRouteSource.includes("triggerDeployHook"));
+		// 边缘缓存键携带内容版本号
+		assert.ok(contentVersionSource.includes("CONTENT_VERSION_KEY"));
+		assert.ok(middlewareSource.includes("__cv"));
+		assert.ok(middlewareSource.includes("getContentCacheVersion"));
+		// 代码部署工作流保留（仅 git push / 手动触发）
 		assert.ok(workflowSource.includes("repository_dispatch"));
-		assert.ok(workflowSource.includes("rebuild-search-index"));
 		assert.ok(workflowSource.includes("npm run deploy"));
 	});
 

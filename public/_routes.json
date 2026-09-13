@@ -4,22 +4,22 @@
 	"include": ["/*"],
 	"exclude": [
 		"/_astro/*",
-		"/pagefind/*",
 		"/favicon.svg",
 		"/favicon.ico",
 		"/admin.js",
 		"/analytics.js",
+		"/article-reveal.js",
 		"/article-toc-highlight.js",
 		"/article-transparency-toggle.js",
 		"/code-block-enhance.js",
 		"/comments.js",
 		"/diagram-render.js",
 		"/footer-reveal.js",
+		"/header-scroll-hide.js",
 		"/home-motion.js",
 		"/local-time.js",
 		"/momo-comment.min.js",
 		"/not-found-terminal.js",
-		"/pagefind-search.js",
 		"/theme.js"
 	]
 }
