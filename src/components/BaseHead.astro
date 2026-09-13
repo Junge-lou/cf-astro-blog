@@ -9,15 +9,9 @@ interface Props {
 	canonicalUrl?: string;
 }
 
-const {
-	title,
-	description = siteConfig.description,
-	image,
-	canonicalUrl,
-} = Astro.props;
+const { title, description = siteConfig.description, image, canonicalUrl } = Astro.props;
 
-const fullTitle =
-	title === siteConfig.name ? title : `${title} · ${siteConfig.name}`;
+const fullTitle = title === siteConfig.name ? title : `${title} · ${siteConfig.name}`;
 const resolvedUrl = canonicalUrl || Astro.url.href;
 ---
 

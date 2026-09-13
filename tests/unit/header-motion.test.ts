@@ -20,10 +20,7 @@ describe("导航收缩动画保护", () => {
 		assert.ok(headerSource.includes("padding var(--nav-motion-main)"));
 		assert.match(globalStylesSource, /--nav-shell-max-width:/u);
 		assert.match(globalStylesSource, /--nav-shell-condensed-scale:/u);
-		assert.match(
-			globalStylesSource,
-			/--nav-shell-blur:\s*var\(--hero-card-blur,\s*18px\)/u,
-		);
+		assert.match(globalStylesSource, /--nav-shell-blur:\s*var\(--hero-card-blur,\s*18px\)/u);
 		assert.match(
 			globalStylesSource,
 			/--nav-shell-open-surface:\s*rgba\(\s*var\(--card-surface-rgb\),\s*calc\(var\(--hero-card-opacity,\s*14\)\s*\/\s*100\)\s*\)/u,

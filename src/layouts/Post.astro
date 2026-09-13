@@ -47,16 +47,13 @@ const {
 
 const formattedDate = publishedAt ? formatDate(publishedAt) : null;
 const safeCjkCharCount =
-	Number.isFinite(cjkCharCount) && Number(cjkCharCount) > 0
-		? Math.trunc(Number(cjkCharCount))
-		: 0;
+	Number.isFinite(cjkCharCount) && Number(cjkCharCount) > 0 ? Math.trunc(Number(cjkCharCount)) : 0;
 const safeLatinWordCount =
 	Number.isFinite(latinWordCount) && Number(latinWordCount) > 0
 		? Math.trunc(Number(latinWordCount))
 		: 0;
 const safeEstimatedReadingMinutes =
-	Number.isFinite(estimatedReadingMinutes) &&
-	Number(estimatedReadingMinutes) > 0
+	Number.isFinite(estimatedReadingMinutes) && Number(estimatedReadingMinutes) > 0
 		? Math.trunc(Number(estimatedReadingMinutes))
 		: 1;
 const countLabelParts: string[] = [];
@@ -69,16 +66,12 @@ if (safeLatinWordCount > 0) {
 	countLabelParts.push(`${safeLatinWordCount.toLocaleString("en-US")} 词`);
 }
 
-const articleLengthLabel =
-	countLabelParts.length > 0 ? countLabelParts.join(" / ") : "0 字";
+const articleLengthLabel = countLabelParts.length > 0 ? countLabelParts.join(" / ") : "0 字";
 const articleReadingTimeLabel = `约 ${safeEstimatedReadingMinutes.toLocaleString("zh-CN")} 分钟`;
 const tocEntries = (toc ?? [])
 	.map((item) => ({
 		...item,
-		level:
-			Number.isInteger(item.level) && item.level >= 2 && item.level <= 4
-				? item.level
-				: 2,
+		level: Number.isInteger(item.level) && item.level >= 2 && item.level <= 4 ? item.level : 2,
 		text: item.text.trim(),
 	}))
 	.filter((item) => item.id && item.text);

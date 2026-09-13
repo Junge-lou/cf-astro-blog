@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
 describe("评论组件保护", () => {
-	test("文章布局会挂载默认折叠的评论面板", async () => {
+	test("文章布局会挂载默认展开的评论面板", async () => {
 		const [postLayoutSource, commentsComponentSource] = await Promise.all([
 			readFile("src/layouts/Post.astro", "utf8"),
 			readFile("src/components/CommentsPanel.astro", "utf8"),
@@ -13,7 +13,8 @@ describe("评论组件保护", () => {
 		assert.match(postLayoutSource, /article-comments-card/u);
 		assert.match(commentsComponentSource, /data-comments-panel/u);
 		assert.match(commentsComponentSource, /data-comments-toggle/u);
-		assert.match(commentsComponentSource, /aria-expanded="false"/u);
+		assert.match(commentsComponentSource, /aria-expanded="true"/u);
+		assert.match(commentsComponentSource, /comments-panel is-open/u);
 		assert.match(commentsComponentSource, /article-opaque-mode/u);
 	});
 
@@ -30,7 +31,7 @@ describe("评论组件保护", () => {
 
 		assert.match(typesSource, /comments:/u);
 		assert.match(typesSource, /lang:\s*"zh-CN"/u);
-		assert.match(typesSource, /apiUrl:\s*"https:\/\/comments\.ffaff\.fun"/u);
+		assert.match(typesSource, /apiUrl:\s*"https:\/\/ffaff\.fun"/u);
 		assert.doesNotMatch(typesSource, /giscus/u);
 		assert.doesNotMatch(typesSource, /provider/u);
 	});

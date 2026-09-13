@@ -78,20 +78,12 @@ class InMemoryR2Bucket {
 describe("媒体去重上传", () => {
 	test("相同内容文件会复用同一个媒体对象", async () => {
 		const bucket = new InMemoryR2Bucket();
-		const fileA = new File(
-			[new TextEncoder().encode("same-content")],
-			"a.png",
-			{
-				type: "image/png",
-			},
-		);
-		const fileB = new File(
-			[new TextEncoder().encode("same-content")],
-			"b.png",
-			{
-				type: "image/png",
-			},
-		);
+		const fileA = new File([new TextEncoder().encode("same-content")], "a.png", {
+			type: "image/png",
+		});
+		const fileB = new File([new TextEncoder().encode("same-content")], "b.png", {
+			type: "image/png",
+		});
 
 		const first = await saveMediaObjectWithDedup({
 			bucket: bucket as unknown as R2Bucket,
@@ -105,35 +97,22 @@ describe("媒体去重上传", () => {
 		assert.equal(first.deduplicated, false);
 		assert.equal(second.deduplicated, true);
 		assert.equal(first.key, second.key);
-		assert.equal(
-			bucket.keys.filter((key) => isMediaHashIndexKey(key)).length,
-			1,
-		);
-		assert.equal(
-			bucket.keys.filter((key) => !isMediaHashIndexKey(key)).length,
-			1,
-		);
+		assert.equal(bucket.keys.filter((key) => isMediaHashIndexKey(key)).length, 1);
+		assert.equal(bucket.keys.filter((key) => !isMediaHashIndexKey(key)).length, 1);
 	});
 
 	test("删除媒体对象时会同步删除对应内容哈希索引", async () => {
 		const bucket = new InMemoryR2Bucket();
-		const file = new File(
-			[new TextEncoder().encode("content-for-delete")],
-			"c.png",
-			{
-				type: "image/png",
-			},
-		);
+		const file = new File([new TextEncoder().encode("content-for-delete")], "c.png", {
+			type: "image/png",
+		});
 
 		const uploaded = await saveMediaObjectWithDedup({
 			bucket: bucket as unknown as R2Bucket,
 			file,
 		});
 
-		await deleteMediaObjectAndIndex(
-			bucket as unknown as R2Bucket,
-			uploaded.key,
-		);
+		await deleteMediaObjectAndIndex(bucket as unknown as R2Bucket, uploaded.key);
 
 		assert.equal(bucket.keys.length, 0);
 	});
@@ -144,9 +123,6 @@ describe("媒体去重上传", () => {
 		});
 
 		const hash = await computeFileContentHash(file);
-		assert.equal(
-			hash,
-			"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
-		);
+		assert.equal(hash, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
 	});
 });

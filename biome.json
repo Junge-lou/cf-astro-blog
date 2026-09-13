@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -7,8 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["src/**", "tests/**", "scripts/**", "*.mjs", "*.ts", "*.json"],
-		"ignore": [".astro/**", "dist/**", "node_modules/**", ".wrangler/**"]
+		"includes": ["**", "!**/.astro/**", "!**/dist/**", "!**/node_modules/**", "!**/.wrangler/**"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -49,6 +48,25 @@
 					"correctness": {
 						"noUnusedVariables": "off",
 						"noUnusedImports": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/momo-comment.min.js", "**/claude.css"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["**/*.svg"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noSvgWithoutTitle": "off"
 					}
 				}
 			}

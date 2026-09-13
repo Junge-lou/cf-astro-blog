@@ -8,19 +8,13 @@ const newCategoryInput = document.getElementById("newCategoryName");
 const statusSelect = document.getElementById("status");
 const scheduleField = document.querySelector("[data-schedule-field='true']");
 const publishAtInput = document.querySelector("[data-publish-at-input='true']");
-const publishedDateField = document.querySelector(
-	"[data-published-date-field='true']",
-);
+const publishedDateField = document.querySelector("[data-published-date-field='true']");
 const publishedAtInput = document.querySelector("[data-published-at-input='true']");
-const postBackgroundModeSelect = document.querySelector(
-	"[data-post-background-mode='true']",
-);
+const postBackgroundModeSelect = document.querySelector("[data-post-background-mode='true']");
 const postBackgroundCustomWrap = document.querySelector(
 	"[data-post-background-custom-wrap='true']",
 );
-const postBackgroundControlsWrap = document.querySelector(
-	"[data-post-background-controls='true']",
-);
+const postBackgroundControlsWrap = document.querySelector("[data-post-background-controls='true']");
 const contentTextarea = document.getElementById("content");
 const contentUploadStatus = document.querySelector("[data-content-upload-status]");
 const markdownPreview = document.querySelector("[data-markdown-preview='true']");
@@ -32,25 +26,15 @@ const aiSeoGenerateButton = document.querySelector("[data-ai-seo-generate='true'
 const aiSeoStatus = document.querySelector("[data-ai-seo-status]");
 const editorForm = document.querySelector("form[data-editor-upload-url]");
 const editorUploadUrl =
-	editorForm instanceof HTMLFormElement
-		? (editorForm.dataset.editorUploadUrl ?? "")
-		: "";
+	editorForm instanceof HTMLFormElement ? (editorForm.dataset.editorUploadUrl ?? "") : "";
 const editorCsrfToken =
-	editorForm instanceof HTMLFormElement
-		? (editorForm.dataset.editorCsrfToken ?? "")
-		: "";
+	editorForm instanceof HTMLFormElement ? (editorForm.dataset.editorCsrfToken ?? "") : "";
 const editorDraftScope =
-	editorForm instanceof HTMLFormElement
-		? (editorForm.dataset.editorDraftScope ?? "")
-		: "";
+	editorForm instanceof HTMLFormElement ? (editorForm.dataset.editorDraftScope ?? "") : "";
 const mediaUploadForm = document.querySelector("[data-media-upload-form='true']");
 const mediaUploadInput = document.querySelector("[data-media-upload-input='true']");
-const mediaUploadDropzone = document.querySelector(
-	"[data-media-upload-dropzone='true']",
-);
-const mediaUploadFilename = document.querySelector(
-	"[data-media-upload-filename='true']",
-);
+const mediaUploadDropzone = document.querySelector("[data-media-upload-dropzone='true']");
+const mediaUploadFilename = document.querySelector("[data-media-upload-filename='true']");
 
 const EDITOR_DRAFT_STORAGE_PREFIX = "cf-astro-blog:editor-draft";
 const EDITOR_DRAFT_SCHEMA_VERSION = 1;
@@ -100,8 +84,7 @@ function updateMediaUploadFilename(file) {
 	}
 
 	if (!(file instanceof File)) {
-		mediaUploadFilename.textContent =
-			"支持 JPG、PNG、WEBP、AVIF、GIF，单个文件不超过 50 MB";
+		mediaUploadFilename.textContent = "支持 JPG、PNG、WEBP、AVIF、GIF，单个文件不超过 50 MB";
 		return;
 	}
 
@@ -170,11 +153,7 @@ function sanitizePreviewUrl(rawValue) {
 		return normalized.startsWith("//") ? null : normalized;
 	}
 
-	if (
-		normalized.startsWith("./") ||
-		normalized.startsWith("../") ||
-		normalized.startsWith("#")
-	) {
+	if (normalized.startsWith("./") || normalized.startsWith("../") || normalized.startsWith("#")) {
 		return normalized;
 	}
 
@@ -203,36 +182,30 @@ function renderInlineMarkdown(source) {
 		return stash(`<code>${escapePreviewHtml(code)}</code>`);
 	});
 
-	text = text.replace(
-		/!\[([^\]]*?)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
-		(_, alt, href, title) => {
-			const safeHref = sanitizePreviewUrl(href);
-			if (!safeHref) {
-				return stash(escapePreviewHtml(alt || ""));
-			}
+	text = text.replace(/!\[([^\]]*?)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g, (_, alt, href, title) => {
+		const safeHref = sanitizePreviewUrl(href);
+		if (!safeHref) {
+			return stash(escapePreviewHtml(alt || ""));
+		}
 
-			const titleAttr = title ? ` title="${escapePreviewAttr(title)}"` : "";
-			return stash(
-				`<img src="${escapePreviewAttr(safeHref)}" alt="${escapePreviewAttr(alt || "")}"${titleAttr} loading="lazy" decoding="async" />`,
-			);
-		},
-	);
+		const titleAttr = title ? ` title="${escapePreviewAttr(title)}"` : "";
+		return stash(
+			`<img src="${escapePreviewAttr(safeHref)}" alt="${escapePreviewAttr(alt || "")}"${titleAttr} loading="lazy" decoding="async" />`,
+		);
+	});
 
-	text = text.replace(
-		/\[([^\]]+?)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
-		(_, label, href, title) => {
-			const safeHref = sanitizePreviewUrl(href);
-			const safeLabel = escapePreviewHtml(label);
-			if (!safeHref) {
-				return stash(safeLabel);
-			}
+	text = text.replace(/\[([^\]]+?)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g, (_, label, href, title) => {
+		const safeHref = sanitizePreviewUrl(href);
+		const safeLabel = escapePreviewHtml(label);
+		if (!safeHref) {
+			return stash(safeLabel);
+		}
 
-			const titleAttr = title ? ` title="${escapePreviewAttr(title)}"` : "";
-			return stash(
-				`<a href="${escapePreviewAttr(safeHref)}"${titleAttr} target="_blank" rel="nofollow ugc noopener noreferrer">${safeLabel}</a>`,
-			);
-		},
-	);
+		const titleAttr = title ? ` title="${escapePreviewAttr(title)}"` : "";
+		return stash(
+			`<a href="${escapePreviewAttr(safeHref)}"${titleAttr} target="_blank" rel="nofollow ugc noopener noreferrer">${safeLabel}</a>`,
+		);
+	});
 
 	text = text.replace(/\*\*([^*\n]+?)\*\*/g, (_, strongText) => {
 		return stash(`<strong>${escapePreviewHtml(strongText)}</strong>`);
@@ -263,8 +236,7 @@ function extractPreviewDetailsShortcodes(markdown) {
 	const markdownWithPlaceholders = markdown.replace(
 		pattern,
 		(_match, doubleQuotedSummary, singleQuotedSummary, plainSummary, content) => {
-			const summarySource =
-				doubleQuotedSummary ?? singleQuotedSummary ?? plainSummary ?? "";
+			const summarySource = doubleQuotedSummary ?? singleQuotedSummary ?? plainSummary ?? "";
 			const summary = String(summarySource).trim() || "详情";
 			const cleanedContent = String(content ?? "")
 				.replaceAll("\r", "")
@@ -316,9 +288,7 @@ function escapeRegExp(value) {
 function renderMarkdownPreview(markdown, showEmptyHint = true) {
 	const normalized = String(markdown ?? "").replaceAll("\r", "");
 	const extractedDetails = extractPreviewDetailsShortcodes(normalized);
-	const extractedSpoilers = extractPreviewSpoilerShortcodes(
-		extractedDetails.markdown,
-	);
+	const extractedSpoilers = extractPreviewSpoilerShortcodes(extractedDetails.markdown);
 	if (!normalized.trim()) {
 		return showEmptyHint
 			? '<p class="markdown-preview-empty">开始输入 Markdown，这里会实时预览</p>'
@@ -365,9 +335,7 @@ function renderMarkdownPreview(markdown, showEmptyHint = true) {
 		if (!inCodeBlock) {
 			return;
 		}
-		const safeLanguage = codeLanguage
-			.toLowerCase()
-			.replaceAll(/[^a-z0-9-]/g, "");
+		const safeLanguage = codeLanguage.toLowerCase().replaceAll(/[^a-z0-9-]/g, "");
 		const languageClass = safeLanguage ? ` class="language-${safeLanguage}"` : "";
 		blocks.push(
 			`<pre><code${languageClass}>${escapePreviewHtml(codeLines.join("\n"))}</code></pre>`,
@@ -469,10 +437,7 @@ function renderMarkdownPreview(markdown, showEmptyHint = true) {
 		const summaryHtml = renderInlineMarkdown(block.summary);
 		const detailsHtml = `<details class="markdown-preview-details"><summary>${summaryHtml}</summary>${innerHtml}</details>`;
 		const placeholderPattern = escapeRegExp(block.placeholder);
-		html = html.replace(
-			new RegExp(`<p>${placeholderPattern}</p>\\n?`, "gu"),
-			detailsHtml,
-		);
+		html = html.replace(new RegExp(`<p>${placeholderPattern}</p>\\n?`, "gu"), detailsHtml);
 		html = html.replace(new RegExp(placeholderPattern, "gu"), detailsHtml);
 	}
 
@@ -516,13 +481,9 @@ async function uploadImageToMedia(file, uploadUrl, csrfToken, options = {}) {
 	}
 
 	const uploadScope =
-		typeof options.uploadScope === "string"
-			? options.uploadScope.trim().toLowerCase()
-			: "";
+		typeof options.uploadScope === "string" ? options.uploadScope.trim().toLowerCase() : "";
 	const uploadKind =
-		options.uploadKind === "cover" || options.uploadKind === "content"
-			? options.uploadKind
-			: "";
+		options.uploadKind === "cover" || options.uploadKind === "content" ? options.uploadKind : "";
 
 	const formData = new FormData();
 	formData.append("_csrf", csrfToken);
@@ -588,8 +549,7 @@ function insertMarkdownImage(textarea, file, url) {
 
 function syncNewCategoryInputVisibility() {
 	const isCreatingNew =
-		categorySelect instanceof HTMLSelectElement &&
-		categorySelect.value === "__new__";
+		categorySelect instanceof HTMLSelectElement && categorySelect.value === "__new__";
 
 	if (newCategoryWrap instanceof HTMLElement) {
 		newCategoryWrap.classList.toggle("is-hidden", !isCreatingNew);
@@ -606,8 +566,7 @@ function syncNewCategoryInputVisibility() {
 
 function syncScheduleFieldVisibility() {
 	const isScheduled =
-		statusSelect instanceof HTMLSelectElement &&
-		statusSelect.value === "scheduled";
+		statusSelect instanceof HTMLSelectElement && statusSelect.value === "scheduled";
 
 	if (scheduleField instanceof HTMLElement) {
 		scheduleField.classList.toggle("is-hidden", !isScheduled);
@@ -621,8 +580,7 @@ function syncScheduleFieldVisibility() {
 
 function syncPublishedDateFieldVisibility() {
 	const isPublished =
-		statusSelect instanceof HTMLSelectElement &&
-		statusSelect.value === "published";
+		statusSelect instanceof HTMLSelectElement && statusSelect.value === "published";
 
 	if (publishedDateField instanceof HTMLElement) {
 		publishedDateField.classList.toggle("is-hidden", !isPublished);
@@ -652,9 +610,7 @@ function syncPostBackgroundModeVisibility() {
 }
 
 function updatePostBackgroundDisplay(name, value) {
-	const target = document.querySelector(
-		`[data-post-background-display="${name}"]`,
-	);
+	const target = document.querySelector(`[data-post-background-display="${name}"]`);
 	if (!(target instanceof HTMLElement)) {
 		return;
 	}
@@ -671,12 +627,8 @@ function updatePostBackgroundControlPreview() {
 	const transparencyInput = document.querySelector(
 		'[data-post-background-control="backgroundTransparency"]',
 	);
-	const blurInput = document.querySelector(
-		'[data-post-background-control="backgroundBlur"]',
-	);
-	const scaleInput = document.querySelector(
-		'[data-post-background-control="backgroundScale"]',
-	);
+	const blurInput = document.querySelector('[data-post-background-control="backgroundBlur"]');
+	const scaleInput = document.querySelector('[data-post-background-control="backgroundScale"]');
 	const positionXInput = document.querySelector(
 		'[data-post-background-control="backgroundPositionX"]',
 	);
@@ -685,10 +637,7 @@ function updatePostBackgroundControlPreview() {
 	);
 
 	if (transparencyInput instanceof HTMLInputElement) {
-		updatePostBackgroundDisplay(
-			"backgroundTransparency",
-			Number(transparencyInput.value),
-		);
+		updatePostBackgroundDisplay("backgroundTransparency", Number(transparencyInput.value));
 	}
 	if (blurInput instanceof HTMLInputElement) {
 		updatePostBackgroundDisplay("backgroundBlur", Number(blurInput.value));
@@ -697,16 +646,10 @@ function updatePostBackgroundControlPreview() {
 		updatePostBackgroundDisplay("backgroundScale", Number(scaleInput.value));
 	}
 	if (positionXInput instanceof HTMLInputElement) {
-		updatePostBackgroundDisplay(
-			"backgroundPositionX",
-			Number(positionXInput.value),
-		);
+		updatePostBackgroundDisplay("backgroundPositionX", Number(positionXInput.value));
 	}
 	if (positionYInput instanceof HTMLInputElement) {
-		updatePostBackgroundDisplay(
-			"backgroundPositionY",
-			Number(positionYInput.value),
-		);
+		updatePostBackgroundDisplay("backgroundPositionY", Number(positionYInput.value));
 	}
 }
 
@@ -751,9 +694,7 @@ function resolveEditorPostMediaScope() {
 		}
 	}
 
-	const postIdMatch = String(editorDraftScope || "").match(
-		/\/api\/admin\/posts\/(\d+)$/u,
-	);
+	const postIdMatch = String(editorDraftScope || "").match(/\/api\/admin\/posts\/(\d+)$/u);
 	if (postIdMatch?.[1]) {
 		return `post-${postIdMatch[1]}`;
 	}
@@ -796,9 +737,7 @@ function updateTagIds() {
 		return;
 	}
 
-	const checkedValues = Array.from(
-		document.querySelectorAll("input[data-tag-checkbox='true']"),
-	)
+	const checkedValues = Array.from(document.querySelectorAll("input[data-tag-checkbox='true']"))
 		.filter((node) => node instanceof HTMLInputElement && node.checked)
 		.map((node) => node.value);
 
@@ -988,10 +927,7 @@ function applyGeneratedSeoFieldsToEditor(fields) {
 		}
 
 		const element = document.getElementById(id);
-		if (
-			!(element instanceof HTMLInputElement) &&
-			!(element instanceof HTMLTextAreaElement)
-		) {
+		if (!(element instanceof HTMLInputElement) && !(element instanceof HTMLTextAreaElement)) {
 			continue;
 		}
 
@@ -1063,13 +999,9 @@ async function triggerAiSeoGeneration() {
 		}
 
 		scheduleEditorDraftSave();
-		setAiSeoUiStatus(
-			`AI 已回填 ${appliedCount} 个字段，请确认后再保存或发布`,
-			"success",
-		);
+		setAiSeoUiStatus(`AI 已回填 ${appliedCount} 个字段，请确认后再保存或发布`, "success");
 	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : "AI 生成失败，请稍后重试";
+		const message = error instanceof Error ? error.message : "AI 生成失败，请稍后重试";
 		setAiSeoUiStatus(message, "error");
 	} finally {
 		aiSeoGenerateButton.disabled = false;
@@ -1295,10 +1227,7 @@ function saveEditorDraftNow() {
 		return;
 	}
 
-	setDraftUiStatus(
-		`本地草稿已保存（${formatDraftSavedAt(editorDraftState.savedAt)}）`,
-		"success",
-	);
+	setDraftUiStatus(`本地草稿已保存（${formatDraftSavedAt(editorDraftState.savedAt)}）`, "success");
 	syncDraftActionButtons({
 		showToolbar: true,
 		showRestore: false,
@@ -1410,10 +1339,7 @@ statusSelect?.addEventListener("change", syncScheduleFieldVisibility);
 statusSelect?.addEventListener("change", syncPublishedDateFieldVisibility);
 syncScheduleFieldVisibility();
 syncPublishedDateFieldVisibility();
-postBackgroundModeSelect?.addEventListener(
-	"change",
-	syncPostBackgroundModeVisibility,
-);
+postBackgroundModeSelect?.addEventListener("change", syncPostBackgroundModeVisibility);
 syncPostBackgroundModeVisibility();
 
 for (const control of document.querySelectorAll("[data-post-background-control]")) {
@@ -1431,10 +1357,7 @@ draftRestoreButton?.addEventListener("click", () => {
 	}
 
 	applyEditorDraftValues(editorDraftState.values);
-	setDraftUiStatus(
-		`已恢复本地草稿（${formatDraftSavedAt(editorDraftState.savedAt)}）`,
-		"success",
-	);
+	setDraftUiStatus(`已恢复本地草稿（${formatDraftSavedAt(editorDraftState.savedAt)}）`, "success");
 	syncDraftActionButtons({
 		showToolbar: true,
 		showRestore: false,
@@ -1605,8 +1528,7 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 			setCoverValue(uploaded.key, uploaded.url);
 			setStatusMessage(status, "封面上传成功", "success");
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "封面上传失败，请检查网络后重试";
+			const message = error instanceof Error ? error.message : "封面上传失败，请检查网络后重试";
 			setStatusMessage(status, message, "error");
 		}
 	};
@@ -1674,9 +1596,7 @@ for (const uploader of document.querySelectorAll("[data-post-background-uploader
 	const csrfToken = uploader.dataset.csrfToken || "";
 	const hiddenKeyInput =
 		uploader.querySelector("[data-post-background-key-input='true']") ||
-		uploader
-			.closest(".form-group")
-			?.querySelector("[data-post-background-key-input='true']") ||
+		uploader.closest(".form-group")?.querySelector("[data-post-background-key-input='true']") ||
 		document.querySelector("[data-post-background-key-input='true']");
 	const fileInput = uploader.querySelector("[data-post-background-file-input='true']");
 	const dropzone = uploader.querySelector("[data-post-background-dropzone='true']");
@@ -1689,9 +1609,7 @@ for (const uploader of document.querySelectorAll("[data-post-background-uploader
 			return null;
 		}
 
-		const existing = dropzone.querySelector(
-			"[data-post-background-preview-image='true']",
-		);
+		const existing = dropzone.querySelector("[data-post-background-preview-image='true']");
 		if (existing instanceof HTMLImageElement) {
 			return existing;
 		}
@@ -1745,8 +1663,7 @@ for (const uploader of document.querySelectorAll("[data-post-background-uploader
 			setBackgroundValue(uploaded.key, uploaded.url);
 			setStatusMessage(status, "背景图上传成功", "success");
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "背景图上传失败，请检查网络后重试";
+			const message = error instanceof Error ? error.message : "背景图上传失败，请检查网络后重试";
 			setStatusMessage(status, message, "error");
 		}
 	};
@@ -1805,294 +1722,6 @@ for (const uploader of document.querySelectorAll("[data-post-background-uploader
 	});
 }
 
-for (const uploader of document.querySelectorAll("[data-hero-image-uploader='true']")) {
-	if (!(uploader instanceof HTMLElement)) {
-		continue;
-	}
-
-	const uploadUrl = uploader.dataset.uploadUrl || "";
-	const csrfToken = uploader.dataset.csrfToken || "";
-	const pathInput =
-		uploader.querySelector("[data-hero-image-path-input='true']") ||
-		uploader.closest(".form-group")?.querySelector("[data-hero-image-path-input='true']") ||
-		document.querySelector("[data-hero-image-path-input='true']");
-	const fileInput = uploader.querySelector("[data-hero-image-file-input='true']");
-	const dropzone = uploader.querySelector("[data-hero-image-dropzone='true']");
-	const status = uploader.querySelector("[data-hero-image-status]");
-	const selectButton = uploader.querySelector("[data-hero-image-select='true']");
-	const clearButton = uploader.querySelector("[data-hero-image-clear='true']");
-
-	const ensurePreviewImage = () => {
-		if (!(dropzone instanceof HTMLElement)) {
-			return null;
-		}
-
-		const existing = dropzone.querySelector("[data-hero-image-preview='true']");
-		if (existing instanceof HTMLImageElement) {
-			return existing;
-		}
-
-		const image = document.createElement("img");
-		image.className = "cover-preview-image";
-		image.setAttribute("data-hero-image-preview", "true");
-		image.alt = "首屏图片预览";
-		dropzone.innerHTML = "";
-		dropzone.appendChild(image);
-		return image;
-	};
-
-	const setEmptyState = () => {
-		if (!(dropzone instanceof HTMLElement)) {
-			return;
-		}
-
-		dropzone.innerHTML =
-			'<div class="cover-empty" data-hero-image-empty="true">拖拽图片或点击上传首屏图片</div>';
-	};
-
-	const setPathValue = (path, previewUrl = path) => {
-		if (pathInput instanceof HTMLInputElement) {
-			pathInput.value = path;
-		}
-
-		if (!path) {
-			setEmptyState();
-			return;
-		}
-
-		const image = ensurePreviewImage();
-		if (image instanceof HTMLImageElement) {
-			image.src = previewUrl;
-		}
-	};
-
-	const uploadFile = async (file) => {
-		if (!file || !uploadUrl || !csrfToken) {
-			return;
-		}
-
-		setStatusMessage(status, "正在上传首屏图片");
-		try {
-			const uploaded = await uploadImageToMedia(file, uploadUrl, csrfToken);
-			setPathValue(uploaded.url, uploaded.url);
-			setStatusMessage(status, "首屏图片上传成功", "success");
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "首屏图片上传失败，请稍后重试";
-			setStatusMessage(status, message, "error");
-		}
-	};
-
-	selectButton?.addEventListener("click", () => {
-		if (fileInput instanceof HTMLInputElement) {
-			fileInput.click();
-		}
-	});
-
-	fileInput?.addEventListener("change", () => {
-		if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.[0]) {
-			return;
-		}
-
-		void uploadFile(fileInput.files[0]);
-		fileInput.value = "";
-	});
-
-	clearButton?.addEventListener("click", () => {
-		setPathValue("");
-		setStatusMessage(status, "首屏图片引用已清空", "success");
-	});
-
-	dropzone?.addEventListener("click", () => {
-		if (fileInput instanceof HTMLInputElement) {
-			fileInput.click();
-		}
-	});
-
-	dropzone?.addEventListener("keydown", (event) => {
-		if (event.key !== "Enter" && event.key !== " ") {
-			return;
-		}
-
-		event.preventDefault();
-		if (fileInput instanceof HTMLInputElement) {
-			fileInput.click();
-		}
-	});
-
-	dropzone?.addEventListener("dragover", (event) => {
-		event.preventDefault();
-		if (dropzone instanceof HTMLElement) {
-			dropzone.classList.add("is-dragover");
-		}
-	});
-
-	dropzone?.addEventListener("dragleave", () => {
-		if (dropzone instanceof HTMLElement) {
-			dropzone.classList.remove("is-dragover");
-		}
-	});
-
-	dropzone?.addEventListener("drop", (event) => {
-		event.preventDefault();
-		if (dropzone instanceof HTMLElement) {
-			dropzone.classList.remove("is-dragover");
-		}
-
-		const file = event.dataTransfer?.files?.[0];
-		if (!(file instanceof File)) {
-			return;
-		}
-
-		void uploadFile(file);
-	});
-}
-
-for (const uploader of document.querySelectorAll("[data-signal-image-uploader='true']")) {
-	if (!(uploader instanceof HTMLElement)) {
-		continue;
-	}
-
-	const uploadUrl = uploader.dataset.uploadUrl || "";
-	const csrfToken = uploader.dataset.csrfToken || "";
-	const pathInput =
-		uploader.querySelector("[data-signal-image-path-input='true']") ||
-		uploader
-			.closest(".form-group")
-			?.querySelector("[data-signal-image-path-input='true']") ||
-		document.querySelector("[data-signal-image-path-input='true']");
-	const fileInput = uploader.querySelector("[data-signal-image-file-input='true']");
-	const dropzone = uploader.querySelector("[data-signal-image-dropzone='true']");
-	const status = uploader.querySelector("[data-signal-image-status]");
-	const selectButton = uploader.querySelector("[data-signal-image-select='true']");
-	const clearButton = uploader.querySelector("[data-signal-image-clear='true']");
-
-	const ensurePreviewImage = () => {
-		if (!(dropzone instanceof HTMLElement)) {
-			return null;
-		}
-
-		const existing = dropzone.querySelector("[data-signal-image-preview='true']");
-		if (existing instanceof HTMLImageElement) {
-			return existing;
-		}
-
-		const image = document.createElement("img");
-		image.className = "cover-preview-image";
-		image.setAttribute("data-signal-image-preview", "true");
-		image.alt = "右侧卡片图片预览";
-		dropzone.innerHTML = "";
-		dropzone.appendChild(image);
-		return image;
-	};
-
-	const setEmptyState = () => {
-		if (!(dropzone instanceof HTMLElement)) {
-			return;
-		}
-
-		dropzone.innerHTML =
-			'<div class="cover-empty" data-signal-image-empty="true">拖拽图片或点击上传右侧卡片图片</div>';
-	};
-
-	const setPathValue = (path, previewUrl = path) => {
-		if (pathInput instanceof HTMLInputElement) {
-			pathInput.value = path;
-		}
-
-		if (!path) {
-			setEmptyState();
-			return;
-		}
-
-		const image = ensurePreviewImage();
-		if (image instanceof HTMLImageElement) {
-			image.src = previewUrl;
-		}
-	};
-
-	const uploadFile = async (file) => {
-		if (!file || !uploadUrl || !csrfToken) {
-			return;
-		}
-
-		setStatusMessage(status, "正在上传右侧卡片图片");
-		try {
-			const uploaded = await uploadImageToMedia(file, uploadUrl, csrfToken);
-			setPathValue(uploaded.url, uploaded.url);
-			setStatusMessage(status, "右侧卡片图片上传成功", "success");
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "右侧卡片图片上传失败，请稍后重试";
-			setStatusMessage(status, message, "error");
-		}
-	};
-
-	selectButton?.addEventListener("click", () => {
-		if (fileInput instanceof HTMLInputElement) {
-			fileInput.click();
-		}
-	});
-
-	fileInput?.addEventListener("change", () => {
-		if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.[0]) {
-			return;
-		}
-
-		void uploadFile(fileInput.files[0]);
-		fileInput.value = "";
-	});
-
-	clearButton?.addEventListener("click", () => {
-		setPathValue("");
-		setStatusMessage(status, "右侧卡片图片引用已清空", "success");
-	});
-
-	dropzone?.addEventListener("click", () => {
-		if (fileInput instanceof HTMLInputElement) {
-			fileInput.click();
-		}
-	});
-
-	dropzone?.addEventListener("keydown", (event) => {
-		if (event.key !== "Enter" && event.key !== " ") {
-			return;
-		}
-
-		event.preventDefault();
-		if (fileInput instanceof HTMLInputElement) {
-			fileInput.click();
-		}
-	});
-
-	dropzone?.addEventListener("dragover", (event) => {
-		event.preventDefault();
-		if (dropzone instanceof HTMLElement) {
-			dropzone.classList.add("is-dragover");
-		}
-	});
-
-	dropzone?.addEventListener("dragleave", () => {
-		if (dropzone instanceof HTMLElement) {
-			dropzone.classList.remove("is-dragover");
-		}
-	});
-
-	dropzone?.addEventListener("drop", (event) => {
-		event.preventDefault();
-		if (dropzone instanceof HTMLElement) {
-			dropzone.classList.remove("is-dragover");
-		}
-
-		const file = event.dataTransfer?.files?.[0];
-		if (!(file instanceof File)) {
-			return;
-		}
-
-		void uploadFile(file);
-	});
-}
-
 const handleEditorImageUpload = async (file) => {
 	if (!(contentTextarea instanceof HTMLTextAreaElement) || !file) {
 		return;
@@ -2100,20 +1729,14 @@ const handleEditorImageUpload = async (file) => {
 
 	setStatusMessage(contentUploadStatus, "上传中");
 	try {
-		const uploaded = await uploadImageToMedia(
-			file,
-			editorUploadUrl,
-			editorCsrfToken,
-			{
-				uploadScope: resolveEditorPostMediaScope(),
-				uploadKind: "content",
-			},
-		);
+		const uploaded = await uploadImageToMedia(file, editorUploadUrl, editorCsrfToken, {
+			uploadScope: resolveEditorPostMediaScope(),
+			uploadKind: "content",
+		});
 		insertMarkdownImage(contentTextarea, file, uploaded.url);
 		setStatusMessage(contentUploadStatus, "已插入", "success");
 	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : "正文图片上传失败，请稍后重试";
+		const message = error instanceof Error ? error.message : "正文图片上传失败，请稍后重试";
 		setStatusMessage(contentUploadStatus, message, "error");
 	}
 };
@@ -2272,9 +1895,7 @@ function initDynamicLinkEditor(name) {
 initDynamicLinkEditor("nav");
 initDynamicLinkEditor("hero");
 
-const appearanceUploadDropzone = document.querySelector(
-	"[data-appearance-upload-dropzone]",
-);
+const appearanceUploadDropzone = document.querySelector("[data-appearance-upload-dropzone]");
 const uploadInput = document.querySelector("[data-appearance-upload-input]");
 const appearanceBackgroundKeyInput = document.querySelector(
 	"[data-appearance-background-key-input='true']",
@@ -2283,30 +1904,16 @@ const appearanceControls = {
 	backgroundTransparency: document.querySelector(
 		'[data-appearance-control="backgroundTransparency"]',
 	),
-	backgroundScale: document.querySelector(
-		'[data-appearance-control="backgroundScale"]',
-	),
-	backgroundBlur: document.querySelector(
-		'[data-appearance-control="backgroundBlur"]',
-	),
-	backgroundPositionX: document.querySelector(
-		'[data-appearance-control="backgroundPositionX"]',
-	),
-	backgroundPositionY: document.querySelector(
-		'[data-appearance-control="backgroundPositionY"]',
-	),
-	heroCardTransparency: document.querySelector(
-		'[data-appearance-control="heroCardTransparency"]',
-	),
-	heroCardBlur: document.querySelector(
-		'[data-appearance-control="heroCardBlur"]',
-	),
+	backgroundScale: document.querySelector('[data-appearance-control="backgroundScale"]'),
+	backgroundBlur: document.querySelector('[data-appearance-control="backgroundBlur"]'),
+	backgroundPositionX: document.querySelector('[data-appearance-control="backgroundPositionX"]'),
+	backgroundPositionY: document.querySelector('[data-appearance-control="backgroundPositionY"]'),
+	heroCardTransparency: document.querySelector('[data-appearance-control="heroCardTransparency"]'),
+	heroCardBlur: document.querySelector('[data-appearance-control="heroCardBlur"]'),
 	articlePanelTransparency: document.querySelector(
 		'[data-appearance-control="articlePanelTransparency"]',
 	),
-	articlePanelBlur: document.querySelector(
-		'[data-appearance-control="articlePanelBlur"]',
-	),
+	articlePanelBlur: document.querySelector('[data-appearance-control="articlePanelBlur"]'),
 };
 
 function resolveAppearanceBackgroundPreviewUrl(rawValue) {
@@ -2315,11 +1922,7 @@ function resolveAppearanceBackgroundPreviewUrl(rawValue) {
 		return "";
 	}
 
-	if (
-		value.startsWith("http://") ||
-		value.startsWith("https://") ||
-		value.startsWith("/")
-	) {
+	if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
 		return value;
 	}
 
@@ -2380,9 +1983,7 @@ function updateAppearanceDisplay(name, value) {
 	}
 
 	target.textContent =
-		name === "backgroundBlur" ||
-		name === "heroCardBlur" ||
-		name === "articlePanelBlur"
+		name === "backgroundBlur" || name === "heroCardBlur" || name === "articlePanelBlur"
 			? `${value} px`
 			: `${value}%`;
 }
@@ -2413,20 +2014,14 @@ function updateAppearancePreview() {
 	const articlePanelBlurInput = appearanceControls.articlePanelBlur;
 
 	if (backgroundTransparencyInput instanceof HTMLInputElement) {
-		updateAppearanceDisplay(
-			"backgroundTransparency",
-			Number(backgroundTransparencyInput.value),
-		);
+		updateAppearanceDisplay("backgroundTransparency", Number(backgroundTransparencyInput.value));
 	}
 	updateAppearanceDisplay("backgroundScale", scale);
 	updateAppearanceDisplay("backgroundBlur", blur);
 	updateAppearanceDisplay("backgroundPositionX", positionX);
 	updateAppearanceDisplay("backgroundPositionY", positionY);
 	if (heroCardTransparencyInput instanceof HTMLInputElement) {
-		updateAppearanceDisplay(
-			"heroCardTransparency",
-			Number(heroCardTransparencyInput.value),
-		);
+		updateAppearanceDisplay("heroCardTransparency", Number(heroCardTransparencyInput.value));
 	}
 	if (heroCardBlurInput instanceof HTMLInputElement) {
 		updateAppearanceDisplay("heroCardBlur", Number(heroCardBlurInput.value));

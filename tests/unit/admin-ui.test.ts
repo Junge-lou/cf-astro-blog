@@ -42,12 +42,6 @@ describe("后台界面风格保护", () => {
 		assert.match(source, /heroActionHref/u);
 		assert.match(source, /heroTitle/u);
 		assert.match(source, /heroIntro/u);
-		assert.match(source, /heroMainImagePath/u);
-		assert.match(source, /heroSignalHeading/u);
-		assert.match(source, /heroSignalImagePath/u);
-		assert.match(source, /heroSignalChip1/u);
-		assert.match(source, /heroSignalChip2/u);
-		assert.match(source, /heroSignalChip3/u);
 		assert.match(source, /aiInternalEnabled/u);
 		assert.match(source, /aiInternalBaseUrl/u);
 		assert.match(source, /aiInternalApiKey/u);
@@ -58,23 +52,14 @@ describe("后台界面风格保护", () => {
 		assert.match(source, /aiPublicModel/u);
 		assert.match(source, /mcpEnabled/u);
 		assert.match(source, /启用 MCP 接口/u);
-		assert.doesNotMatch(
-			source,
-			/value="\$\{escapeAttribute\(aiSettings\.internal\.apiKey\)\}"/u,
-		);
-		assert.doesNotMatch(
-			source,
-			/value="\$\{escapeAttribute\(aiSettings\.public\.apiKey\)\}"/u,
-		);
+		assert.doesNotMatch(source, /value="\$\{escapeAttribute\(aiSettings\.internal\.apiKey\)\}"/u);
+		assert.doesNotMatch(source, /value="\$\{escapeAttribute\(aiSettings\.public\.apiKey\)\}"/u);
 		assert.match(source, /留空表示不修改当前 Key/u);
 		assert.match(source, /Cloudflare Secret/u);
 	});
 
 	test("文章封面上传会回填隐藏字段用于持久化保存", async () => {
-		const editorSource = await readFile(
-			"src/admin/views/posts/editor.ts",
-			"utf8",
-		);
+		const editorSource = await readFile("src/admin/views/posts/editor.ts", "utf8");
 		const adminScriptSource = await readFile("public/admin.js", "utf8");
 
 		assert.match(editorSource, /data-cover-key-input="true"/u);
@@ -86,12 +71,11 @@ describe("后台界面风格保护", () => {
 	});
 
 	test("文章编辑页支持背景来源切换、自定义背景上传和背景参数滑块", async () => {
-		const [editorSource, adminScriptSource, postsRouteSource] =
-			await Promise.all([
-				readFile("src/admin/views/posts/editor.ts", "utf8"),
-				readFile("public/admin.js", "utf8"),
-				readFile("src/admin/routes/posts.ts", "utf8"),
-			]);
+		const [editorSource, adminScriptSource, postsRouteSource] = await Promise.all([
+			readFile("src/admin/views/posts/editor.ts", "utf8"),
+			readFile("public/admin.js", "utf8"),
+			readFile("src/admin/routes/posts.ts", "utf8"),
+		]);
 
 		assert.match(editorSource, /name="backgroundMode"/u);
 		assert.match(editorSource, /跟随站点全局背景/u);
@@ -100,18 +84,9 @@ describe("后台界面风格保护", () => {
 		assert.match(editorSource, /data-post-background-custom-wrap="true"/u);
 		assert.match(editorSource, /data-post-background-uploader="true"/u);
 		assert.match(editorSource, /data-post-background-key-input="true"/u);
-		assert.match(
-			editorSource,
-			/data-post-background-control="backgroundTransparency"/u,
-		);
-		assert.match(
-			editorSource,
-			/data-post-background-control="backgroundScale"/u,
-		);
-		assert.match(
-			editorSource,
-			/data-post-background-control="backgroundPositionY"/u,
-		);
+		assert.match(editorSource, /data-post-background-control="backgroundTransparency"/u);
+		assert.match(editorSource, /data-post-background-control="backgroundScale"/u);
+		assert.match(editorSource, /data-post-background-control="backgroundPositionY"/u);
 		assert.match(adminScriptSource, /syncPostBackgroundModeVisibility/u);
 		assert.match(adminScriptSource, /data-post-background-uploader='true'/u);
 		assert.match(adminScriptSource, /syncEditorPostBackgroundPreviewFromKey/u);
@@ -135,22 +110,11 @@ describe("后台界面风格保护", () => {
 		assert.match(editorSource, /new-category-wrap is-hidden/u);
 		assert.match(editorSource, /name="publishedAt"/u);
 		assert.match(editorSource, /data-published-at-input="true"/u);
-		assert.ok(
-			adminScriptSource.includes('classList.toggle("is-hidden", !isScheduled)'),
-		);
-		assert.ok(
-			adminScriptSource.includes('classList.toggle("is-hidden", !isPublished)'),
-		);
+		assert.ok(adminScriptSource.includes('classList.toggle("is-hidden", !isScheduled)'));
+		assert.ok(adminScriptSource.includes('classList.toggle("is-hidden", !isPublished)'));
 		assert.match(adminScriptSource, /syncPublishedDateFieldVisibility/u);
-		assert.match(
-			adminScriptSource,
-			/publishedAt: getEditorFieldValue\("publishedAt"\)/u,
-		);
-		assert.ok(
-			adminScriptSource.includes(
-				'classList.toggle("is-hidden", !isCreatingNew)',
-			),
-		);
+		assert.match(adminScriptSource, /publishedAt: getEditorFieldValue\("publishedAt"\)/u);
+		assert.ok(adminScriptSource.includes('classList.toggle("is-hidden", !isCreatingNew)'));
 	});
 
 	test("文章编辑页支持首页置顶开关与置顶顺序输入", async () => {
@@ -197,14 +161,8 @@ describe("后台界面风格保护", () => {
 		assert.match(adminScriptSource, /initEditorDraft/u);
 		assert.match(layoutSource, /markdown-preview-body/u);
 		assert.match(layoutSource, /markdown-preview-spoiler/u);
-		assert.match(
-			layoutSource,
-			/markdown-preview-body blockquote > :first-child/u,
-		);
-		assert.match(
-			layoutSource,
-			/markdown-preview-body blockquote > :last-child/u,
-		);
+		assert.match(layoutSource, /markdown-preview-body blockquote > :first-child/u);
+		assert.match(layoutSource, /markdown-preview-body blockquote > :last-child/u);
 		assert.match(layoutSource, /draft-toolbar/u);
 	});
 
@@ -215,10 +173,7 @@ describe("后台界面风格保护", () => {
 		]);
 
 		assert.match(editorSource, /data-ai-seo-generate="true"/u);
-		assert.match(
-			editorSource,
-			/data-ai-seo-endpoint="\/api\/admin\/posts\/ai-seo"/u,
-		);
+		assert.match(editorSource, /data-ai-seo-endpoint="\/api\/admin\/posts\/ai-seo"/u);
 		assert.match(editorSource, /data-ai-seo-status/u);
 		assert.match(adminScriptSource, /triggerAiSeoGeneration/u);
 		assert.match(adminScriptSource, /applyGeneratedSeoFieldsToEditor/u);
@@ -235,19 +190,19 @@ describe("后台界面风格保护", () => {
 		assert.ok(source.includes("/api/admin/posts/tags/"));
 	});
 
-	test("外观页首屏图片预留位支持拖拽上传并自动回填路径", async () => {
+	test("外观页首屏与右侧卡片图片上传入口已随单栏首屏重构移除", async () => {
 		const [appearanceSource, adminScriptSource] = await Promise.all([
 			readFile("src/admin/routes/appearance.ts", "utf8"),
 			readFile("public/admin.js", "utf8"),
 		]);
 
-		assert.match(appearanceSource, /data-hero-image-uploader="true"/u);
-		assert.match(appearanceSource, /data-hero-image-dropzone="true"/u);
-		assert.match(appearanceSource, /data-hero-image-path-input="true"/u);
-		assert.match(appearanceSource, /data-hero-image-file-input="true"/u);
-		assert.match(appearanceSource, /\/api\/admin\/media\/upload-async/u);
-		assert.match(adminScriptSource, /\[data-hero-image-uploader='true'\]/u);
-		assert.match(adminScriptSource, /首屏图片上传成功/u);
+		// 管理页只保留背景图上传，首屏/信号卡图片上传 UI 已删除
+		assert.doesNotMatch(appearanceSource, /data-hero-image-uploader="true"/u);
+		assert.doesNotMatch(appearanceSource, /data-signal-image-uploader="true"/u);
+		assert.match(appearanceSource, /data-appearance-background-dropzone="true"/u);
+		// admin.js 中的旧上传处理器不再有对应 DOM
+		assert.doesNotMatch(adminScriptSource, /\[data-hero-image-uploader='true'\]/u);
+		assert.doesNotMatch(adminScriptSource, /\[data-signal-image-uploader='true'\]/u);
 	});
 
 	test("外观页背景图支持预览并与键名输入联动", async () => {
@@ -256,38 +211,19 @@ describe("后台界面风格保护", () => {
 			readFile("public/admin.js", "utf8"),
 		]);
 
-		assert.match(
-			appearanceSource,
-			/data-appearance-background-key-input="true"/u,
-		);
-		assert.match(
-			appearanceSource,
-			/data-appearance-background-preview="true"/u,
-		);
+		assert.match(appearanceSource, /data-appearance-background-key-input="true"/u);
+		assert.match(appearanceSource, /data-appearance-background-preview="true"/u);
 		assert.match(adminScriptSource, /resolveAppearanceBackgroundPreviewUrl/u);
 		assert.match(adminScriptSource, /setAppearanceBackgroundPreviewValue/u);
-		assert.match(
-			adminScriptSource,
-			/\[data-appearance-background-key-input='true'\]/u,
-		);
-		assert.match(
-			adminScriptSource,
-			/\[data-appearance-background-preview='true'\]/u,
-		);
+		assert.match(adminScriptSource, /\[data-appearance-background-key-input='true'\]/u);
+		assert.match(adminScriptSource, /\[data-appearance-background-preview='true'\]/u);
 	});
 
-	test("外观页右侧卡片图片支持拖拽上传并自动回填路径", async () => {
-		const [appearanceSource, adminScriptSource] = await Promise.all([
-			readFile("src/admin/routes/appearance.ts", "utf8"),
-			readFile("public/admin.js", "utf8"),
-		]);
+	test("外观页右侧卡片图片上传入口已移除", async () => {
+		const appearanceSource = await readFile("src/admin/routes/appearance.ts", "utf8");
 
-		assert.match(appearanceSource, /data-signal-image-uploader="true"/u);
-		assert.match(appearanceSource, /data-signal-image-dropzone="true"/u);
-		assert.match(appearanceSource, /data-signal-image-path-input="true"/u);
-		assert.match(appearanceSource, /data-signal-image-file-input="true"/u);
-		assert.match(adminScriptSource, /\[data-signal-image-uploader='true'\]/u);
-		assert.match(adminScriptSource, /右侧卡片图片上传成功/u);
+		assert.doesNotMatch(appearanceSource, /data-signal-image-dropzone="true"/u);
+		assert.doesNotMatch(appearanceSource, /data-signal-image-path-input="true"/u);
 	});
 
 	test("外观页透明度与模糊参数统一为 0-100 透明度语义，并绑定完整滑块监听", async () => {
@@ -297,44 +233,17 @@ describe("后台界面风格保护", () => {
 		]);
 
 		assert.match(appearanceSource, /背景透明度/u);
-		assert.match(
-			appearanceSource,
-			/id="backgroundTransparency"[\s\S]*min="0" max="100"/u,
-		);
-		assert.match(
-			appearanceSource,
-			/id="heroCardTransparency"[\s\S]*min="0" max="100"/u,
-		);
-		assert.match(
-			appearanceSource,
-			/id="articlePanelTransparency"[\s\S]*min="0" max="100"/u,
-		);
-		assert.match(
-			appearanceSource,
-			/id="backgroundBlur"[\s\S]*min="0" max="60"/u,
-		);
+		assert.match(appearanceSource, /id="backgroundTransparency"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="heroCardTransparency"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="articlePanelTransparency"[\s\S]*min="0" max="100"/u);
+		assert.match(appearanceSource, /id="backgroundBlur"[\s\S]*min="0" max="60"/u);
 		assert.match(appearanceSource, /id="heroCardBlur"[\s\S]*min="0" max="48"/u);
-		assert.match(
-			appearanceSource,
-			/id="articlePanelBlur"[\s\S]*min="0" max="48"/u,
-		);
+		assert.match(appearanceSource, /id="articlePanelBlur"[\s\S]*min="0" max="48"/u);
 		assert.match(appearanceSource, /convertTransparencyToOpacity/u);
 
-		assert.ok(
-			adminScriptSource.includes(
-				'[data-appearance-control="backgroundTransparency"]',
-			),
-		);
-		assert.ok(
-			adminScriptSource.includes(
-				'[data-appearance-control="articlePanelTransparency"]',
-			),
-		);
-		assert.ok(
-			adminScriptSource.includes(
-				'[data-appearance-control="articlePanelBlur"]',
-			),
-		);
+		assert.ok(adminScriptSource.includes('[data-appearance-control="backgroundTransparency"]'));
+		assert.ok(adminScriptSource.includes('[data-appearance-control="articlePanelTransparency"]'));
+		assert.ok(adminScriptSource.includes('[data-appearance-control="articlePanelBlur"]'));
 		assert.match(adminScriptSource, /name === "articlePanelBlur"/u);
 	});
 
@@ -349,25 +258,15 @@ describe("后台界面风格保护", () => {
 		assert.match(mediaRouteSource, /extractWildcardMediaKey/u);
 		assert.match(mediaRouteSource, /uploadScope/u);
 		assert.match(mediaRouteSource, /uploadKind/u);
-		assert.ok(
-			mediaRouteSource.includes(`posts/\${uploadScope}/\${uploadKind}`),
-		);
+		assert.ok(mediaRouteSource.includes(`posts/\${uploadScope}/\${uploadKind}`));
 		assert.match(mediaRouteSource, /media-directory/u);
 		assert.match(layoutSource, /\.media-directory/u);
 		assert.ok(mediaRouteSource.includes('c.req.param("0")'));
 		assert.ok(mediaRouteSource.includes('"/admin/media/file/"'));
 		assert.ok(mediaRouteSource.includes('"/admin/media/delete/"'));
 		assert.ok(mediaRouteSource.includes('replace(/^\\/+/u, "")'));
-		assert.ok(
-			!mediaRouteSource.includes(
-				'c.req.path.replace("/api/admin/media/file/", "")',
-			),
-		);
-		assert.ok(
-			!mediaRouteSource.includes(
-				'c.req.path.replace("/api/admin/media/delete/", "")',
-			),
-		);
+		assert.ok(!mediaRouteSource.includes('c.req.path.replace("/api/admin/media/file/", "")'));
+		assert.ok(!mediaRouteSource.includes('c.req.path.replace("/api/admin/media/delete/", "")'));
 	});
 
 	test("友链审核页使用结构化卡片布局，避免信息遮挡", async () => {

@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	if (window.__codeBlockEnhancerInitialized) {
 		return;
 	}
@@ -70,10 +70,7 @@
 	};
 
 	const copyText = async (text) => {
-		if (
-			navigator.clipboard &&
-			typeof navigator.clipboard.writeText === "function"
-		) {
+		if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
 			try {
 				await navigator.clipboard.writeText(text);
 				return true;
@@ -199,9 +196,12 @@
 			const copied = await copyText(content);
 			updateCopyButtonState(copyButton, copied ? COPY_SUCCESS : COPY_ERROR);
 			window.clearTimeout(resetTimer);
-			resetTimer = window.setTimeout(() => {
-				updateCopyButtonState(copyButton, COPY_DEFAULT);
-			}, copied ? 1500 : 1800);
+			resetTimer = window.setTimeout(
+				() => {
+					updateCopyButtonState(copyButton, COPY_DEFAULT);
+				},
+				copied ? 1500 : 1800,
+			);
 		});
 
 		const scroll = document.createElement("div");

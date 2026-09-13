@@ -17,7 +17,9 @@ function normalizeTerminalPath(pathname) {
 }
 
 function normalizeTerminalLineType(type) {
-	const normalized = String(type ?? "").trim().toLowerCase();
+	const normalized = String(type ?? "")
+		.trim()
+		.toLowerCase();
 	return TERMINAL_LINE_TYPES.has(normalized) ? normalized : "output";
 }
 
@@ -67,9 +69,7 @@ function normalizeStoredTerminalHistory(value) {
 		return null;
 	}
 
-	const content = String(
-		/** @type {{ content?: unknown }} */ (value).content ?? "",
-	).trim();
+	const content = String(/** @type {{ content?: unknown }} */ (value).content ?? "").trim();
 	if (!content) {
 		return null;
 	}
@@ -154,7 +154,9 @@ function appendTerminalLineWithState(logNode, state, text, type) {
 }
 
 function appendTerminalBlockWithState(logNode, state, text, type) {
-	const lines = String(text ?? "").replaceAll("\r", "").split("\n");
+	const lines = String(text ?? "")
+		.replaceAll("\r", "")
+		.split("\n");
 	if (lines.length === 0) {
 		appendTerminalLineWithState(logNode, state, "", type);
 		return;
@@ -171,10 +173,7 @@ function readInitialEntriesFromDom(logNode) {
 	}
 
 	return Array.from(logNode.querySelectorAll(".terminal-line")).map((node) =>
-		createTerminalLineEntry(
-			node.textContent ?? "",
-			resolveTerminalLineTypeFromNode(node),
-		),
+		createTerminalLineEntry(node.textContent ?? "", resolveTerminalLineTypeFromNode(node)),
 	);
 }
 
@@ -292,12 +291,7 @@ function initNotFoundTerminal() {
 			return;
 		}
 
-		appendTerminalLineWithState(
-			logNode,
-			terminalState,
-			`${promptPrefix} ${command}`,
-			"command",
-		);
+		appendTerminalLineWithState(logNode, terminalState, `${promptPrefix} ${command}`, "command");
 		writeTerminalSession(terminalState);
 		inputNode.value = "";
 
@@ -350,9 +344,7 @@ function initNotFoundTerminal() {
 
 			const reply = String(payload?.reply ?? "").trim();
 			const terminalPayload =
-				payload?.terminal && typeof payload.terminal === "object"
-					? payload.terminal
-					: null;
+				payload?.terminal && typeof payload.terminal === "object" ? payload.terminal : null;
 			const nextCwdRaw =
 				terminalPayload && typeof terminalPayload.nextCwd === "string"
 					? terminalPayload.nextCwd
@@ -371,11 +363,7 @@ function initNotFoundTerminal() {
 				}
 			}
 
-			const outputText = reply
-				? reply
-				: isCdCommand
-					? ""
-					: "(无输出)";
+			const outputText = reply ? reply : isCdCommand ? "" : "(无输出)";
 			terminalState.history.push({
 				role: "user",
 				content: buildTerminalHistoryMessage(commandCwd, command),

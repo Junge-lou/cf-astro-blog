@@ -41,13 +41,7 @@ function clampInteger(
 	return Math.min(max, Math.max(min, Math.round(value)));
 }
 
-const {
-	title,
-	description,
-	image,
-	canonicalUrl,
-	backgroundOverride,
-} = Astro.props;
+const { title, description, image, canonicalUrl, backgroundOverride } = Astro.props;
 const isAdminPreview = Astro.url.searchParams.get("adminPreview") === "1";
 let siteAppearance = DEFAULT_SITE_APPEARANCE;
 
@@ -63,39 +57,19 @@ const resolvedBackgroundImageKey = hasBackgroundOverride
 	? overrideImageKey
 	: siteAppearance.backgroundImageKey;
 const resolvedBackgroundOpacity = hasBackgroundOverride
-	? clampInteger(
-			backgroundOverride?.opacity,
-			0,
-			100,
-			siteAppearance.backgroundOpacity,
-		)
+	? clampInteger(backgroundOverride?.opacity, 0, 100, siteAppearance.backgroundOpacity)
 	: siteAppearance.backgroundOpacity;
 const resolvedBackgroundBlur = hasBackgroundOverride
 	? clampInteger(backgroundOverride?.blur, 0, 60, siteAppearance.backgroundBlur)
 	: siteAppearance.backgroundBlur;
 const resolvedBackgroundScale = hasBackgroundOverride
-	? clampInteger(
-			backgroundOverride?.scale,
-			100,
-			180,
-			siteAppearance.backgroundScale,
-		)
+	? clampInteger(backgroundOverride?.scale, 100, 180, siteAppearance.backgroundScale)
 	: siteAppearance.backgroundScale;
 const resolvedBackgroundPositionX = hasBackgroundOverride
-	? clampInteger(
-			backgroundOverride?.positionX,
-			0,
-			100,
-			siteAppearance.backgroundPositionX,
-		)
+	? clampInteger(backgroundOverride?.positionX, 0, 100, siteAppearance.backgroundPositionX)
 	: siteAppearance.backgroundPositionX;
 const resolvedBackgroundPositionY = hasBackgroundOverride
-	? clampInteger(
-			backgroundOverride?.positionY,
-			0,
-			100,
-			siteAppearance.backgroundPositionY,
-		)
+	? clampInteger(backgroundOverride?.positionY, 0, 100, siteAppearance.backgroundPositionY)
 	: siteAppearance.backgroundPositionY;
 const backgroundImageUrl = buildBackgroundImageUrl(resolvedBackgroundImageKey);
 const backgroundImageStyle = backgroundImageUrl
@@ -103,8 +77,7 @@ const backgroundImageStyle = backgroundImageUrl
 	: "";
 const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --hero-card-blur: ${siteAppearance.heroCardBlur}px; --post-card-opacity: ${siteAppearance.postCardOpacity}; --post-card-blur: ${siteAppearance.postCardBlur}px; --article-panel-opacity: ${siteAppearance.articlePanelOpacity}; --article-panel-blur: ${siteAppearance.articlePanelBlur}px;`;
 const resolvedDescription =
-	description ??
-	resolveSiteDescriptionFromAppearance(siteAppearance, siteConfig.description);
+	description ?? resolveSiteDescriptionFromAppearance(siteAppearance, siteConfig.description);
 ---
 
 <!doctype html>

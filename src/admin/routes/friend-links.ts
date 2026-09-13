@@ -42,7 +42,7 @@ function isPrivateIpv4(hostname: string): boolean {
 		return false;
 	}
 
-	const [a, b] = parts;
+	const [a = -1, b = -1] = parts;
 	if (a === 10 || a === 127 || a === 0) {
 		return true;
 	}
@@ -142,8 +142,7 @@ function isRedirectStatus(status: number): boolean {
 
 function parseAvatarContentType(contentType: string | null): string {
 	const normalized =
-		sanitizePlainText(contentType, 120).toLowerCase() ||
-		"application/octet-stream";
+		sanitizePlainText(contentType, 120).toLowerCase() || "application/octet-stream";
 	const [mediaType] = normalized.split(";");
 	return (mediaType || "").trim();
 }
@@ -155,9 +154,7 @@ function isAllowedAvatarContentType(contentType: string): boolean {
 function getBodyText(body: Record<string, unknown>, key: string): string {
 	const value = body[key];
 	if (Array.isArray(value)) {
-		const firstText = value.find(
-			(item): item is string => typeof item === "string",
-		);
+		const firstText = value.find((item): item is string => typeof item === "string");
 		return firstText?.trim() ?? "";
 	}
 
@@ -228,14 +225,11 @@ async function verifyTurnstileToken(c: Context<AdminAppEnv>, token: string) {
 	}
 
 	try {
-		const response = await fetch(
-			"https://challenges.cloudflare.com/turnstile/v0/siteverify",
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body: formData.toString(),
-			},
-		);
+		const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: formData.toString(),
+		});
 		if (!response.ok) {
 			return { success: false, reason: "verify-request-failed" } as const;
 		}
@@ -340,11 +334,7 @@ friendLinksRoutes.get("/avatar", async (c) => {
 	try {
 		let currentUrl = new URL(targetUrl.toString());
 
-		for (
-			let redirectCount = 0;
-			redirectCount <= AVATAR_PROXY_MAX_REDIRECTS;
-			redirectCount += 1
-		) {
+		for (let redirectCount = 0; redirectCount <= AVATAR_PROXY_MAX_REDIRECTS; redirectCount += 1) {
 			const validateError = validateAvatarTarget(currentUrl, requestUrl);
 			if (validateError) {
 				return c.text(validateError, 400);
@@ -386,14 +376,9 @@ friendLinksRoutes.get("/avatar", async (c) => {
 				return c.text("头像暂时不可用", 502);
 			}
 
-			const contentType = parseAvatarContentType(
-				response.headers.get("content-type"),
-			);
+			const contentType = parseAvatarContentType(response.headers.get("content-type"));
 			if (!isAllowedAvatarContentType(contentType)) {
-				return c.text(
-					"头像资源类型不支持，仅允许 JPG、PNG、WEBP、AVIF、GIF、SVG、ICO",
-					415,
-				);
+				return c.text("头像资源类型不支持，仅允许 JPG、PNG、WEBP、AVIF、GIF、SVG、ICO", 415);
 			}
 
 			const data = await response.arrayBuffer();

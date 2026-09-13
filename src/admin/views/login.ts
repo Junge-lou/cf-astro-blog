@@ -17,9 +17,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		backgroundImageUrl,
 	} = options;
 	const hasBackgroundImage = Boolean(backgroundImageUrl);
-	const escapedBackgroundImageUrl = backgroundImageUrl
-		? escapeAttribute(backgroundImageUrl)
-		: "";
+	const escapedBackgroundImageUrl = backgroundImageUrl ? escapeAttribute(backgroundImageUrl) : "";
 	const escapedCsrfToken = csrfToken ? escapeAttribute(csrfToken) : "";
 
 	// Build the login description text
@@ -551,7 +549,9 @@ export function loginPage(options: LoginPageOptions = {}): string {
 
 				${error ? `<p class="entry-error" role="alert">${escapeHtml(error)}</p>` : ""}
 
-				${passwordEnabled ? `
+				${
+					passwordEnabled
+						? `
 				<form method="post" action="/api/auth/login" class="entry-form">
 					<input type="hidden" name="_csrf" value="${escapedCsrfToken}" />
 					<div class="entry-field">
@@ -585,13 +585,21 @@ export function loginPage(options: LoginPageOptions = {}): string {
 						<a href="/" class="entry-btn entry-btn-ghost">返回首页</a>
 					</div>
 				</form>
-				` : ""}
+				`
+						: ""
+				}
 
-				${passwordEnabled && oauthEnabled ? `
+				${
+					passwordEnabled && oauthEnabled
+						? `
 				<div class="entry-divider">或</div>
-				` : ""}
+				`
+						: ""
+				}
 
-				${oauthEnabled ? `
+				${
+					oauthEnabled
+						? `
 				<div class="entry-actions">
 					<a
 						href="/api/auth/github"
@@ -604,13 +612,19 @@ export function loginPage(options: LoginPageOptions = {}): string {
 					</a>
 					${!passwordEnabled ? '<a href="/" class="entry-btn entry-btn-ghost">返回首页</a>' : ""}
 				</div>
-				` : ""}
+				`
+						: ""
+				}
 
-				${!passwordEnabled && !oauthEnabled ? `
+				${
+					!passwordEnabled && !oauthEnabled
+						? `
 				<div class="entry-actions">
 					<a href="/" class="entry-btn entry-btn-ghost">返回首页</a>
 				</div>
-				` : ""}
+				`
+						: ""
+				}
 			</div>
 		</section>
 

@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	const HERO_SELECTOR = "[data-hero-depth]";
 	const TILT_SELECTOR = "[data-tilt-card]";
 	const FINE_POINTER_QUERY = "(any-hover: hover) and (any-pointer: fine)";
@@ -7,17 +7,12 @@
 	const MOTION_EPSILON = 0.001;
 	let disposeHomeMotion = () => {};
 
-	const prefersReducedMotion = () =>
-		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 	const prefersFinePointer = () => window.matchMedia(FINE_POINTER_QUERY).matches;
 
 	const isFinePointerEvent = (event) => {
-		if (
-			typeof PointerEvent !== "undefined" &&
-			event instanceof PointerEvent &&
-			event.pointerType
-		) {
+		if (typeof PointerEvent !== "undefined" && event instanceof PointerEvent && event.pointerType) {
 			return event.pointerType === "mouse" || event.pointerType === "pen";
 		}
 
@@ -45,28 +40,13 @@
 		let targetScrollShift = 0;
 
 		const render = () => {
-			currentPointerX = stepValue(
-				currentPointerX,
-				targetPointerX,
-				HERO_SMOOTHING,
-			);
-			currentPointerY = stepValue(
-				currentPointerY,
-				targetPointerY,
-				HERO_SMOOTHING,
-			);
-			currentScrollShift = stepValue(
-				currentScrollShift,
-				targetScrollShift,
-				HERO_SMOOTHING,
-			);
+			currentPointerX = stepValue(currentPointerX, targetPointerX, HERO_SMOOTHING);
+			currentPointerY = stepValue(currentPointerY, targetPointerY, HERO_SMOOTHING);
+			currentScrollShift = stepValue(currentScrollShift, targetScrollShift, HERO_SMOOTHING);
 
 			hero.style.setProperty("--hero-pointer-x", currentPointerX.toFixed(3));
 			hero.style.setProperty("--hero-pointer-y", currentPointerY.toFixed(3));
-			hero.style.setProperty(
-				"--hero-scroll-shift",
-				`${currentScrollShift.toFixed(1)}px`,
-			);
+			hero.style.setProperty("--hero-scroll-shift", `${currentScrollShift.toFixed(1)}px`);
 
 			if (
 				currentPointerX !== targetPointerX ||
@@ -158,10 +138,7 @@
 		);
 		const shiftScale = Math.min(
 			1.4,
-			Math.max(
-				0.2,
-				Number.parseFloat(card.dataset.tiltShiftScale || "1") || 1,
-			),
+			Math.max(0.2, Number.parseFloat(card.dataset.tiltShiftScale || "1") || 1),
 		);
 		let currentRotateX = 0;
 		let currentRotateY = 0;
@@ -173,16 +150,8 @@
 		let targetShiftY = 0;
 
 		const render = () => {
-			currentRotateX = stepValue(
-				currentRotateX,
-				targetRotateX,
-				TILT_SMOOTHING,
-			);
-			currentRotateY = stepValue(
-				currentRotateY,
-				targetRotateY,
-				TILT_SMOOTHING,
-			);
+			currentRotateX = stepValue(currentRotateX, targetRotateX, TILT_SMOOTHING);
+			currentRotateY = stepValue(currentRotateY, targetRotateY, TILT_SMOOTHING);
 			currentShiftX = stepValue(currentShiftX, targetShiftX, TILT_SMOOTHING);
 			currentShiftY = stepValue(currentShiftY, targetShiftY, TILT_SMOOTHING);
 

@@ -20,12 +20,7 @@ import { adminLayout } from "../views/layout";
 
 const friendsRoutes = new Hono<AdminAppEnv>();
 
-const FRIEND_LINK_STATUS_VALUES = [
-	"pending",
-	"approved",
-	"rejected",
-	"offline",
-] as const;
+const FRIEND_LINK_STATUS_VALUES = ["pending", "approved", "rejected", "offline"] as const;
 
 type FriendLinkStatus = (typeof FRIEND_LINK_STATUS_VALUES)[number];
 
@@ -165,18 +160,12 @@ function parseFriendFormInput(
 	const siteUrl = sanitizeCanonicalUrl(getBodyText(body, fieldMap.siteUrlKey));
 	const rawAvatarUrl = getBodyText(body, fieldMap.avatarUrlKey);
 	const avatarUrl = rawAvatarUrl ? sanitizeCanonicalUrl(rawAvatarUrl) : null;
-	const description = sanitizePlainText(
-		getBodyText(body, fieldMap.descriptionKey),
-		320,
-		{ allowNewlines: true },
-	);
-	const contact = sanitizePlainText(
-		getBodyText(body, fieldMap.contactKey),
-		120,
-		{
-			allowNewlines: true,
-		},
-	);
+	const description = sanitizePlainText(getBodyText(body, fieldMap.descriptionKey), 320, {
+		allowNewlines: true,
+	});
+	const contact = sanitizePlainText(getBodyText(body, fieldMap.contactKey), 120, {
+		allowNewlines: true,
+	});
 	const note =
 		sanitizePlainText(getBodyText(body, fieldMap.noteKey), 320, {
 			allowNewlines: true,
@@ -185,9 +174,7 @@ function parseFriendFormInput(
 		sanitizePlainText(getBodyText(body, fieldMap.reviewNoteKey), 320, {
 			allowNewlines: true,
 		}) || null;
-	const status = normalizeFriendLinkStatus(
-		getBodyText(body, fieldMap.statusKey) || "approved",
-	);
+	const status = normalizeFriendLinkStatus(getBodyText(body, fieldMap.statusKey) || "approved");
 
 	if (!name || !siteUrl || !contact || !status) {
 		return { error: "invalid" };
@@ -342,12 +329,7 @@ function renderFriendRows(rows: FriendLinkRow[], csrfToken: string) {
 }
 
 function renderCreateForm(csrfToken: string): string {
-	const createStatusOptions: FriendLinkStatus[] = [
-		"approved",
-		"pending",
-		"offline",
-		"rejected",
-	];
+	const createStatusOptions: FriendLinkStatus[] = ["approved", "pending", "offline", "rejected"];
 
 	return `
 		<section id="friend-create-form" class="appearance-panel review-card">
@@ -404,10 +386,7 @@ function renderCreateForm(csrfToken: string): string {
 	`;
 }
 
-function renderFriendApplyNoticeForm(
-	csrfToken: string,
-	friendApplyNotice: string,
-): string {
+function renderFriendApplyNoticeForm(csrfToken: string, friendApplyNotice: string): string {
 	return `
 		<section class="appearance-panel review-card">
 			<h2 style="margin-bottom: 0.35rem;">申请页公示</h2>
@@ -493,11 +472,9 @@ friendsRoutes.post("/settings", async (c) => {
 		return c.redirect("/api/admin/friends?status=csrf-failed");
 	}
 
-	const friendApplyNotice = sanitizePlainText(
-		getBodyText(body, "friendApplyNotice"),
-		1200,
-		{ allowNewlines: true },
-	);
+	const friendApplyNotice = sanitizePlainText(getBodyText(body, "friendApplyNotice"), 1200, {
+		allowNewlines: true,
+	});
 	const now = new Date().toISOString();
 	const db = getDb(c.env.DB);
 
@@ -586,9 +563,7 @@ friendsRoutes.post("/:id/review", async (c) => {
 	const [existing] = await db
 		.select({ id: friendLinks.id })
 		.from(friendLinks)
-		.where(
-			and(eq(friendLinks.siteUrl, parsed.data.siteUrl), ne(friendLinks.id, id)),
-		)
+		.where(and(eq(friendLinks.siteUrl, parsed.data.siteUrl), ne(friendLinks.id, id)))
 		.limit(1);
 	if (existing) {
 		return c.redirect("/api/admin/friends?status=update-duplicate");

@@ -3,20 +3,19 @@ import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
 
 describe("首页灵动交互保护", () => {
-	test("基础布局会加载首页交互脚本", async () => {
-		const baseLayoutSource = await readFile("src/layouts/Base.astro", "utf8");
+	test("首页会加载交互脚本且布局保留背景图钩子", async () => {
+		const [homePageSource, baseLayoutSource] = await Promise.all([
+			readFile("src/pages/index.astro", "utf8"),
+			readFile("src/layouts/Base.astro", "utf8"),
+		]);
 
-		assert.match(baseLayoutSource, /home-motion\.js/u);
+		assert.match(homePageSource, /home-motion\.js/u);
 		assert.match(baseLayoutSource, /site-shell-has-background-image/u);
 	});
 
-	test("首页会提供景深 Hero 和 3D 胶囊结构", async () => {
+	test("首页会提供毛玻璃 Hero 与信号卡结构", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
-		assert.match(homePageSource, /data-hero-depth/u);
-		assert.match(homePageSource, /data-tilt-card/u);
-		assert.match(homePageSource, /data-tilt-scale="0\.78"/u);
-		assert.match(homePageSource, /data-tilt-shift-scale="1\.08"/u);
 		assert.match(homePageSource, /hero-signal-card/u);
 		assert.match(homePageSource, /hero-main-media/u);
 		assert.match(homePageSource, /hero-aura-primary/u);
@@ -42,12 +41,8 @@ describe("首页灵动交互保护", () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
 		assert.match(homePageSource, /hero-signal-pane-bg/u);
-		assert.ok(
-			homePageSource.includes(':global([data-theme="dark"]) .hero-signal-card'),
-		);
-		assert.ok(
-			homePageSource.includes(':global(:root:not([data-theme="light"]))'),
-		);
+		assert.ok(homePageSource.includes(':global([data-theme="dark"]) .hero-signal-card'));
+		assert.ok(homePageSource.includes(':global(:root:not([data-theme="light"]))'));
 		assert.match(homePageSource, /hero-signal-pane-border/u);
 	});
 
@@ -74,9 +69,6 @@ describe("首页灵动交互保护", () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
 		assert.match(homePageSource, /\.hero-signal-copy/u);
-		assert.match(
-			homePageSource,
-			/\.hero-signal-copy\s*\{[\s\S]*white-space:\s*pre-line/u,
-		);
+		assert.match(homePageSource, /\.hero-signal-copy\s*\{[\s\S]*white-space:\s*pre-line/u);
 	});
 });

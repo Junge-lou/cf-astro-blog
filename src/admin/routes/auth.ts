@@ -3,10 +3,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { getDb } from "@/lib/db";
 import { timingSafeEqualText, verifyPassword } from "@/lib/password";
 import { sanitizePlainText } from "@/lib/security";
-import {
-	buildBackgroundImageUrl,
-	getSiteAppearance,
-} from "@/lib/site-appearance";
+import { buildBackgroundImageUrl, getSiteAppearance } from "@/lib/site-appearance";
 import {
 	type AdminAppEnv,
 	assertCsrfToken,
@@ -19,11 +16,7 @@ import {
 	getSessionFromToken,
 	requireAuth,
 } from "../middleware/auth";
-import {
-	clearAttempts,
-	rateLimit,
-	recordFailedAttempt,
-} from "../middleware/rate-limit";
+import { clearAttempts, rateLimit, recordFailedAttempt } from "../middleware/rate-limit";
 import { loginPage } from "../views/login";
 
 const auth = new Hono<AdminAppEnv>();
@@ -97,9 +90,7 @@ function getGitHubOAuthConfig(env: Env): GitHubOAuthConfig | null {
 }
 
 function getOAuthCookieOptions(requestUrl: string) {
-	const secure = !["localhost", "127.0.0.1"].includes(
-		new URL(requestUrl).hostname,
-	);
+	const secure = !["localhost", "127.0.0.1"].includes(new URL(requestUrl).hostname);
 
 	return {
 		httpOnly: true,
@@ -116,10 +107,7 @@ function encodeBase64Url(bytes: Uint8Array): string {
 		value += String.fromCharCode(byte);
 	}
 
-	return btoa(value)
-		.replaceAll("+", "-")
-		.replaceAll("/", "_")
-		.replace(/=+$/u, "");
+	return btoa(value).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
 }
 
 function createCodeVerifier(): string {
@@ -128,22 +116,13 @@ function createCodeVerifier(): string {
 }
 
 async function createCodeChallenge(codeVerifier: string): Promise<string> {
-	const digest = await crypto.subtle.digest(
-		"SHA-256",
-		new TextEncoder().encode(codeVerifier),
-	);
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(codeVerifier));
 
 	return encodeBase64Url(new Uint8Array(digest));
 }
 
-function getResolvedRedirectUri(
-	config: GitHubOAuthConfig,
-	requestUrl: string,
-): string {
-	return (
-		config.redirectUri ||
-		new URL("/api/auth/github/callback", requestUrl).toString()
-	);
+function getResolvedRedirectUri(config: GitHubOAuthConfig, requestUrl: string): string {
+	return config.redirectUri || new URL("/api/auth/github/callback", requestUrl).toString();
 }
 
 async function exchangeGitHubAccessToken(
@@ -206,18 +185,13 @@ function isPasswordLoginEnabled(env: Env): boolean {
 
 async function generateLoginCsrfToken(env: Env): Promise<string> {
 	const token = crypto.randomUUID();
-	await env.SESSION.put(
-		`${LOGIN_CSRF_PREFIX}${token}`,
-		"1",
-		{ expirationTtl: LOGIN_CSRF_TTL_SECONDS },
-	);
+	await env.SESSION.put(`${LOGIN_CSRF_PREFIX}${token}`, "1", {
+		expirationTtl: LOGIN_CSRF_TTL_SECONDS,
+	});
 	return token;
 }
 
-async function consumeLoginCsrfToken(
-	env: Env,
-	token: string,
-): Promise<boolean> {
+async function consumeLoginCsrfToken(env: Env, token: string): Promise<boolean> {
 	const key = `${LOGIN_CSRF_PREFIX}${token}`;
 	const value = await env.SESSION.get(key);
 	if (!value) return false;
@@ -249,9 +223,7 @@ auth.get("/login", async (c) => {
 		// DB 未绑定或查询失败时退化为无背景图
 	}
 
-	const csrfToken = passwordEnabled
-		? await generateLoginCsrfToken(c.env)
-		: undefined;
+	const csrfToken = passwordEnabled ? await generateLoginCsrfToken(c.env) : undefined;
 
 	return c.html(
 		loginPage({
@@ -287,18 +259,18 @@ auth.post("/login", async (c) => {
 	try {
 		const state = await (async () => {
 			const raw = await c.env.SESSION.get(`login-rate:${ip}`);
-			return raw ? (JSON.parse(raw) as {
-				attempts: number;
-				lockedUntil: string | null;
-			}) : null;
+			return raw
+				? (JSON.parse(raw) as {
+						attempts: number;
+						lockedUntil: string | null;
+					})
+				: null;
 		})();
 
 		if (state?.lockedUntil) {
 			const lockExpiry = new Date(state.lockedUntil);
 			if (lockExpiry.getTime() > Date.now()) {
-				const remainingSeconds = Math.ceil(
-					(lockExpiry.getTime() - Date.now()) / 1000,
-				);
+				const remainingSeconds = Math.ceil((lockExpiry.getTime() - Date.now()) / 1000);
 				return c.html(
 					loginPage({
 						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,
@@ -441,10 +413,7 @@ auth.get("/github", async (c) => {
 	const authorizeUrl = new URL("https://github.com/login/oauth/authorize");
 
 	authorizeUrl.searchParams.set("client_id", config.clientId);
-	authorizeUrl.searchParams.set(
-		"redirect_uri",
-		getResolvedRedirectUri(config, c.req.url),
-	);
+	authorizeUrl.searchParams.set("redirect_uri", getResolvedRedirectUri(config, c.req.url));
 	authorizeUrl.searchParams.set("state", state);
 	authorizeUrl.searchParams.set("scope", "read:user");
 	authorizeUrl.searchParams.set("code_challenge", codeChallenge);
@@ -506,12 +475,7 @@ auth.get("/github/callback", async (c) => {
 		);
 	}
 
-	const accessToken = await exchangeGitHubAccessToken(
-		config,
-		code,
-		c.req.url,
-		storedVerifier,
-	);
+	const accessToken = await exchangeGitHubAccessToken(config, code, c.req.url, storedVerifier);
 
 	if (!accessToken) {
 		await recordOAuthFailure(c);

@@ -10,7 +10,7 @@ import {
 	getBodyText,
 	requireAuth,
 } from "../middleware/auth";
-import { shuoshuoListPage, shuoshuoEditorPage } from "../views/shuoshuo";
+import { shuoshuoEditorPage, shuoshuoListPage } from "../views/shuoshuo";
 
 const shuoshuo = new Hono<AdminAppEnv>();
 
@@ -26,7 +26,10 @@ function parseShuoshuoInput(body: Record<string, unknown>) {
 	return { content, status };
 }
 
-function validateCsrf(c: Parameters<typeof getAuthenticatedSession>[0], body: Record<string, unknown>): boolean {
+function validateCsrf(
+	c: Parameters<typeof getAuthenticatedSession>[0],
+	body: Record<string, unknown>,
+): boolean {
 	const session = getAuthenticatedSession(c);
 	return assertCsrfToken(getBodyText(body, "_csrf"), session);
 }

@@ -76,29 +76,22 @@ function getEdgeCache(): Cache | null {
 	return defaultCache || null;
 }
 
-function applySecurityHeaders(
-	pathname: string,
-	response: Response,
-	isAdminPreview: boolean,
-) {
+function applySecurityHeaders(pathname: string, response: Response, isAdminPreview: boolean) {
 	const normalizedPath = normalizePathname(pathname);
 
 	response.headers.set("X-Content-Type-Options", "nosniff");
-	response.headers.set(
-		"X-Frame-Options",
-		isAdminPreview ? "SAMEORIGIN" : "DENY",
-	);
+	response.headers.set("X-Frame-Options", isAdminPreview ? "SAMEORIGIN" : "DENY");
 	response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-	response.headers.set(
-		"Permissions-Policy",
-		"camera=(), microphone=(), geolocation=()",
-	);
+	response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 	response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
 	// 告知 CDN/浏览器响应可因 Accept-Encoding 和 Cookie 而不同
 	const existingVary = response.headers.get("Vary") || "";
 	const varySegments = new Set(
-		existingVary.split(",").map((s) => s.trim()).filter(Boolean),
+		existingVary
+			.split(",")
+			.map((s) => s.trim())
+			.filter(Boolean),
 	);
 	varySegments.add("Accept-Encoding");
 	if (response.headers.has("set-cookie")) {
@@ -116,7 +109,7 @@ function applySecurityHeaders(
 		const scriptSources = [
 			"'self'",
 			"'unsafe-inline'",
-						"https://challenges.cloudflare.com",
+			"https://challenges.cloudflare.com",
 			"https://static.cloudflareinsights.com",
 			"'wasm-unsafe-eval'",
 		];

@@ -16,9 +16,7 @@ export const blogCategories = sqliteTable("blog_categories", {
 	name: text("name").notNull(),
 	slug: text("slug").notNull().unique(),
 	description: text("description"),
-	parentId: integer("parent_id").references(
-		(): AnySQLiteColumn => blogCategories.id,
-	),
+	parentId: integer("parent_id").references((): AnySQLiteColumn => blogCategories.id),
 	createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 	updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
@@ -54,9 +52,7 @@ export const blogPosts = sqliteTable(
 		backgroundScale: integer("background_scale").notNull().default(112),
 		backgroundPositionX: integer("background_position_x").notNull().default(50),
 		backgroundPositionY: integer("background_position_y").notNull().default(50),
-		isPinned: integer("is_pinned", { mode: "boolean" })
-			.notNull()
-			.default(false),
+		isPinned: integer("is_pinned", { mode: "boolean" }).notNull().default(false),
 		pinnedOrder: integer("pinned_order").notNull().default(100),
 		metaTitle: text("meta_title"),
 		metaDescription: text("meta_description"),
@@ -73,11 +69,7 @@ export const blogPosts = sqliteTable(
 	(table) => [
 		index("posts_slug_idx").on(table.slug),
 		index("posts_status_publish_idx").on(table.status, table.publishAt),
-		index("posts_pinned_order_idx").on(
-			table.isPinned,
-			table.pinnedOrder,
-			table.publishedAt,
-		),
+		index("posts_pinned_order_idx").on(table.isPinned, table.pinnedOrder, table.publishedAt),
 		index("posts_source_idx").on(table.source),
 		index("posts_deleted_idx").on(table.deletedAt),
 	],
@@ -145,9 +137,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	postCardBlur: integer("post_card_blur").notNull().default(18),
 	articlePanelOpacity: integer("article_panel_opacity").notNull().default(14),
 	articlePanelBlur: integer("article_panel_blur").notNull().default(18),
-	headerSubtitle: text("header_subtitle")
-		.notNull()
-		.default("流畅、克制、持续更新的技术写作"),
+	headerSubtitle: text("header_subtitle").notNull().default("流畅、克制、持续更新的技术写作"),
 	navLink1Label: text("nav_link_1_label").notNull().default("首页"),
 	navLink1Href: text("nav_link_1_href").notNull().default("/"),
 	navLink2Label: text("nav_link_2_label").notNull().default("归档"),
@@ -156,9 +146,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	navLink3Href: text("nav_link_3_href").notNull().default("/search"),
 	navLinksJson: text("nav_links_json"),
 	heroKicker: text("hero_kicker").notNull().default("云端记录"),
-	heroTitle: text("hero_title")
-		.notNull()
-		.default("把工程判断写清楚，把技术细节写漂亮。"),
+	heroTitle: text("hero_title").notNull().default("把工程判断写清楚，把技术细节写漂亮。"),
 	heroIntro: text("hero_intro")
 		.notNull()
 		.default(
@@ -167,45 +155,29 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	heroMainImagePath: text("hero_main_image_path"),
 	heroPrimaryLabel: text("hero_primary_label").notNull().default("进入归档"),
 	heroPrimaryHref: text("hero_primary_href").notNull().default("/blog"),
-	heroSecondaryLabel: text("hero_secondary_label")
-		.notNull()
-		.default("站内搜索"),
+	heroSecondaryLabel: text("hero_secondary_label").notNull().default("站内搜索"),
 	heroSecondaryHref: text("hero_secondary_href").notNull().default("/search"),
 	heroActionsJson: text("hero_actions_json"),
 	heroLayout: text("hero_layout").notNull().default("default"),
 	heroSignalLabel: text("hero_signal_label").notNull().default("Scene Depth"),
-	heroSignalHeading: text("hero_signal_heading")
-		.notNull()
-		.default("首页会跟着你的视线轻轻转一下"),
+	heroSignalHeading: text("hero_signal_heading").notNull().default("首页会跟着你的视线轻轻转一下"),
 	heroSignalCopy: text("hero_signal_copy")
 		.notNull()
-		.default(
-			"不是把页面做得很吵，而是只让首屏层次、信息胶囊和按钮反馈更有呼吸感。",
-		),
+		.default("不是把页面做得很吵，而是只让首屏层次、信息胶囊和按钮反馈更有呼吸感。"),
 	heroSignalImagePath: text("hero_signal_image_path"),
 	heroSignalChip1: text("hero_signal_chip_1").notNull().default("Mouse Sync"),
 	heroSignalChip2: text("hero_signal_chip_2").notNull().default("Soft Orbit"),
 	heroSignalChip3: text("hero_signal_chip_3").notNull().default("Card Lift"),
 	friendApplyNotice: text("friend_apply_notice").notNull().default(""),
-	aiInternalEnabled: integer("ai_internal_enabled", { mode: "boolean" })
-		.notNull()
-		.default(false),
-	aiInternalBaseUrl: text("ai_internal_base_url")
-		.notNull()
-		.default("https://api.deepseek.com"),
+	aiInternalEnabled: integer("ai_internal_enabled", { mode: "boolean" }).notNull().default(false),
+	aiInternalBaseUrl: text("ai_internal_base_url").notNull().default("https://api.deepseek.com"),
 	aiInternalApiKey: text("ai_internal_api_key").notNull().default(""),
 	aiInternalModel: text("ai_internal_model").notNull().default("deepseek-v4-flash"),
-	aiPublicEnabled: integer("ai_public_enabled", { mode: "boolean" })
-		.notNull()
-		.default(false),
-	aiPublicBaseUrl: text("ai_public_base_url")
-		.notNull()
-		.default("https://api.deepseek.com"),
+	aiPublicEnabled: integer("ai_public_enabled", { mode: "boolean" }).notNull().default(false),
+	aiPublicBaseUrl: text("ai_public_base_url").notNull().default("https://api.deepseek.com"),
 	aiPublicApiKey: text("ai_public_api_key").notNull().default(""),
 	aiPublicModel: text("ai_public_model").notNull().default("deepseek-v4-flash"),
-	mcpEnabled: integer("mcp_enabled", { mode: "boolean" })
-		.notNull()
-		.default(true),
+	mcpEnabled: integer("mcp_enabled", { mode: "boolean" }).notNull().default(true),
 	updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -271,10 +243,7 @@ export const mcpAuditLogs = sqliteTable(
 	},
 	(table) => [
 		index("mcp_audit_logs_timestamp_idx").on(table.timestamp),
-		index("mcp_audit_logs_status_idx").on(
-			table.responseStatus,
-			table.timestamp,
-		),
+		index("mcp_audit_logs_status_idx").on(table.responseStatus, table.timestamp),
 		index("mcp_audit_logs_tool_idx").on(table.toolName, table.timestamp),
 		index("mcp_audit_logs_ip_idx").on(table.ipAddress, table.timestamp),
 	],
@@ -307,8 +276,7 @@ export type FriendLink = typeof friendLinks.$inferSelect;
 export type NewFriendLink = typeof friendLinks.$inferInsert;
 
 export type SiteAppearanceSetting = typeof siteAppearanceSettings.$inferSelect;
-export type NewSiteAppearanceSetting =
-	typeof siteAppearanceSettings.$inferInsert;
+export type NewSiteAppearanceSetting = typeof siteAppearanceSettings.$inferInsert;
 
 export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
 export type NewAnalyticsSession = typeof analyticsSessions.$inferInsert;

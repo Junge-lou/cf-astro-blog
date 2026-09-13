@@ -76,10 +76,7 @@ export function isLegacyPasswordHash(hash: string): boolean {
 	return !hash.startsWith(`${PBKDF2_PREFIX}$`);
 }
 
-export async function verifyPassword(
-	password: string,
-	storedHash: string,
-): Promise<boolean> {
+export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
 	if (isLegacyPasswordHash(storedHash)) {
 		const legacyHash = await sha256Hex(password);
 		return timingSafeEqualText(legacyHash, storedHash);

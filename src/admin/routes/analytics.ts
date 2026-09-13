@@ -7,11 +7,7 @@ import {
 import { analyticsEvents, analyticsSessions, mcpAuditLogs } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { escapeAttribute, escapeHtml } from "@/lib/security";
-import {
-	type AdminAppEnv,
-	getAuthenticatedSession,
-	requireAuth,
-} from "../middleware/auth";
+import { type AdminAppEnv, getAuthenticatedSession, requireAuth } from "../middleware/auth";
 import { adminLayout } from "../views/layout";
 
 const analytics = new Hono<AdminAppEnv>();
@@ -105,11 +101,7 @@ function parsePageValue(value: string | undefined, fallback = 1) {
 	return parsed;
 }
 
-function buildPageHref(
-	requestUrl: string,
-	paramKey: "eventsPage" | "mcpPage",
-	page: number,
-) {
+function buildPageHref(requestUrl: string, paramKey: "eventsPage" | "mcpPage", page: number) {
 	const url = new URL(requestUrl);
 	url.searchParams.set(paramKey, String(page));
 	url.searchParams.delete("cleanup");
@@ -212,14 +204,10 @@ analytics.get("/", async (c) => {
 			.from(analyticsSessions);
 		stats.totalSessions = sessionCount?.count ?? 0;
 
-		const [pageViewCount] = await db
-			.select({ count: sql<number>`count(*)` })
-			.from(analyticsEvents);
+		const [pageViewCount] = await db.select({ count: sql<number>`count(*)` }).from(analyticsEvents);
 		stats.totalPageViews = pageViewCount?.count ?? 0;
 
-		const [mcpRequestCount] = await db
-			.select({ count: sql<number>`count(*)` })
-			.from(mcpAuditLogs);
+		const [mcpRequestCount] = await db.select({ count: sql<number>`count(*)` }).from(mcpAuditLogs);
 		stats.totalMcpRequests = mcpRequestCount?.count ?? 0;
 
 		const [mcpNotFoundCount] = await db
@@ -228,14 +216,8 @@ analytics.get("/", async (c) => {
 			.where(sql`${mcpAuditLogs.responseStatus} = 404`);
 		stats.totalMcpNotFound = mcpNotFoundCount?.count ?? 0;
 
-		stats.totalEventPages = Math.max(
-			1,
-			Math.ceil(stats.totalPageViews / RECENT_EVENTS_PAGE_SIZE),
-		);
-		stats.totalMcpPages = Math.max(
-			1,
-			Math.ceil(stats.totalMcpRequests / RECENT_MCP_PAGE_SIZE),
-		);
+		stats.totalEventPages = Math.max(1, Math.ceil(stats.totalPageViews / RECENT_EVENTS_PAGE_SIZE));
+		stats.totalMcpPages = Math.max(1, Math.ceil(stats.totalMcpRequests / RECENT_MCP_PAGE_SIZE));
 		stats.eventsPage = Math.min(requestedEventsPage, stats.totalEventPages);
 		stats.mcpPage = Math.min(requestedMcpPage, stats.totalMcpPages);
 		const eventsOffset = (stats.eventsPage - 1) * RECENT_EVENTS_PAGE_SIZE;
@@ -371,12 +353,8 @@ analytics.get("/", async (c) => {
 										? `${log.mcpMethod || "tools/call"}:${log.toolName}`
 										: log.mcpMethod || "-",
 								);
-								const resultLabel = escapeHtml(
-									`${log.authState} / ${log.outcome}`,
-								);
-								const requestLabel = escapeHtml(
-									`${log.requestMethod} ${log.requestPath}`,
-								);
+								const resultLabel = escapeHtml(`${log.authState} / ${log.outcome}`);
+								const requestLabel = escapeHtml(`${log.requestMethod} ${log.requestPath}`);
 								const statusLabel = escapeHtml(String(log.responseStatus));
 								const note = [
 									log.requestId ? `requestId=${log.requestId}` : "",
@@ -418,9 +396,7 @@ analytics.get("/", async (c) => {
 		}
 	`;
 
-	return c.html(
-		adminLayout("访问统计", content, { csrfToken: session.csrfToken }),
-	);
+	return c.html(adminLayout("访问统计", content, { csrfToken: session.csrfToken }));
 });
 
 analytics.get("/export", async (c) => {

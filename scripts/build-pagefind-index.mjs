@@ -2,19 +2,14 @@ import { execSync } from "node:child_process";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import process from "node:process";
+
 const ROOT_DIR = process.cwd();
 const SOURCE_DIR = join(ROOT_DIR, ".pagefind-source");
 const OUTPUT_DIR = join(ROOT_DIR, "public", "pagefind");
 const META_FILE = join(ROOT_DIR, "public", "pagefind-meta.json");
 const BIN_DIR = join(ROOT_DIR, "node_modules", ".bin");
-const PAGEFIND = join(
-	BIN_DIR,
-	process.platform === "win32" ? "pagefind.cmd" : "pagefind",
-);
-const WRANGLER = join(
-	BIN_DIR,
-	process.platform === "win32" ? "wrangler.cmd" : "wrangler",
-);
+const PAGEFIND = join(BIN_DIR, process.platform === "win32" ? "pagefind.cmd" : "pagefind");
+const WRANGLER = join(BIN_DIR, process.platform === "win32" ? "wrangler.cmd" : "wrangler");
 
 const forceRemote = process.argv.includes("--remote");
 const forceLocal = process.argv.includes("--local");
@@ -133,8 +128,7 @@ function readRowsForMode(sourceMode) {
 }
 
 function resolveSourceRows() {
-	const attempts =
-		requestedMode === "auto" ? ["local", "remote"] : [requestedMode];
+	const attempts = requestedMode === "auto" ? ["local", "remote"] : [requestedMode];
 	let fallback = null;
 
 	for (let index = 0; index < attempts.length; index += 1) {
@@ -144,12 +138,7 @@ function resolveSourceRows() {
 		try {
 			const rows = readRowsForMode(mode);
 
-			if (
-				requestedMode === "auto" &&
-				mode === "local" &&
-				rows.postsRows.length === 0 &&
-				hasNext
-			) {
+			if (requestedMode === "auto" && mode === "local" && rows.postsRows.length === 0 && hasNext) {
 				console.warn("[Pagefind] 本地 D1 未读取到文章，自动回退远端 D1。");
 				fallback = { mode, ...rows };
 				continue;
@@ -284,12 +273,8 @@ function buildMetaPayload(posts, sourceMode) {
 			featuredImageKey: post.featuredImageKey,
 			featuredImageAlt: post.featuredImageAlt,
 		})),
-		categories: [...categoriesMap.values()].sort((a, b) =>
-			a.name.localeCompare(b.name, "zh-CN"),
-		),
-		tags: [...tagsMap.values()].sort((a, b) =>
-			a.name.localeCompare(b.name, "zh-CN"),
-		),
+		categories: [...categoriesMap.values()].sort((a, b) => a.name.localeCompare(b.name, "zh-CN")),
+		tags: [...tagsMap.values()].sort((a, b) => a.name.localeCompare(b.name, "zh-CN")),
 	};
 }
 
@@ -362,9 +347,7 @@ async function main() {
 	console.log(`[Pagefind] 开始生成索引（请求模式：${requestedMode}）`);
 
 	const { mode: sourceMode, postsRows, tagsRows } = resolveSourceRows();
-	console.log(
-		`[Pagefind] 使用 ${sourceMode} D1 数据源，读取到 ${postsRows.length} 篇文章。`,
-	);
+	console.log(`[Pagefind] 使用 ${sourceMode} D1 数据源，读取到 ${postsRows.length} 篇文章。`);
 
 	const posts = buildPosts(postsRows, tagsRows);
 	await buildSourceFiles(posts);

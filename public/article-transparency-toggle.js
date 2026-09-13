@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	if (window.__articleTransparencyToggleInitialized) {
 		return;
 	}
@@ -30,11 +30,9 @@
 		ROOT.classList.toggle("article-opaque-mode", enabled);
 	};
 
-	const prefersReducedMotion = () =>
-		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-	const clampToViewport = (value, max) =>
-		Math.min(Math.max(value, 0), Math.max(max, 0));
+	const clampToViewport = (value, max) => Math.min(Math.max(value, 0), Math.max(max, 0));
 
 	const getToggleCenter = (button) => {
 		const rect = button.getBoundingClientRect();
@@ -111,11 +109,9 @@
 			})
 			.catch(() => undefined);
 
-		return Promise.allSettled([transition.finished, rippleMotion]).finally(
-			() => {
-				ROOT.removeAttribute(TRANSITION_ATTR);
-			},
-		);
+		return Promise.allSettled([transition.finished, rippleMotion]).finally(() => {
+			ROOT.removeAttribute(TRANSITION_ATTR);
+		});
 	};
 
 	const updateToggleLabel = (button, enabled) => {
@@ -139,17 +135,14 @@
 		const enabled = readPreference();
 		setOpaqueMode(enabled);
 
-		const toggleButtons = Array.from(
-			document.querySelectorAll(TOGGLE_SELECTOR),
-		).filter((button) => button instanceof HTMLButtonElement);
+		const toggleButtons = Array.from(document.querySelectorAll(TOGGLE_SELECTOR)).filter(
+			(button) => button instanceof HTMLButtonElement,
+		);
 		if (toggleButtons.length === 0) {
 			return;
 		}
 
-		syncToggleButtons(
-			toggleButtons,
-			enabled,
-		);
+		syncToggleButtons(toggleButtons, enabled);
 
 		for (const toggleButton of toggleButtons) {
 			if (toggleButton.dataset.bound === "true") {

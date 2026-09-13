@@ -47,9 +47,7 @@ try {
 	const db = getDb(env.DB);
 
 	// 解析分类筛选
-	const categoryFilter = categorySlug
-		? eq(blogCategories.slug, categorySlug)
-		: undefined;
+	const categoryFilter = categorySlug ? eq(blogCategories.slug, categorySlug) : undefined;
 
 	if (categorySlug) {
 		const [cat] = await db

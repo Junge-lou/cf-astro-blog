@@ -32,8 +32,5 @@ export function getPublicPostKeywordCondition(pattern: string) {
 }
 
 export function getPublicPostSearchCondition(pattern: string) {
-	return and(
-		getPublicPostVisibilityCondition(),
-		getPublicPostKeywordCondition(pattern),
-	);
+	return and(getPublicPostVisibilityCondition(), getPublicPostKeywordCondition(pattern));
 }

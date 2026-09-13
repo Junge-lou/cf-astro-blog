@@ -64,8 +64,7 @@ function extractWildcardMediaKey(
 	},
 	prefix: string,
 ) {
-	const wildcardRaw =
-		c.req.param("*") || c.req.param("0") || c.req.path.replace(prefix, "");
+	const wildcardRaw = c.req.param("*") || c.req.param("0") || c.req.path.replace(prefix, "");
 	const normalized = wildcardRaw.replace(/^\/+/u, "");
 	return decodeRouteParam(normalized);
 }
@@ -250,9 +249,7 @@ media.get("/", async (c) => {
 		</div>
 	`;
 
-	return c.html(
-		adminLayout("媒体库", content, { csrfToken: session.csrfToken }),
-	);
+	return c.html(adminLayout("媒体库", content, { csrfToken: session.csrfToken }));
 });
 
 media.post("/upload", async (c) => {
@@ -263,26 +260,17 @@ media.post("/upload", async (c) => {
 	}
 	const file = parseUploadFile(body);
 	if (!file) {
-		return c.html(
-			renderMediaErrorPage(session.csrfToken, "请选择要上传的文件"),
-			400,
-		);
+		return c.html(renderMediaErrorPage(session.csrfToken, "请选择要上传的文件"), 400);
 	}
 
 	const validationError = validateUploadFile(file);
 	if (validationError) {
-		return c.html(
-			renderMediaErrorPage(session.csrfToken, validationError),
-			400,
-		);
+		return c.html(renderMediaErrorPage(session.csrfToken, validationError), 400);
 	}
 
 	const uploadTarget = resolveUploadPrefix(body);
 	if (uploadTarget.error) {
-		return c.html(
-			renderMediaErrorPage(session.csrfToken, uploadTarget.error),
-			400,
-		);
+		return c.html(renderMediaErrorPage(session.csrfToken, uploadTarget.error), 400);
 	}
 
 	await saveUploadFile(c, file, uploadTarget.prefix);
@@ -318,9 +306,7 @@ media.post("/upload-async", async (c) => {
 			key: uploaded.key,
 			url: `/media/${uploaded.key}`,
 			deduplicated: uploaded.deduplicated,
-			message: uploaded.deduplicated
-				? "检测到重复内容，已复用已有媒体文件"
-				: "上传成功",
+			message: uploaded.deduplicated ? "检测到重复内容，已复用已有媒体文件" : "上传成功",
 		});
 	} catch {
 		return c.json({ message: "上传失败，请稍后再试" }, 500);

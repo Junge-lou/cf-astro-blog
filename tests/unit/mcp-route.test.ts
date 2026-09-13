@@ -23,9 +23,6 @@ describe("MCP 发帖路由", () => {
 		assert.match(source, /MCP_BEARER_TOKEN/u);
 		assert.match(source, /recordMcpAuditLog/u);
 		assert.match(source, /mcpAuditLogs/u);
-		assert.match(
-			source,
-			/statusRaw\s*\?\s*sanitizePostStatus\(statusRaw\)\s*:\s*\("published"/u,
-		);
+		assert.match(source, /statusRaw\s*\?\s*sanitizePostStatus\(statusRaw\)\s*:\s*\("published"/u);
 	});
 });

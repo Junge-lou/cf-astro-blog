@@ -67,10 +67,7 @@ function createMcpPostMockD1() {
 						},
 						raw: async () => {
 							calls.push({ sql, params });
-							if (
-								/insert into\s+["`]?blog_posts["`]?/iu.test(sql) &&
-								/returning/iu.test(sql)
-							) {
+							if (/insert into\s+["`]?blog_posts["`]?/iu.test(sql) && /returning/iu.test(sql)) {
 								return [[9527]];
 							}
 							if (
@@ -79,20 +76,14 @@ function createMcpPostMockD1() {
 							) {
 								return [[nextCategoryId++]];
 							}
-							if (
-								/insert into\s+["`]?blog_tags["`]?/iu.test(sql) &&
-								/returning/iu.test(sql)
-							) {
+							if (/insert into\s+["`]?blog_tags["`]?/iu.test(sql) && /returning/iu.test(sql)) {
 								return [[nextTagId++]];
 							}
 							return [];
 						},
 						all: async () => {
 							calls.push({ sql, params });
-							if (
-								/insert into\s+["`]?blog_posts["`]?/iu.test(sql) &&
-								/returning/iu.test(sql)
-							) {
+							if (/insert into\s+["`]?blog_posts["`]?/iu.test(sql) && /returning/iu.test(sql)) {
 								return { results: [{ id: 9527 }] };
 							}
 							if (
@@ -101,20 +92,14 @@ function createMcpPostMockD1() {
 							) {
 								return { results: [{ id: nextCategoryId++ }] };
 							}
-							if (
-								/insert into\s+["`]?blog_tags["`]?/iu.test(sql) &&
-								/returning/iu.test(sql)
-							) {
+							if (/insert into\s+["`]?blog_tags["`]?/iu.test(sql) && /returning/iu.test(sql)) {
 								return { results: [{ id: nextTagId++ }] };
 							}
 							return { results: [] };
 						},
 						first: async () => {
 							calls.push({ sql, params });
-							if (
-								/insert into\s+["`]?blog_posts["`]?/iu.test(sql) &&
-								/returning/iu.test(sql)
-							) {
+							if (/insert into\s+["`]?blog_posts["`]?/iu.test(sql) && /returning/iu.test(sql)) {
 								return { id: 9527 };
 							}
 							if (
@@ -123,10 +108,7 @@ function createMcpPostMockD1() {
 							) {
 								return { id: nextCategoryId++ };
 							}
-							if (
-								/insert into\s+["`]?blog_tags["`]?/iu.test(sql) &&
-								/returning/iu.test(sql)
-							) {
+							if (/insert into\s+["`]?blog_tags["`]?/iu.test(sql) && /returning/iu.test(sql)) {
 								return { id: nextTagId++ };
 							}
 							return undefined;
@@ -275,20 +257,13 @@ describe("后台接口", () => {
 		);
 
 		assert.equal(res.status, 204);
-		const sessionUpsert = calls.find((entry) =>
-			/insert into analytics_sessions/iu.test(entry.sql),
-		);
-		const eventInsert = calls.find((entry) =>
-			/insert into analytics_events/iu.test(entry.sql),
-		);
+		const sessionUpsert = calls.find((entry) => /insert into analytics_sessions/iu.test(entry.sql));
+		const eventInsert = calls.find((entry) => /insert into analytics_events/iu.test(entry.sql));
 		assert.ok(sessionUpsert);
 		assert.ok(eventInsert);
 		assert.equal(sessionUpsert?.params[1], "203.0.113.10");
 		assert.equal(eventInsert?.params[4], "203.0.113.10");
-		assert.equal(
-			eventInsert?.params[5],
-			"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)",
-		);
+		assert.equal(eventInsert?.params[5], "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5)");
 	});
 
 	test("POST /analytics/track 会拒绝无效事件数据", async () => {
@@ -326,8 +301,7 @@ describe("后台接口", () => {
 					"content-type": "application/json",
 					origin: "http://localhost",
 					"CF-Connecting-IP": "198.51.100.22",
-					"user-agent":
-						"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+					"user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
 				},
 				body: JSON.stringify({
 					sessionId: "sid_test_1234567890abcd",
@@ -346,28 +320,17 @@ describe("后台接口", () => {
 			calls.some((entry) => /insert into analytics_sessions/iu.test(entry.sql)),
 			false,
 		);
-		assert.ok(
-			calls.some((entry) => /insert into analytics_events/iu.test(entry.sql)),
-		);
-		const eventInsert = calls.find((entry) =>
-			/insert into analytics_events/iu.test(entry.sql),
-		);
+		assert.ok(calls.some((entry) => /insert into analytics_events/iu.test(entry.sql)));
+		const eventInsert = calls.find((entry) => /insert into analytics_events/iu.test(entry.sql));
 		assert.equal(eventInsert?.params[4], "198.51.100.22");
-		assert.equal(
-			eventInsert?.params[5],
-			"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
-		);
+		assert.equal(eventInsert?.params[5], "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)");
 	});
 
 	test("GET /friend-links/avatar 会拒绝无效 URL", async () => {
-		const res = await app.request(
-			"/friend-links/avatar?url=bad-url",
-			undefined,
-			{
-				...mockEnv,
-				DB: createMockD1().db,
-			} as unknown as Env,
-		);
+		const res = await app.request("/friend-links/avatar?url=bad-url", undefined, {
+			...mockEnv,
+			DB: createMockD1().db,
+		} as unknown as Env);
 
 		assert.equal(res.status, 400);
 		assert.match(await res.text(), /头像地址不合法/u);
@@ -600,8 +563,7 @@ describe("后台接口", () => {
 				...mockEnv,
 				PUBLIC_AI_RATE_LIMIT_PER_MINUTE: "1",
 				SESSION: {
-					get: async (key: string) =>
-						key.startsWith("public-ai:minute:") ? "1" : null,
+					get: async (key: string) => (key.startsWith("public-ai:minute:") ? "1" : null),
 					put: async () => undefined,
 					delete: async () => undefined,
 				},
@@ -782,9 +744,7 @@ describe("后台接口", () => {
 		);
 		assert.equal(secondRes.status, 404);
 
-		const authBlockKey = [...store.keys()].find((key) =>
-			key.startsWith("mcp:auth:block:"),
-		);
+		const authBlockKey = [...store.keys()].find((key) => key.startsWith("mcp:auth:block:"));
 		assert.ok(authBlockKey);
 
 		const blockedRes = await app.request(
@@ -842,10 +802,7 @@ describe("后台接口", () => {
 			result?: { isError?: boolean; content?: Array<{ text?: string }> };
 		};
 		assert.notEqual(payload?.result?.isError, true);
-		assert.match(
-			String(payload?.result?.content?.[0]?.text || ""),
-			/"authorName":\s*"AI-Agent"/u,
-		);
+		assert.match(String(payload?.result?.content?.[0]?.text || ""), /"authorName":\s*"AI-Agent"/u);
 
 		const insertCall = calls.find((entry) =>
 			/insert into\s+["`]?blog_posts["`]?/iu.test(entry.sql),
@@ -933,10 +890,7 @@ describe("后台接口", () => {
 			result?: { isError?: boolean; content?: Array<{ text?: string }> };
 		};
 		assert.equal(payload?.result?.isError, true);
-		assert.match(
-			String(payload?.result?.content?.[0]?.text || ""),
-			/authorName/u,
-		);
+		assert.match(String(payload?.result?.content?.[0]?.text || ""), /authorName/u);
 	});
 
 	test("POST /mcp 在 create_post 成功时会写入 author_name 且默认已发布", async () => {
@@ -1015,18 +969,9 @@ describe("后台接口", () => {
 			result?: { isError?: boolean; content?: Array<{ text?: string }> };
 		};
 		assert.notEqual(payload?.result?.isError, true);
-		assert.match(
-			String(payload?.result?.content?.[0]?.text || ""),
-			/"authorName":\s*"AI-Agent"/u,
-		);
-		assert.match(
-			String(payload?.result?.content?.[0]?.text || ""),
-			/"status":\s*"published"/u,
-		);
-		assert.match(
-			String(payload?.result?.content?.[0]?.text || ""),
-			/"slug":\s*"mcp-发布测试"/u,
-		);
+		assert.match(String(payload?.result?.content?.[0]?.text || ""), /"authorName":\s*"AI-Agent"/u);
+		assert.match(String(payload?.result?.content?.[0]?.text || ""), /"status":\s*"published"/u);
+		assert.match(String(payload?.result?.content?.[0]?.text || ""), /"slug":\s*"mcp-发布测试"/u);
 		assert.match(
 			String(payload?.result?.content?.[0]?.text || ""),
 			/"url":\s*"\/blog\/mcp-%E5%8F%91%E5%B8%83%E6%B5%8B%E8%AF%95"/u,
@@ -1043,9 +988,7 @@ describe("后台接口", () => {
 			/insert into\s+["`]?mcp_audit_logs["`]?/iu.test(entry.sql),
 		);
 		assert.ok(auditInsertCalls.length >= 2);
-		const toolAuditCall = auditInsertCalls.find((entry) =>
-			entry.params.includes("create_post"),
-		);
+		const toolAuditCall = auditInsertCalls.find((entry) => entry.params.includes("create_post"));
 		assert.ok(toolAuditCall);
 		assert.ok(toolAuditCall?.params.includes("tools/call"));
 		assert.ok(toolAuditCall?.params.includes("success"));
@@ -1141,9 +1084,7 @@ describe("后台接口", () => {
 			/insert into\s+["`]?blog_posts["`]?/iu.test(entry.sql),
 		);
 		assert.ok(postInsertCall);
-		assert.ok(
-			postInsertCall?.params.includes("在-ucg-fiber-上优雅地使用-softbank-10g"),
-		);
+		assert.ok(postInsertCall?.params.includes("在-ucg-fiber-上优雅地使用-softbank-10g"));
 		assert.ok(postInsertCall?.params.includes("这是一段摘要"));
 		assert.ok(postInsertCall?.params.includes("SEO 主标题"));
 		assert.ok(postInsertCall?.params.includes("SEO 描述文本"));

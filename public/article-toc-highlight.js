@@ -5,7 +5,7 @@
  * 1. 使用 IntersectionObserver 追踪当前可视标题，为 TOC 对应链接添加 .active 类
  * 2. .active 条目变化时，自动将该链接滚动到 .article-toc-body 可视区内
  */
-(function () {
+(() => {
 	if (window.__articleTocHighlightBooted) return;
 	window.__articleTocHighlightBooted = true;
 
@@ -33,9 +33,9 @@
 		if (linkMap.size === 0) return;
 
 		/** 按文档顺序收集所有带 id 的标题 */
-		const headings = Array.from(
-			prose.querySelectorAll(":is(h1,h2,h3,h4,h5,h6)[id]"),
-		).filter((h) => linkMap.has(h.id));
+		const headings = Array.from(prose.querySelectorAll(":is(h1,h2,h3,h4,h5,h6)[id]")).filter((h) =>
+			linkMap.has(h.id),
+		);
 		if (headings.length === 0) return;
 
 		/** 当前高亮的 id */
@@ -49,7 +49,9 @@
 			if (id === activeId) return;
 			activeId = id;
 
-			linkMap.forEach((link) => link.classList.remove(ACTIVE_CLASS));
+			for (const link of linkMap.values()) {
+				link.classList.remove(ACTIVE_CLASS);
+			}
 
 			const activeLink = linkMap.get(id);
 			if (!activeLink) return;
@@ -107,7 +109,9 @@
 			},
 		);
 
-		headings.forEach((h) => observer.observe(h));
+		for (const h of headings) {
+			observer.observe(h);
+		}
 
 		// 页面加载时立即同步一次活跃标题
 		const syncOnLoad = () => {
@@ -127,7 +131,9 @@
 
 		disposeCurrent = () => {
 			observer.disconnect();
-			linkMap.forEach((link) => link.classList.remove(ACTIVE_CLASS));
+			for (const link of linkMap.values()) {
+				link.classList.remove(ACTIVE_CLASS);
+			}
 			activeId = null;
 		};
 	};

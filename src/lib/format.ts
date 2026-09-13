@@ -32,10 +32,7 @@ export function estimateArticleReadStats(markdown: string): ArticleReadStats {
 	const readableText = extractReadableText(markdown);
 	const cjkCharCount = readableText.match(CJK_CHAR_PATTERN)?.length ?? 0;
 	const latinWordCount = readableText.match(LATIN_WORD_PATTERN)?.length ?? 0;
-	const estimatedReadingMinutes = Math.max(
-		1,
-		Math.ceil(cjkCharCount / 300 + latinWordCount / 200),
-	);
+	const estimatedReadingMinutes = Math.max(1, Math.ceil(cjkCharCount / 300 + latinWordCount / 200));
 
 	return {
 		cjkCharCount,

@@ -23,13 +23,8 @@ describe("文章字数与阅读时长估算", () => {
 
 	test("会按公式估算阅读分钟数", () => {
 		const chineseContent = "字".repeat(900);
-		const englishContent = Array.from(
-			{ length: 200 },
-			(_, index) => `word${index}`,
-		).join(" ");
-		const stats = estimateArticleReadStats(
-			`${chineseContent}\n\n${englishContent}`,
-		);
+		const englishContent = Array.from({ length: 200 }, (_, index) => `word${index}`).join(" ");
+		const stats = estimateArticleReadStats(`${chineseContent}\n\n${englishContent}`);
 
 		assert.equal(stats.cjkCharCount, 900);
 		assert.equal(stats.latinWordCount, 200);

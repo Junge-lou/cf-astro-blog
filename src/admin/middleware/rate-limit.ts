@@ -16,10 +16,7 @@ function getAttemptKey(ip: string): string {
 	return `login-rate:${ip}`;
 }
 
-async function readAttemptState(
-	env: Env,
-	ip: string,
-): Promise<LoginAttemptState | null> {
+async function readAttemptState(env: Env, ip: string): Promise<LoginAttemptState | null> {
 	const raw = await env.SESSION.get(getAttemptKey(ip));
 	if (!raw) {
 		return null;
@@ -45,9 +42,7 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 		if (state?.lockedUntil) {
 			const lockExpiry = new Date(state.lockedUntil);
 			if (lockExpiry.getTime() > Date.now()) {
-				const remainingSeconds = Math.ceil(
-					(lockExpiry.getTime() - Date.now()) / 1000,
-				);
+				const remainingSeconds = Math.ceil((lockExpiry.getTime() - Date.now()) / 1000);
 				return c.html(
 					loginPage({
 						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,

@@ -34,10 +34,7 @@ describe("公开内容保护", () => {
 		assert.match(compiled.sql, /"blog_posts"\."status" = \?/u);
 		assert.ok(compiled.params.includes("published"));
 		assert.ok(compiled.params.includes("scheduled"));
-		assert.equal(
-			compiled.params.filter((value) => value === "%draft%").length,
-			3,
-		);
+		assert.equal(compiled.params.filter((value) => value === "%draft%").length, 3);
 	});
 
 	test("关键词过滤条件会覆盖标题、正文与摘要", () => {
@@ -45,10 +42,7 @@ describe("公开内容保护", () => {
 			sql`select * from ${blogPosts} where ${getPublicPostKeywordCondition("%astro%")}`,
 		);
 
-		assert.equal(
-			compiled.params.filter((value) => value === "%astro%").length,
-			3,
-		);
+		assert.equal(compiled.params.filter((value) => value === "%astro%").length, 3);
 		assert.match(compiled.sql, /"blog_posts"\."title" like \?/u);
 		assert.match(compiled.sql, /"blog_posts"\."content" like \?/u);
 		assert.match(compiled.sql, /"blog_posts"\."excerpt" like \?/u);
@@ -78,29 +72,19 @@ describe("源码回归保护", () => {
 		assert.match(postPageSource, /VIEW_COUNT_DEDUP_TTL_SECONDS/u);
 		assert.match(postPageSource, /env\.SESSION\.get/u);
 		assert.match(postPageSource, /env\.SESSION\.put/u);
-		assert.match(
-			postPageSource,
-			/viewCount:\s*sql`\$\{blogPosts\.viewCount\}\s*\+\s*1`/u,
-		);
-		assert.match(
-			postPageSource,
-			/backgroundMode:\s*blogPosts\.backgroundMode/u,
-		);
-		assert.match(
-			postPageSource,
-			/backgroundOverride=\{postBackgroundOverride\}/u,
-		);
+		assert.match(postPageSource, /viewCount:\s*sql`\$\{blogPosts\.viewCount\}\s*\+\s*1`/u);
+		assert.match(postPageSource, /backgroundMode:\s*blogPosts\.backgroundMode/u);
+		assert.match(postPageSource, /backgroundOverride=\{postBackgroundOverride\}/u);
 		assert.match(searchPageSource, /pagefind-search\.js/u);
 		assert.match(searchPageSource, /pagefind-search-results/u);
 	});
 
 	test("主题切换组件不再包含内联脚本，并改由外置脚本接管", async () => {
-		const [toggleSource, themeScriptSource, mediaRouteSource] =
-			await Promise.all([
-				readFile("src/components/ThemeToggle.astro", "utf8"),
-				readFile("public/theme.js", "utf8"),
-				readFile("src/admin/routes/media.ts", "utf8"),
-			]);
+		const [toggleSource, themeScriptSource, mediaRouteSource] = await Promise.all([
+			readFile("src/components/ThemeToggle.astro", "utf8"),
+			readFile("public/theme.js", "utf8"),
+			readFile("src/admin/routes/media.ts", "utf8"),
+		]);
 
 		assert.ok(!toggleSource.includes("<script"));
 		assert.match(themeScriptSource, /closest\("\.theme-toggle"\)/u);
@@ -118,10 +102,7 @@ describe("源码回归保护", () => {
 
 		assert.match(notFoundPageSource, /Astro\.response\.status = 404/u);
 		assert.match(notFoundPageSource, /data-not-found-terminal="true"/u);
-		assert.match(
-			notFoundPageSource,
-			/data-ai-endpoint="\/api\/ai\/terminal-404"/u,
-		);
+		assert.match(notFoundPageSource, /data-ai-endpoint="\/api\/ai\/terminal-404"/u);
 		assert.match(notFoundPageSource, /guest@404:~\$/u);
 		assert.match(notFoundPageSource, /\/not-found-terminal\.js/u);
 		assert.match(terminalScriptSource, /\/api\/ai\/terminal-404/u);
@@ -152,9 +133,7 @@ describe("源码回归保护", () => {
 
 		assert.ok(!postCardStyleSource.includes("transform: scale(0.88);"));
 		assert.ok(
-			!postCardStyleSource.includes(
-				"backdrop-filter: blur(var(--post-card-cover-blur-effective))",
-			),
+			!postCardStyleSource.includes("backdrop-filter: blur(var(--post-card-cover-blur-effective))"),
 		);
 		assert.ok(!postCardSource.includes("post-card-cover-fallback"));
 		assert.match(postCardSource, /post-card-no-cover/u);
@@ -164,11 +143,7 @@ describe("源码回归保护", () => {
 		assert.match(postCardSource, /<div class="pill-row"/u);
 		assert.match(
 			postCardSource,
-			/<span class="pill">\{articleLengthLabel\}<\/span>/u,
-		);
-		assert.match(
-			postCardSource,
-			/<span class="pill">\{articleReadingTimeLabel\}<\/span>/u,
+			/<span class="pill">\{articleReadingTimeLabel\} · \{articleLengthLabel\}<\/span>/u,
 		);
 		assert.match(postCardStyleSource, /object-position: center;/u);
 	});
@@ -181,14 +156,8 @@ describe("源码回归保护", () => {
 
 		assert.match(homeSource, /estimateArticleReadStats/u);
 		assert.match(archiveSource, /estimateArticleReadStats/u);
-		assert.match(
-			homeSource,
-			/estimatedReadingMinutes=\{post\.estimatedReadingMinutes\}/u,
-		);
-		assert.match(
-			archiveSource,
-			/estimatedReadingMinutes=\{post\.estimatedReadingMinutes\}/u,
-		);
+		assert.match(homeSource, /estimatedReadingMinutes=\{post\.estimatedReadingMinutes\}/u);
+		assert.match(archiveSource, /estimatedReadingMinutes=\{post\.estimatedReadingMinutes\}/u);
 	});
 
 	test("友链页只保留申请入口卡片，申请表移到独立页面", async () => {
@@ -201,43 +170,20 @@ describe("源码回归保护", () => {
 		assert.ok(!friendsSource.includes('action="/api/friend-links/apply"'));
 		assert.ok(applyPageSource.includes('action="/api/friend-links/apply"'));
 		assert.ok(
-			friendsSource.includes(
-				"--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);",
-			),
+			friendsSource.includes("--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);"),
 		);
+		assert.ok(friendsSource.includes("--glass-panel-blur: var(--hero-card-blur, 18px);"));
 		assert.ok(
-			friendsSource.includes(
-				"--glass-panel-blur: var(--hero-card-blur, 18px);",
-			),
+			applyPageSource.includes("--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);"),
 		);
-		assert.ok(
-			applyPageSource.includes(
-				"--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);",
-			),
-		);
-		assert.ok(
-			applyPageSource.includes(
-				"--glass-panel-blur: var(--hero-card-blur, 18px);",
-			),
-		);
+		assert.ok(applyPageSource.includes("--glass-panel-blur: var(--hero-card-blur, 18px);"));
 		assert.ok(applyPageSource.includes("站点简介（可选）"));
-		assert.doesNotMatch(
-			applyPageSource,
-			/<textarea[^>]*name="description"[^>]*required/u,
-		);
-		assert.ok(
-			applyPageSource.includes(
-				"https://challenges.cloudflare.com/turnstile/v0/api.js",
-			),
-		);
+		assert.doesNotMatch(applyPageSource, /<textarea[^>]*name="description"[^>]*required/u);
+		assert.ok(applyPageSource.includes("https://challenges.cloudflare.com/turnstile/v0/api.js"));
 		assert.ok(applyPageSource.includes('class="cf-turnstile"'));
 		assert.ok(applyPageSource.includes("申请须知"));
-		assert.ok(
-			applyPageSource.includes("siteAppearanceSettings.friendApplyNotice"),
-		);
-		assert.ok(
-			applyPageSource.includes('<p class="page-intro">{friendApplyNotice}</p>'),
-		);
+		assert.ok(applyPageSource.includes("siteAppearanceSettings.friendApplyNotice"));
+		assert.ok(applyPageSource.includes('<p class="page-intro">{friendApplyNotice}</p>'));
 		assert.ok(applyPageSource.includes("white-space: pre-line;"));
 	});
 
@@ -245,11 +191,7 @@ describe("源码回归保护", () => {
 		const source = await readFile("src/admin/routes/friend-links.ts", "utf8");
 
 		assert.ok(source.includes("cf-turnstile-response"));
-		assert.ok(
-			source.includes(
-				"https://challenges.cloudflare.com/turnstile/v0/siteverify",
-			),
-		);
+		assert.ok(source.includes("https://challenges.cloudflare.com/turnstile/v0/siteverify"));
 		assert.match(source, /if \(!name \|\| !contact \|\| !siteUrl\)/u);
 	});
 
@@ -296,12 +238,11 @@ describe("源码回归保护", () => {
 	});
 
 	test("文章详情页支持目录导航并提供阅读去透明度开关", async () => {
-		const [postLayoutSource, postPageSource, articleToggleScript] =
-			await Promise.all([
-				readFile("src/layouts/Post.astro", "utf8"),
-				readFile("src/pages/blog/[slug].astro", "utf8"),
-				readFile("public/article-transparency-toggle.js", "utf8"),
-			]);
+		const [postLayoutSource, postPageSource, articleToggleScript] = await Promise.all([
+			readFile("src/layouts/Post.astro", "utf8"),
+			readFile("src/pages/blog/[slug].astro", "utf8"),
+			readFile("public/article-transparency-toggle.js", "utf8"),
+		]);
 
 		assert.ok(postLayoutSource.includes("article-shell"));
 		assert.ok(postLayoutSource.includes("article-shell-no-sidebar"));
@@ -316,29 +257,17 @@ describe("源码回归保护", () => {
 		assert.ok(postLayoutSource.includes("article-opaque-mode"));
 		assert.doesNotMatch(postLayoutSource, /article-profile/u);
 		assert.doesNotMatch(postLayoutSource, /article-sidebar-sticky\.js/u);
-		assert.match(
-			postLayoutSource,
-			/\.article-toc\s*\{[^}]*position:\s*sticky/u,
-		);
+		assert.match(postLayoutSource, /\.article-toc\s*\{[^}]*position:\s*sticky/u);
 		assert.match(
 			postLayoutSource,
 			/\.article-toc\s*\{[^}]*top:\s*var\(--article-sidebar-sticky-top\)/u,
 		);
-		assert.doesNotMatch(
-			postLayoutSource,
-			/\.article-toc\s*\{[^}]*overflow:\s*auto/u,
-		);
+		assert.doesNotMatch(postLayoutSource, /\.article-toc\s*\{[^}]*overflow:\s*auto/u);
 		assert.match(postLayoutSource, /\.article-toc\s*\{[^}]*max-height/u);
-		assert.match(
-			postLayoutSource,
-			/\.article-toc-body\s*\{[^}]*overflow-y:\s*auto/u,
-		);
+		assert.match(postLayoutSource, /\.article-toc-body\s*\{[^}]*overflow-y:\s*auto/u);
 		assert.ok(postLayoutSource.includes(".article-toc-item::before"));
 		assert.ok(postLayoutSource.includes(".article-toc-list::before"));
-		assert.doesNotMatch(
-			postLayoutSource,
-			/\.article-sidebar\s*\{[^}]*position:\s*sticky/u,
-		);
+		assert.doesNotMatch(postLayoutSource, /\.article-sidebar\s*\{[^}]*position:\s*sticky/u);
 		assert.ok(postLayoutSource.includes("orientation: portrait"));
 		assert.doesNotMatch(postPageSource, /articleSidebar/u);
 		assert.doesNotMatch(postPageSource, /getSiteAppearance/u);
@@ -348,21 +277,18 @@ describe("源码回归保护", () => {
 		assert.ok(articleToggleScript.includes("querySelectorAll"));
 		assert.ok(articleToggleScript.includes("astro:page-load"));
 		assert.ok(articleToggleScript.includes("startViewTransition"));
-		assert.ok(
-			articleToggleScript.includes("data-article-transparency-switching"),
-		);
+		assert.ok(articleToggleScript.includes("data-article-transparency-switching"));
 		assert.ok(articleToggleScript.includes("clipPath"));
 	});
 
 	test("文章代码块启用 Mac 终端样式增强与复制按钮脚本", async () => {
-		const [baseLayoutSource, scriptSource, globalStyleSource] =
-			await Promise.all([
-				readFile("src/layouts/Base.astro", "utf8"),
-				readFile("public/code-block-enhance.js", "utf8"),
-				readFile("src/styles/global.css", "utf8"),
-			]);
+		const [postLayoutSource, scriptSource, globalStyleSource] = await Promise.all([
+			readFile("src/layouts/Post.astro", "utf8"),
+			readFile("public/code-block-enhance.js", "utf8"),
+			readFile("src/styles/global.css", "utf8"),
+		]);
 
-		assert.ok(baseLayoutSource.includes("/code-block-enhance.js"));
+		assert.ok(postLayoutSource.includes("/code-block-enhance.js"));
 		assert.ok(scriptSource.includes("prose-code-block"));
 		assert.ok(scriptSource.includes("prose-code-head"));
 		assert.ok(scriptSource.includes("prose-code-copy"));
@@ -393,36 +319,14 @@ describe("源码回归保护", () => {
 		assert.ok(dependencies["@fontsource/cormorant-garamond"]);
 		assert.ok(dependencies["@fontsource/shippori-mincho"]);
 		assert.ok(dependencies["@fontsource/space-grotesk"]);
+		assert.ok(globalStyleSource.includes('@import "@fontsource-variable/lora/wght.css";'));
+		assert.ok(globalStyleSource.includes('@import "@fontsource-variable/lora/wght-italic.css";'));
 		assert.ok(
-			globalStyleSource.includes(
-				'@import "@fontsource-variable/lora/wght.css";',
-			),
+			globalStyleSource.includes('@import "@fontsource/cormorant-garamond/500-italic.css";'),
 		);
-		assert.ok(
-			globalStyleSource.includes(
-				'@import "@fontsource-variable/lora/wght-italic.css";',
-			),
-		);
-		assert.ok(
-			globalStyleSource.includes(
-				'@import "@fontsource/cormorant-garamond/500-italic.css";',
-			),
-		);
-		assert.ok(
-			globalStyleSource.includes(
-				'@import "@fontsource/shippori-mincho/400.css";',
-			),
-		);
-		assert.ok(
-			globalStyleSource.includes(
-				'@import "@fontsource/shippori-mincho/700.css";',
-			),
-		);
-		assert.ok(
-			globalStyleSource.includes(
-				'@import "@fontsource/space-grotesk/700.css";',
-			),
-		);
+		assert.ok(globalStyleSource.includes('@import "@fontsource/shippori-mincho/400.css";'));
+		assert.ok(globalStyleSource.includes('@import "@fontsource/shippori-mincho/700.css";'));
+		assert.ok(globalStyleSource.includes('@import "@fontsource/space-grotesk/700.css";'));
 		assert.ok(globalStyleSource.includes('--font-serif-body: "Lora Variable"'));
 		assert.ok(globalStyleSource.includes("--font-serif-em:"));
 		assert.ok(globalStyleSource.includes('"Cormorant Garamond"'));
@@ -449,12 +353,11 @@ describe("源码回归保护", () => {
 	});
 
 	test("后台文章变更会触发可选部署钩子", async () => {
-		const [postRouteSource, deployHookSource, workflowSource] =
-			await Promise.all([
-				readFile("src/admin/routes/posts.ts", "utf8"),
-				readFile("src/admin/lib/deploy-hook.ts", "utf8"),
-				readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
-			]);
+		const [postRouteSource, deployHookSource, workflowSource] = await Promise.all([
+			readFile("src/admin/routes/posts.ts", "utf8"),
+			readFile("src/admin/lib/deploy-hook.ts", "utf8"),
+			readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
+		]);
 
 		assert.ok(postRouteSource.includes("triggerDeployHook"));
 		assert.ok(postRouteSource.includes("post-created"));

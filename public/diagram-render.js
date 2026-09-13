@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	if (window.__diagramRendererInitialized) {
 		return;
 	}
@@ -25,8 +25,10 @@
 			const match = line.match(/^\s*(\w+)\s*:\s*(.+)$/);
 			if (match) {
 				let value = match[2].trim();
-				if ((value.startsWith('"') && value.endsWith('"')) ||
-					(value.startsWith("'") && value.endsWith("'"))) {
+				if (
+					(value.startsWith('"') && value.endsWith('"')) ||
+					(value.startsWith("'") && value.endsWith("'"))
+				) {
 					value = value.slice(1, -1);
 				}
 				result[match[1]] = value;
@@ -52,7 +54,10 @@
 				if (!code) continue;
 
 				try {
-					const { svg } = await window.mermaid.render("mermaid-" + Math.random().toString(36).slice(2), code);
+					const { svg } = await window.mermaid.render(
+						"mermaid-" + Math.random().toString(36).slice(2),
+						code,
+					);
 					container.innerHTML = svg;
 				} catch (err) {
 					container.innerHTML = `<pre class="prose-mermaid-error"><code>${code}</code></pre>`;
@@ -128,11 +133,7 @@
 	}
 
 	async function renderAll() {
-		await Promise.allSettled([
-			renderMermaid(),
-			renderECharts(),
-			renderChartJS(),
-		]);
+		await Promise.allSettled([renderMermaid(), renderECharts(), renderChartJS()]);
 	}
 
 	// 页面加载后渲染

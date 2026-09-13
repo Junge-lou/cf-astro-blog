@@ -91,12 +91,7 @@ function parsePostBackgroundMode(value: unknown): PostBackgroundMode | null {
 		: null;
 }
 
-function clampInteger(
-	value: unknown,
-	min: number,
-	max: number,
-	fallback: number,
-): number {
+function clampInteger(value: unknown, min: number, max: number, fallback: number): number {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) {
 		return fallback;
@@ -153,9 +148,7 @@ function parsePostInput(
 		return { error: "网址别名格式不合法" } as const;
 	}
 
-	const slug =
-		manualSlug ||
-		buildUrlSlug(title, { fallbackPrefix: "post", maxLength: 120 });
+	const slug = manualSlug || buildUrlSlug(title, { fallbackPrefix: "post", maxLength: 120 });
 
 	const content = sanitizePlainText(body.content, 100_000, {
 		allowNewlines: true,
@@ -198,25 +191,19 @@ function parsePostInput(
 	const categoryIdRaw = String(body.categoryId ?? "").trim();
 	const isNewCategorySelected = categoryIdRaw === "__new__";
 	const categoryId =
-		categoryIdRaw && !isNewCategorySelected
-			? parseOptionalPositiveInt(categoryIdRaw)
-			: null;
+		categoryIdRaw && !isNewCategorySelected ? parseOptionalPositiveInt(categoryIdRaw) : null;
 	if (categoryIdRaw && !isNewCategorySelected && categoryId === null) {
 		return { error: "分类参数不合法" } as const;
 	}
 
 	const canonicalUrlRaw = String(body.canonicalUrl ?? "").trim();
-	const canonicalUrl = canonicalUrlRaw
-		? sanitizeCanonicalUrl(canonicalUrlRaw)
-		: null;
+	const canonicalUrl = canonicalUrlRaw ? sanitizeCanonicalUrl(canonicalUrlRaw) : null;
 	if (canonicalUrlRaw && !canonicalUrl) {
 		return { error: "规范链接地址不合法" } as const;
 	}
 
 	const featuredImageKeyRaw = String(body.featuredImageKey ?? "").trim();
-	const featuredImageKey = featuredImageKeyRaw
-		? sanitizeMediaKey(featuredImageKeyRaw)
-		: null;
+	const featuredImageKey = featuredImageKeyRaw ? sanitizeMediaKey(featuredImageKeyRaw) : null;
 	if (featuredImageKeyRaw && !featuredImageKey) {
 		return { error: "封面图片键名不合法" } as const;
 	}
@@ -228,9 +215,7 @@ function parsePostInput(
 	}
 
 	const backgroundImageKeyRaw = String(body.backgroundImageKey ?? "").trim();
-	const backgroundImageKey = backgroundImageKeyRaw
-		? sanitizeMediaKey(backgroundImageKeyRaw)
-		: null;
+	const backgroundImageKey = backgroundImageKeyRaw ? sanitizeMediaKey(backgroundImageKeyRaw) : null;
 	if (backgroundImageKeyRaw && !backgroundImageKey) {
 		return { error: "文章背景图片键名不合法" } as const;
 	}
@@ -265,35 +250,24 @@ function parsePostInput(
 		body.backgroundPositionX,
 		-50,
 		50,
-		Math.max(
-			-50,
-			Math.min(50, DEFAULT_SITE_APPEARANCE.backgroundPositionX - 50),
-		),
+		Math.max(-50, Math.min(50, DEFAULT_SITE_APPEARANCE.backgroundPositionX - 50)),
 	);
 	const backgroundPositionYOffset = clampInteger(
 		body.backgroundPositionY,
 		-50,
 		50,
-		Math.max(
-			-50,
-			Math.min(50, DEFAULT_SITE_APPEARANCE.backgroundPositionY - 50),
-		),
+		Math.max(-50, Math.min(50, DEFAULT_SITE_APPEARANCE.backgroundPositionY - 50)),
 	);
 
 	const isPinnedRaw = String(body.isPinned ?? "")
 		.trim()
 		.toLowerCase();
-	const isPinned =
-		isPinnedRaw === "1" || isPinnedRaw === "true" || isPinnedRaw === "on";
+	const isPinned = isPinnedRaw === "1" || isPinnedRaw === "true" || isPinnedRaw === "on";
 	const pinnedOrderRaw = String(body.pinnedOrder ?? "").trim();
 	let pinnedOrder = 100;
 	if (pinnedOrderRaw) {
 		const parsedPinnedOrder = Number(pinnedOrderRaw);
-		if (
-			!Number.isInteger(parsedPinnedOrder) ||
-			parsedPinnedOrder < 1 ||
-			parsedPinnedOrder > 9999
-		) {
+		if (!Number.isInteger(parsedPinnedOrder) || parsedPinnedOrder < 1 || parsedPinnedOrder > 9999) {
 			return { error: "置顶顺序需填写 1-9999 的整数" } as const;
 		}
 		pinnedOrder = parsedPinnedOrder;
@@ -316,16 +290,14 @@ function parsePostInput(
 			authorName,
 			slug,
 			content,
-			excerpt:
-				sanitizePlainText(body.excerpt, 200, { allowNewlines: true }) || null,
+			excerpt: sanitizePlainText(body.excerpt, 200, { allowNewlines: true }) || null,
 			status,
 			publishAt,
 			publishedAt,
 			featuredImageKey,
 			featuredImageAlt: sanitizePlainText(body.featuredImageAlt, 200) || null,
 			backgroundMode,
-			backgroundImageKey:
-				backgroundMode === "custom" ? backgroundImageKey : null,
+			backgroundImageKey: backgroundMode === "custom" ? backgroundImageKey : null,
 			backgroundOpacity: 100 - backgroundTransparency,
 			backgroundBlur,
 			backgroundScale: 100 + backgroundScaleOffset,
@@ -352,11 +324,7 @@ function parsePostInput(
 	} as const;
 }
 
-function buildSlugCandidate(
-	baseSlug: string,
-	index: number,
-	maxLength: number,
-): string {
+function buildSlugCandidate(baseSlug: string, index: number, maxLength: number): string {
 	const suffix = index === 0 ? "" : `-${index + 1}`;
 	const trimmedBase = baseSlug
 		.slice(0, Math.max(1, maxLength - suffix.length))
@@ -382,17 +350,10 @@ async function resolveUniquePostSlug(
 		}
 	}
 
-	return buildSlugCandidate(
-		`${baseSlug}-${crypto.randomUUID().slice(0, 8)}`,
-		0,
-		120,
-	);
+	return buildSlugCandidate(`${baseSlug}-${crypto.randomUUID().slice(0, 8)}`, 0, 120);
 }
 
-async function createOrGetCategoryId(
-	db: BlogDb,
-	categoryName: string,
-): Promise<number | null> {
+async function createOrGetCategoryId(db: BlogDb, categoryName: string): Promise<number | null> {
 	const [existingByName] = await db
 		.select({ id: blogCategories.id })
 		.from(blogCategories)
@@ -437,10 +398,7 @@ async function createOrGetCategoryId(
 	return null;
 }
 
-async function createOrGetTagId(
-	db: BlogDb,
-	tagName: string,
-): Promise<number | null> {
+async function createOrGetTagId(db: BlogDb, tagName: string): Promise<number | null> {
 	const [existingByName] = await db
 		.select({ id: blogTags.id })
 		.from(blogTags)
@@ -594,11 +552,7 @@ posts.get("/", async (c) => {
 			.from(blogPosts)
 			.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
 			.where(isNull(blogPosts.deletedAt))
-			.orderBy(
-				desc(blogPosts.isPinned),
-				asc(blogPosts.pinnedOrder),
-				desc(blogPosts.createdAt),
-			);
+			.orderBy(desc(blogPosts.isPinned), asc(blogPosts.pinnedOrder), desc(blogPosts.createdAt));
 
 		const trashedPosts = await db
 			.select({
@@ -613,10 +567,7 @@ posts.get("/", async (c) => {
 			.where(isNotNull(blogPosts.deletedAt))
 			.orderBy(desc(blogPosts.deletedAt));
 
-		const [categories, tags] = await Promise.all([
-			getCategoryRows(db),
-			getTagRows(db),
-		]);
+		const [categories, tags] = await Promise.all([getCategoryRows(db), getTagRows(db)]);
 
 		return c.html(
 			postsListPage(
@@ -629,9 +580,7 @@ posts.get("/", async (c) => {
 			),
 		);
 	} catch {
-		return c.html(
-			postsListPage([], [], [], [], session.csrfToken, resolvePostsAlert(status)),
-		);
+		return c.html(postsListPage([], [], [], [], session.csrfToken, resolvePostsAlert(status)));
 	}
 });
 
@@ -680,21 +629,11 @@ posts.post("/", async (c) => {
 	const postInput = parsed.data;
 
 	const now = new Date().toISOString();
-	const categoryId = await resolveCategoryId(
-		db,
-		postInput.categoryId,
-		postInput.newCategoryName,
-	);
-	const tagIds = await resolveTagIds(
-		db,
-		postInput.tagIds,
-		postInput.newTagNames,
-	);
+	const categoryId = await resolveCategoryId(db, postInput.categoryId, postInput.newCategoryName);
+	const tagIds = await resolveTagIds(db, postInput.tagIds, postInput.newTagNames);
 	const slug = await resolveUniquePostSlug(db, postInput.slug);
-	const publishedAt =
-		postInput.status === "published" ? (postInput.publishedAt ?? now) : null;
-	const publishAt =
-		postInput.status === "scheduled" ? postInput.publishAt : publishedAt;
+	const publishedAt = postInput.status === "published" ? (postInput.publishedAt ?? now) : null;
+	const publishAt = postInput.status === "scheduled" ? postInput.publishAt : publishedAt;
 
 	const [inserted] = await db
 		.insert(blogPosts)
@@ -820,8 +759,7 @@ posts.post("/ai-seo", async (c) => {
 		return c.json(
 			{
 				success: false,
-				message:
-					error instanceof Error ? error.message : "AI 生成失败，请稍后重试",
+				message: error instanceof Error ? error.message : "AI 生成失败，请稍后重试",
 			},
 			502,
 		);
@@ -851,11 +789,7 @@ posts.get("/:id/edit", async (c) => {
 	}
 	const db = getDb(c.env.DB);
 
-	const [post] = await db
-		.select()
-		.from(blogPosts)
-		.where(eq(blogPosts.id, id))
-		.limit(1);
+	const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
 
 	if (!post) {
 		return c.redirect("/api/admin/posts");
@@ -864,10 +798,7 @@ posts.get("/:id/edit", async (c) => {
 	const [categories, tags, postTagRows, defaultAuthorName] = await Promise.all([
 		db.select().from(blogCategories),
 		db.select().from(blogTags),
-		db
-			.select({ tagId: blogPostTags.tagId })
-			.from(blogPostTags)
-			.where(eq(blogPostTags.postId, id)),
+		db.select({ tagId: blogPostTags.tagId }).from(blogPostTags).where(eq(blogPostTags.postId, id)),
 		getDefaultPostAuthorName(db),
 	]);
 
@@ -928,16 +859,8 @@ posts.post("/:id", async (c) => {
 			: postInput.status === "published"
 				? publishedAt
 				: null;
-	const categoryId = await resolveCategoryId(
-		db,
-		postInput.categoryId,
-		postInput.newCategoryName,
-	);
-	const tagIds = await resolveTagIds(
-		db,
-		postInput.tagIds,
-		postInput.newTagNames,
-	);
+	const categoryId = await resolveCategoryId(db, postInput.categoryId, postInput.newCategoryName);
+	const tagIds = await resolveTagIds(db, postInput.tagIds, postInput.newTagNames);
 	const slug = await resolveUniquePostSlug(db, postInput.slug, id);
 
 	await db
@@ -1047,10 +970,7 @@ posts.post("/:id/restore", async (c) => {
 	}
 	const db = getDb(c.env.DB);
 
-	await db
-		.update(blogPosts)
-		.set({ deletedAt: null })
-		.where(eq(blogPosts.id, id));
+	await db.update(blogPosts).set({ deletedAt: null }).where(eq(blogPosts.id, id));
 
 	const [existing] = await db
 		.select({

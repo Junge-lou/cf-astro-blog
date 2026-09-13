@@ -36,9 +36,7 @@ type AppearanceFormBody = Record<string, AppearanceFormValue>;
 function getBodyText(body: AppearanceFormBody, key: string): string {
 	const value = body[key];
 	if (Array.isArray(value)) {
-		const firstText = value.find(
-			(item): item is string => typeof item === "string",
-		);
+		const firstText = value.find((item): item is string => typeof item === "string");
 		return firstText?.trim() ?? "";
 	}
 
@@ -98,10 +96,7 @@ function convertTransparencyToOpacity(transparency: number): number {
 	return Math.max(0, Math.min(100, 100 - Math.round(transparency)));
 }
 
-function buildLinkItemsFromBody(
-	labels: string[],
-	hrefs: string[],
-): SiteNavLink[] {
+function buildLinkItemsFromBody(labels: string[], hrefs: string[]): SiteNavLink[] {
 	const maxLength = Math.max(labels.length, hrefs.length);
 	const items: SiteNavLink[] = [];
 	for (let index = 0; index < maxLength; index += 1) {
@@ -158,10 +153,7 @@ function renderLinkRow(options: {
 
 function renderLinkRows(
 	items: SiteNavLink[],
-	options: Omit<
-		Parameters<typeof renderLinkRow>[0],
-		"labelValue" | "hrefValue"
-	>,
+	options: Omit<Parameters<typeof renderLinkRow>[0], "labelValue" | "hrefValue">,
 ) {
 	const safeItems = items.length > 0 ? items : [{ label: "", href: "" }];
 	return safeItems
@@ -189,35 +181,13 @@ function renderAppearancePage(options: {
 	};
 	alert?: { type: "success" | "error"; message: string };
 }) {
-	const {
-		csrfToken,
-		settings,
-		aiSettings,
-		aiKeySource,
-		aiWebKeyStatus,
-		alert,
-	} = options;
-	const backgroundScaleOffset = Math.min(
-		80,
-		Math.max(0, settings.backgroundScale - 100),
-	);
-	const backgroundPositionXOffset = Math.min(
-		50,
-		Math.max(-50, settings.backgroundPositionX - 50),
-	);
-	const backgroundPositionYOffset = Math.min(
-		50,
-		Math.max(-50, settings.backgroundPositionY - 50),
-	);
-	const backgroundTransparency = convertOpacityToTransparency(
-		settings.backgroundOpacity,
-	);
-	const heroCardTransparency = convertOpacityToTransparency(
-		settings.heroCardOpacity,
-	);
-	const articlePanelTransparency = convertOpacityToTransparency(
-		settings.articlePanelOpacity,
-	);
+	const { csrfToken, settings, aiSettings, aiKeySource, aiWebKeyStatus, alert } = options;
+	const backgroundScaleOffset = Math.min(80, Math.max(0, settings.backgroundScale - 100));
+	const backgroundPositionXOffset = Math.min(50, Math.max(-50, settings.backgroundPositionX - 50));
+	const backgroundPositionYOffset = Math.min(50, Math.max(-50, settings.backgroundPositionY - 50));
+	const backgroundTransparency = convertOpacityToTransparency(settings.backgroundOpacity);
+	const heroCardTransparency = convertOpacityToTransparency(settings.heroCardOpacity);
+	const articlePanelTransparency = convertOpacityToTransparency(settings.articlePanelOpacity);
 	const alertHtml = alert
 		? `<div class="alert alert-${escapeAttribute(alert.type)}">${escapeHtml(alert.message)}</div>`
 		: "";
@@ -927,10 +897,7 @@ appearance.post("/", async (c) => {
 
 	const backgroundImageKey = getBodyText(body, "backgroundImageKey").trim();
 	if (backgroundImageKey && !sanitizeMediaKey(backgroundImageKey)) {
-		return c.html(
-			renderAppearanceErrorPage(session.csrfToken, "背景图键名格式不合法"),
-			400,
-		);
+		return c.html(renderAppearanceErrorPage(session.csrfToken, "背景图键名格式不合法"), 400);
 	}
 
 	const backgroundTransparency = parseBodyNumber(
@@ -938,11 +905,7 @@ appearance.post("/", async (c) => {
 		"backgroundTransparency",
 		"backgroundOpacity",
 	);
-	const unifiedCardTransparency = parseBodyNumber(
-		body,
-		"heroCardTransparency",
-		"heroCardOpacity",
-	);
+	const unifiedCardTransparency = parseBodyNumber(body, "heroCardTransparency", "heroCardOpacity");
 	const unifiedCardBlur = parseBodyNumber(body, "heroCardBlur");
 	const articlePanelTransparency = parseBodyNumber(
 		body,
@@ -951,9 +914,7 @@ appearance.post("/", async (c) => {
 	);
 	const articlePanelBlur = parseBodyNumber(body, "articlePanelBlur");
 	const db = getDb(c.env.DB);
-	const storedAiSettings = await getAiSettings(db).catch(
-		() => DEFAULT_AI_SETTINGS,
-	);
+	const storedAiSettings = await getAiSettings(db).catch(() => DEFAULT_AI_SETTINGS);
 	const internalInputApiKey = getBodyText(body, "aiInternalApiKey").trim();
 	const publicInputApiKey = getBodyText(body, "aiPublicApiKey").trim();
 	const useInternalSecret = Boolean(c.env.AI_INTERNAL_API_KEY?.trim());
@@ -1017,28 +978,19 @@ appearance.post("/background/upload", async (c) => {
 
 	const file = getBodyFile(body, "file");
 	if (!(file instanceof File)) {
-		return c.html(
-			renderAppearanceErrorPage(session.csrfToken, "请选择要上传的背景图片"),
-			400,
-		);
+		return c.html(renderAppearanceErrorPage(session.csrfToken, "请选择要上传的背景图片"), 400);
 	}
 
 	if (!isAllowedImageMimeType(file.type)) {
 		return c.html(
-			renderAppearanceErrorPage(
-				session.csrfToken,
-				"背景图仅允许 JPG、PNG、WEBP、AVIF 或 GIF 图片",
-			),
+			renderAppearanceErrorPage(session.csrfToken, "背景图仅允许 JPG、PNG、WEBP、AVIF 或 GIF 图片"),
 			400,
 		);
 	}
 
 	if (file.size > MAX_UPLOAD_BYTES) {
 		return c.html(
-			renderAppearanceErrorPage(
-				session.csrfToken,
-				"背景图单个文件不能超过 50 MB ",
-			),
+			renderAppearanceErrorPage(session.csrfToken, "背景图单个文件不能超过 50 MB "),
 			400,
 		);
 	}

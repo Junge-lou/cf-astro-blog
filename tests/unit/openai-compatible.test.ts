@@ -30,20 +30,14 @@ describe("OpenAI 兼容接口", () => {
 			"https://api.deepseek.com",
 		);
 		assert.equal(
-			normalizeOpenAICompatibleBaseUrl(
-				"javascript:alert(1)",
-				"https://fallback.example.com/v1",
-			),
+			normalizeOpenAICompatibleBaseUrl("javascript:alert(1)", "https://fallback.example.com/v1"),
 			"https://fallback.example.com/v1",
 		);
 	});
 
 	test("isOpenAICompatibleEndpointReady 会校验必要字段", () => {
 		assert.equal(isOpenAICompatibleEndpointReady(endpoint), true);
-		assert.equal(
-			isOpenAICompatibleEndpointReady({ ...endpoint, apiKey: "" }),
-			false,
-		);
+		assert.equal(isOpenAICompatibleEndpointReady({ ...endpoint, apiKey: "" }), false);
 	});
 
 	test("requestOpenAICompatibleChatCompletion 会按标准 chat/completions 发请求", async () => {
@@ -79,12 +73,14 @@ describe("OpenAI 兼容接口", () => {
 
 		assert.equal(content, '{"ok":true}');
 		assert.equal(requests.length, 1);
-		assert.equal(requests[0].url, "https://api.deepseek.com/chat/completions");
-		assert.equal(requests[0].init?.method, "POST");
-		const headers = new Headers(requests[0].init?.headers);
+		const request = requests[0];
+		assert.ok(request);
+		assert.equal(request.url, "https://api.deepseek.com/chat/completions");
+		assert.equal(request.init?.method, "POST");
+		const headers = new Headers(request.init?.headers);
 		assert.equal(headers.get("authorization"), "Bearer sk-test");
 
-		const payload = JSON.parse(String(requests[0].init?.body));
+		const payload = JSON.parse(String(request.init?.body));
 		assert.equal(payload.model, "deepseek-v4-flash");
 		assert.equal(payload.messages.length, 2);
 		assert.deepEqual(payload.response_format, { type: "json_object" });

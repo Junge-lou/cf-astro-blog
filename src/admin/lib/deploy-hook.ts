@@ -9,8 +9,7 @@ interface DeployHookPayload {
 
 function isGitHubDispatchUrl(url: URL): boolean {
 	return (
-		url.hostname === "api.github.com" &&
-		/^\/repos\/[^/]+\/[^/]+\/dispatches$/u.test(url.pathname)
+		url.hostname === "api.github.com" && /^\/repos\/[^/]+\/[^/]+\/dispatches$/u.test(url.pathname)
 	);
 }
 
@@ -35,10 +34,7 @@ function normalizeWebhookUrl(rawUrl: unknown): string | null {
 	}
 }
 
-export async function triggerDeployHook(
-	env: Env,
-	payload: DeployHookPayload,
-): Promise<boolean> {
+export async function triggerDeployHook(env: Env, payload: DeployHookPayload): Promise<boolean> {
 	const webhookUrl = normalizeWebhookUrl(env.AUTO_DEPLOY_WEBHOOK_URL);
 	if (!webhookUrl) {
 		return false;
@@ -68,9 +64,7 @@ export async function triggerDeployHook(
 		headers.set("x-github-api-version", "2022-11-28");
 		headers.set("authorization", `Bearer ${secret}`);
 		requestBody = {
-			event_type:
-				String(env.AUTO_DEPLOY_GITHUB_EVENT_TYPE ?? "").trim() ||
-				"rebuild-search-index",
+			event_type: String(env.AUTO_DEPLOY_GITHUB_EVENT_TYPE ?? "").trim() || "rebuild-search-index",
 			client_payload: requestBody,
 		};
 	} else if (secret) {

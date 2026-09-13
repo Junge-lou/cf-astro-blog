@@ -199,8 +199,7 @@ describe("文章 AI 摘要与 SEO 自动生成", () => {
 					choices: [
 						{
 							message: {
-								content:
-									'{ "excerpt": "作者分享了博客上线一周后的近况，包括利用 AI 辅助（Vibe',
+								content: '{ "excerpt": "作者分享了博客上线一周后的近况，包括利用 AI 辅助（Vibe',
 							},
 						},
 					],

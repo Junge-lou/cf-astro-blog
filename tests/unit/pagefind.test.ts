@@ -5,10 +5,7 @@ import { describe, test } from "node:test";
 describe("Pagefind 搜索集成", () => {
 	test("搜索页接入客户端检索脚本与结果容器", async () => {
 		const source = await readFile("src/pages/search.astro", "utf8");
-		const searchComponentSource = await readFile(
-			"src/components/Search.astro",
-			"utf8",
-		);
+		const searchComponentSource = await readFile("src/components/Search.astro", "utf8");
 		const searchScript = await readFile("public/pagefind-search.js", "utf8");
 
 		assert.ok(source.includes("pagefind-search.js"));
@@ -27,9 +24,7 @@ describe("Pagefind 搜索集成", () => {
 		assert.ok(searchScript.includes("toEndOfDayExclusiveTimestamp"));
 		assert.ok(searchScript.includes("dateFrom"));
 		assert.ok(searchScript.includes("dateTo"));
-		assert.ok(
-			searchScript.includes('updateAddressBar(state, { mode: "push" })'),
-		);
+		assert.ok(searchScript.includes('updateAddressBar(state, { mode: "push" })'));
 		assert.match(
 			searchScript,
 			/form\.addEventListener\("submit",\s*async \(event\) => \{[\s\S]*updateAddressBar\(state,\s*\{\s*mode:\s*"push"\s*\}\);[\s\S]*performSearch\(context,\s*state\);[\s\S]*\}\);/u,
@@ -44,7 +39,9 @@ describe("Pagefind 搜索集成", () => {
 		assert.ok(source.includes("--local"));
 		assert.ok(source.includes("本地 D1 未读取到文章"));
 		assert.ok(source.includes("pagefind-meta.json"));
-		assert.ok(source.includes("npx"));
+		// Windows 兼容：直接调用 node_modules/.bin 下的 pagefind 可执行文件
+		assert.ok(source.includes('process.platform === "win32"'));
+		assert.ok(source.includes("pagefind.cmd"));
 		assert.ok(source.includes("pagefind"));
 	});
 

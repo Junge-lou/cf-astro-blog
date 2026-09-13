@@ -1536,11 +1536,7 @@ export const adminSharedStyles = `
 function resolveActiveNav(title: string): AdminNavKey {
 	if (title.includes("外观")) return "appearance";
 	if (title.includes("友链")) return "friends";
-	if (
-		title.includes("文章") ||
-		title.includes("编辑") ||
-		title.includes("新建")
-	) {
+	if (title.includes("文章") || title.includes("编辑") || title.includes("新建")) {
 		return "posts";
 	}
 	if (title.includes("媒体")) return "media";
@@ -1553,9 +1549,7 @@ function renderNav(title: string): string {
 
 	return navItems
 		.map(
-			(
-				item,
-			) => `<a href="${item.href}"${item.key === activeNav ? ' class="active"' : ""}>
+			(item) => `<a href="${item.href}"${item.key === activeNav ? ' class="active"' : ""}>
 				<span>${item.label}</span>
 			</a>`,
 		)

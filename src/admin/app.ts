@@ -10,9 +10,9 @@ import { friendsRoutes } from "./routes/friends";
 import { mcpRoutes } from "./routes/mcp";
 import { mediaRoutes } from "./routes/media";
 import { postsRoutes } from "./routes/posts";
-import { shuoshuoRoutes } from "./routes/shuoshuo";
 import { publicAiRoutes } from "./routes/public-ai";
 import { publicAnalyticsRoutes } from "./routes/public-analytics";
+import { shuoshuoRoutes } from "./routes/shuoshuo";
 
 const app = new Hono<AdminAppEnv>();
 
@@ -20,10 +20,7 @@ function applySecurityHeaders(pathname: string, response: Response) {
 	response.headers.set("X-Content-Type-Options", "nosniff");
 	response.headers.set("X-Frame-Options", "DENY");
 	response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-	response.headers.set(
-		"Permissions-Policy",
-		"camera=(), microphone=(), geolocation=()",
-	);
+	response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 	response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
 	const contentType = response.headers.get("content-type") ?? "";
@@ -43,10 +40,10 @@ function applySecurityHeaders(pathname: string, response: Response) {
 				"object-src 'none'",
 				"form-action 'self'",
 				// ✅ 视频：新增 video-src 支持 MP4 直链 + B站/腾讯视频
-    			"video-src 'self' https: data:",
+				"video-src 'self' https: data:",
 
-    // ✅ 媒体（音频）
-   				"media-src 'self' https: data:",
+				// ✅ 媒体（音频）
+				"media-src 'self' https: data:",
 				"script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
 				"style-src 'self' 'unsafe-inline'",
 				"img-src 'self' data: https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com",
@@ -96,8 +93,6 @@ app.route("/admin/analytics", analyticsRoutes);
 app.route("/friend-links", friendLinksRoutes);
 app.route("/comments", commentsProxyRoutes);
 
-app.get("/health", (c) =>
-	c.json({ status: "ok", timestamp: new Date().toISOString() }),
-);
+app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
 
 export { app };

@@ -21,10 +21,7 @@ interface RequestChatOptions {
 	jsonMode?: boolean;
 }
 
-export function normalizeOpenAICompatibleBaseUrl(
-	value: unknown,
-	fallback: string,
-): string {
+export function normalizeOpenAICompatibleBaseUrl(value: unknown, fallback: string): string {
 	const raw = sanitizePlainText(value, 240);
 	if (!raw) {
 		return fallback;
@@ -46,14 +43,9 @@ export function normalizeOpenAICompatibleBaseUrl(
 	}
 }
 
-export function isOpenAICompatibleEndpointReady(
-	endpoint: OpenAICompatibleEndpointConfig,
-): boolean {
+export function isOpenAICompatibleEndpointReady(endpoint: OpenAICompatibleEndpointConfig): boolean {
 	return Boolean(
-		endpoint.enabled &&
-			endpoint.baseUrl.trim() &&
-			endpoint.model.trim() &&
-			endpoint.apiKey.trim(),
+		endpoint.enabled && endpoint.baseUrl.trim() && endpoint.model.trim() && endpoint.apiKey.trim(),
 	);
 }
 
@@ -120,8 +112,7 @@ export async function requestOpenAICompatibleChatCompletion(
 	const payload: Record<string, unknown> = {
 		model: endpoint.model.trim(),
 		messages,
-		temperature:
-			typeof options.temperature === "number" ? options.temperature : 0.2,
+		temperature: typeof options.temperature === "number" ? options.temperature : 0.2,
 		max_tokens: typeof options.maxTokens === "number" ? options.maxTokens : 700,
 	};
 	if (options.jsonMode !== false) {
@@ -145,8 +136,7 @@ export async function requestOpenAICompatibleChatCompletion(
 
 		if (!response.ok) {
 			const providerMessage =
-				(responseJson as { error?: { message?: string } })?.error?.message ??
-				"";
+				(responseJson as { error?: { message?: string } })?.error?.message ?? "";
 			const fallbackMessage = sanitizePlainText(responseText, 180);
 			throw new Error(
 				`AI 请求失败（${response.status}）：${providerMessage || fallbackMessage || "未知错误"}`,

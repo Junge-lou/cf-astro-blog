@@ -49,8 +49,7 @@ function renderTaxonomyRows(options: {
 	csrfToken: string;
 	inUseLabel: string;
 }) {
-	const { items, emptyText, deleteActionBuilder, csrfToken, inUseLabel } =
-		options;
+	const { items, emptyText, deleteActionBuilder, csrfToken, inUseLabel } = options;
 
 	if (items.length === 0) {
 		return `<p class="empty-state">${escapeHtml(emptyText)}</p>`;

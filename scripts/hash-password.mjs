@@ -12,8 +12,6 @@ if (!password) {
 }
 
 const salt = randomBytes(16).toString("hex");
-const hash = pbkdf2Sync(password, salt, iterations, keyLength, "sha256").toString(
-	"hex",
-);
+const hash = pbkdf2Sync(password, salt, iterations, keyLength, "sha256").toString("hex");
 
 console.log(`pbkdf2_sha256$${iterations}$${salt}$${hash}`);

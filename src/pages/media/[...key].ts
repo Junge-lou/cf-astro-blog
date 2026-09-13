@@ -1,9 +1,6 @@
 import { env } from "cloudflare:workers";
 import type { APIRoute } from "astro";
-import {
-	buildPublicImageHeaders,
-	getMediaContentTypeForKey,
-} from "@/lib/media";
+import { buildPublicImageHeaders, getMediaContentTypeForKey } from "@/lib/media";
 import { sanitizeMediaKey } from "@/lib/security";
 
 export const GET: APIRoute = async ({ params }) => {

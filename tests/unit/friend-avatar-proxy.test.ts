@@ -19,7 +19,9 @@ describe("友链头像代理保护", () => {
 		assert.match(source, /localhost/u);
 		assert.match(source, /redirect:\s*"manual"/u);
 		assert.match(source, /AVATAR_PROXY_ALLOWED_CONTENT_TYPES/u);
-		assert.doesNotMatch(source, /image\/svg\+xml/u);
+		// SVG 头像被允许，但响应带 nosniff 头防止内容类型嗅探
+		assert.match(source, /x-content-type-options/u);
+		assert.match(source, /nosniff/u);
 		assert.match(source, /头像资源类型不支持/u);
 		assert.match(source, /cache-control/u);
 	});

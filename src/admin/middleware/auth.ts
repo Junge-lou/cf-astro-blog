@@ -26,26 +26,18 @@ export interface AdminAppEnv {
 
 function normalizeFormText(value: unknown): string {
 	if (Array.isArray(value)) {
-		const firstText = value.find(
-			(item): item is string => typeof item === "string",
-		);
+		const firstText = value.find((item): item is string => typeof item === "string");
 		return firstText?.trim() ?? "";
 	}
 
 	return typeof value === "string" ? value.trim() : "";
 }
 
-export function getBodyText(
-	body: Record<string, unknown>,
-	key: string,
-): string {
+export function getBodyText(body: Record<string, unknown>, key: string): string {
 	return normalizeFormText(body[key]);
 }
 
-export function getBodyFile(
-	body: Record<string, unknown>,
-	key: string,
-): File | null {
+export function getBodyFile(body: Record<string, unknown>, key: string): File | null {
 	const value = body[key];
 	if (Array.isArray(value)) {
 		const firstFile = value.find((item): item is File => item instanceof File);
@@ -62,19 +54,13 @@ function getSessionStorageKey(sessionId: string): string {
 function getJwtSecret(jwtSecret: string): Uint8Array {
 	const normalized = String(jwtSecret ?? "").trim();
 	if (normalized.length < MIN_JWT_SECRET_LENGTH) {
-		throw new Error(
-			`JWT_SECRET 长度不足，至少 ${MIN_JWT_SECRET_LENGTH} 个字符`,
-		);
+		throw new Error(`JWT_SECRET 长度不足，至少 ${MIN_JWT_SECRET_LENGTH} 个字符`);
 	}
 	return new TextEncoder().encode(normalized);
 }
 
 function getAdminGitHubLogin(env: Env): string {
-	return (
-		env.ADMIN_GITHUB_LOGIN?.trim() ||
-		env.ADMIN_USERNAME?.trim() ||
-		""
-	).trim();
+	return (env.ADMIN_GITHUB_LOGIN?.trim() || env.ADMIN_USERNAME?.trim() || "").trim();
 }
 
 export function getSessionCookieOptions(requestUrl?: string) {
@@ -92,14 +78,9 @@ export function getSessionCookieOptions(requestUrl?: string) {
 	};
 }
 
-export async function createSession(
-	env: Env,
-	username: string,
-): Promise<AdminSession> {
+export async function createSession(env: Env, username: string): Promise<AdminSession> {
 	const createdAt = new Date().toISOString();
-	const expiresAt = new Date(
-		Date.now() + SESSION_TTL_SECONDS * 1000,
-	).toISOString();
+	const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
 	const session: AdminSession = {
 		id: crypto.randomUUID(),
 		username,
@@ -108,28 +89,18 @@ export async function createSession(
 		expiresAt,
 	};
 
-	await env.SESSION.put(
-		getSessionStorageKey(session.id),
-		JSON.stringify(session),
-		{
-			expirationTtl: SESSION_TTL_SECONDS,
-		},
-	);
+	await env.SESSION.put(getSessionStorageKey(session.id), JSON.stringify(session), {
+		expirationTtl: SESSION_TTL_SECONDS,
+	});
 
 	return session;
 }
 
-export async function destroySession(
-	env: Env,
-	sessionId: string,
-): Promise<void> {
+export async function destroySession(env: Env, sessionId: string): Promise<void> {
 	await env.SESSION.delete(getSessionStorageKey(sessionId));
 }
 
-async function readSession(
-	env: Env,
-	sessionId: string,
-): Promise<AdminSession | null> {
+async function readSession(env: Env, sessionId: string): Promise<AdminSession | null> {
 	const raw = await env.SESSION.get(getSessionStorageKey(sessionId));
 	if (!raw) {
 		return null;
@@ -137,12 +108,7 @@ async function readSession(
 
 	try {
 		const parsed = JSON.parse(raw) as AdminSession;
-		if (
-			!parsed?.id ||
-			!parsed.username ||
-			!parsed.csrfToken ||
-			!parsed.expiresAt
-		) {
+		if (!parsed?.id || !parsed.username || !parsed.csrfToken || !parsed.expiresAt) {
 			await destroySession(env, sessionId);
 			return null;
 		}
@@ -181,14 +147,10 @@ export async function verifyToken(
 	token: string,
 ): Promise<{ sessionId: string; username: string } | null> {
 	try {
-		const { payload } = await jose.jwtVerify(
-			token,
-			getJwtSecret(env.JWT_SECRET),
-			{
-				issuer: SESSION_ISSUER,
-				audience: SESSION_AUDIENCE,
-			},
-		);
+		const { payload } = await jose.jwtVerify(token, getJwtSecret(env.JWT_SECRET), {
+			issuer: SESSION_ISSUER,
+			audience: SESSION_AUDIENCE,
+		});
 
 		if (
 			typeof payload.jti !== "string" ||
@@ -208,10 +170,7 @@ export async function verifyToken(
 	}
 }
 
-export async function getSessionFromToken(
-	env: Env,
-	token: string,
-): Promise<AdminSession | null> {
+export async function getSessionFromToken(env: Env, token: string): Promise<AdminSession | null> {
 	const payload = await verifyToken(env, token);
 	if (!payload) {
 		return null;
@@ -239,14 +198,8 @@ export function getAuthenticatedSession(c: Context<AdminAppEnv>): AdminSession {
 	return c.get("session");
 }
 
-export function assertCsrfToken(
-	providedToken: unknown,
-	session: AdminSession,
-): boolean {
-	return timingSafeEqualText(
-		normalizeFormText(providedToken),
-		session.csrfToken,
-	);
+export function assertCsrfToken(providedToken: unknown, session: AdminSession): boolean {
+	return timingSafeEqualText(normalizeFormText(providedToken), session.csrfToken);
 }
 
 export async function requireAuth(c: Context<AdminAppEnv>, next: Next) {

@@ -17,17 +17,13 @@ describe("页脚精简保护", () => {
 	});
 
 	test("页脚会在接近页面底部时缓慢上浮出现", async () => {
-		const [
-			footerSource,
-			baseLayoutSource,
-			globalStylesSource,
-			footerScriptSource,
-		] = await Promise.all([
-			readFile("src/components/Footer.astro", "utf8"),
-			readFile("src/layouts/Base.astro", "utf8"),
-			readFile("src/styles/global.css", "utf8"),
-			readFile("public/footer-reveal.js", "utf8"),
-		]);
+		const [footerSource, baseLayoutSource, globalStylesSource, footerScriptSource] =
+			await Promise.all([
+				readFile("src/components/Footer.astro", "utf8"),
+				readFile("src/layouts/Base.astro", "utf8"),
+				readFile("src/styles/global.css", "utf8"),
+				readFile("public/footer-reveal.js", "utf8"),
+			]);
 
 		assert.match(footerSource, /data-footer-reveal/u);
 		assert.match(baseLayoutSource, /footer-reveal\.js/u);

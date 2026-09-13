@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	const root = document.documentElement;
 	const NAV_CONDENSE_ENTER_Y = 56;
 	const NAV_CONDENSE_EXIT_Y = 20;
@@ -9,8 +9,7 @@
 		},
 		{
 			order: 1,
-			matches: (pathname) =>
-				pathname === "/blog" || pathname.startsWith("/blog/"),
+			matches: (pathname) => pathname === "/blog" || pathname.startsWith("/blog/"),
 		},
 		{
 			order: 2,
@@ -28,13 +27,10 @@
 		root.setAttribute("data-theme", theme);
 	}
 
-	const normalizeScrollY = (scrollY) =>
-		Number.isFinite(scrollY) ? Math.max(0, scrollY) : 0;
+	const normalizeScrollY = (scrollY) => (Number.isFinite(scrollY) ? Math.max(0, scrollY) : 0);
 
 	const getRouteTransitionOrder = (pathname) => {
-		const matchedRoute = ROUTE_TRANSITION_ORDER.find((route) =>
-			route.matches(pathname),
-		);
+		const matchedRoute = ROUTE_TRANSITION_ORDER.find((route) => route.matches(pathname));
 
 		return matchedRoute?.order ?? null;
 	};
@@ -106,10 +102,7 @@
 		const maxCapsuleW = vw - MIN_INSET_PX * 2;
 		const newCapsuleW = Math.min(contentW, maxCapsuleW);
 		const newInset = Math.max(MIN_INSET_PX, (vw - newCapsuleW) / 2);
-		root.style.setProperty(
-			"--nav-shell-condensed-computed-inset",
-			`${newInset.toFixed(1)}px`,
-		);
+		root.style.setProperty("--nav-shell-condensed-computed-inset", `${newInset.toFixed(1)}px`);
 	};
 
 	const applyNavState = (nextCondensed) => {
@@ -178,19 +171,12 @@
 	);
 	document.addEventListener("astro:page-load", () => requestNavSync(true));
 	document.addEventListener("astro:before-preparation", (event) => {
-		event.direction = getRouteTransitionDirection(
-			event.from,
-			event.to,
-			event.direction,
-		);
+		event.direction = getRouteTransitionDirection(event.from, event.to, event.direction);
 	});
 	document.addEventListener("astro:before-swap", (event) => {
 		isRouteTransitioning = true;
 		syncRootAttributeToDocument("data-theme", event.newDocument);
-		event.newDocument.documentElement.toggleAttribute(
-			"data-nav-condensed",
-			isNavCondensed,
-		);
+		event.newDocument.documentElement.toggleAttribute("data-nav-condensed", isNavCondensed);
 
 		const unlockNavSync = () => {
 			isRouteTransitioning = false;
@@ -207,8 +193,7 @@
 		window.requestAnimationFrame(unlockNavSync);
 	});
 
-	const prefersReducedMotion = () =>
-		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 	const getThemeToggleCenter = (toggle) => {
 		const rect = toggle.getBoundingClientRect();
@@ -218,8 +203,7 @@
 		};
 	};
 
-	const clampToViewport = (value, max) =>
-		Math.min(Math.max(value, 0), Math.max(max, 0));
+	const clampToViewport = (value, max) => Math.min(Math.max(value, 0), Math.max(max, 0));
 
 	const getThemeTransitionOrigin = (event, toggle) => {
 		const isPointerTriggered = event.detail > 0;
@@ -249,9 +233,7 @@
 
 	const resolveNextTheme = () => {
 		const current = root.getAttribute("data-theme");
-		const prefersDark = window.matchMedia(
-			"(prefers-color-scheme: dark)",
-		).matches;
+		const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 		return current === "dark" || (!current && prefersDark) ? "light" : "dark";
 	};
@@ -302,11 +284,9 @@
 			})
 			.catch(() => undefined);
 
-		return Promise.allSettled([transition.finished, rippleMotion]).finally(
-			() => {
-				root.removeAttribute("data-theme-switching");
-			},
-		);
+		return Promise.allSettled([transition.finished, rippleMotion]).finally(() => {
+			root.removeAttribute("data-theme-switching");
+		});
 	};
 
 	document.addEventListener("click", (event) => {

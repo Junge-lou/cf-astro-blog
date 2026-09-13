@@ -35,9 +35,7 @@ function toRssDate(value: string | null | undefined): string | null {
 		return null;
 	}
 
-	const normalized = value.includes("T")
-		? value
-		: `${value.replace(" ", "T")}Z`;
+	const normalized = value.includes("T") ? value : `${value.replace(" ", "T")}Z`;
 	const parsed = new Date(normalized);
 
 	if (Number.isNaN(parsed.getTime())) {
@@ -77,10 +75,7 @@ export const GET: APIRoute = async () => {
 			getSiteAppearance(db).catch(() => DEFAULT_SITE_APPEARANCE),
 		]);
 		posts = postRows;
-		feedDescription = resolveSiteDescriptionFromAppearance(
-			appearance,
-			siteConfig.description,
-		);
+		feedDescription = resolveSiteDescriptionFromAppearance(appearance, siteConfig.description);
 	} catch {
 		// D1 未绑定时回退为空 Feed
 	}
@@ -89,8 +84,7 @@ export const GET: APIRoute = async () => {
 	const items = posts
 		.map((post) => {
 			const url = `${siteConfig.url}/blog/${encodeRouteParam(post.slug)}`;
-			const pubDate =
-				toRssDate(post.publishedAt) || toRssDate(post.updatedAt) || now;
+			const pubDate = toRssDate(post.publishedAt) || toRssDate(post.updatedAt) || now;
 
 			return `<item>
 	<title>${escapeXml(post.title)}</title>

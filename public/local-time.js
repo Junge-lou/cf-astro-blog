@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	const TARGET_SELECTOR = "[data-local-time]";
 	const STYLE_OPTIONS = {
 		date: {

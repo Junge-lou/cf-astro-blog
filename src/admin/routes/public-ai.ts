@@ -69,12 +69,7 @@ interface TurnstileVerifyResponse {
 	"error-codes"?: string[];
 }
 
-function parseLimit(
-	value: unknown,
-	fallback: number,
-	min: number,
-	max: number,
-): number {
+function parseLimit(value: unknown, fallback: number, min: number, max: number): number {
 	const parsed = Number.parseInt(String(value ?? ""), 10);
 	if (!Number.isFinite(parsed)) {
 		return fallback;
@@ -119,8 +114,7 @@ function parsePayload(
 	rawBody: string,
 	mode: PublicAiMode,
 ): { data: PublicAiPayload } | { error: string } {
-	const maxBodyLength =
-		mode === "terminal-404" ? MAX_TERMINAL_BODY_LENGTH : MAX_CHAT_BODY_LENGTH;
+	const maxBodyLength = mode === "terminal-404" ? MAX_TERMINAL_BODY_LENGTH : MAX_CHAT_BODY_LENGTH;
 	if (!rawBody || rawBody.length > maxBodyLength) {
 		return { error: "请求体体积无效" };
 	}
@@ -140,12 +134,10 @@ function parsePayload(
 	}
 	const cwdRaw = sanitizePlainText(parsed.cwd, MAX_TERMINAL_CWD_LENGTH);
 	const cwd = normalizeTerminalCwd(cwdRaw);
-	const history =
-		mode === "terminal-404" ? normalizeTerminalHistory(parsed.history) : [];
+	const history = mode === "terminal-404" ? normalizeTerminalHistory(parsed.history) : [];
 
 	const turnstileToken =
-		sanitizePlainText(parsed.turnstileToken, MAX_TURNSTILE_TOKEN_LENGTH) ||
-		null;
+		sanitizePlainText(parsed.turnstileToken, MAX_TURNSTILE_TOKEN_LENGTH) || null;
 
 	return {
 		data: {
@@ -183,10 +175,7 @@ function normalizeTerminalHistory(value: unknown): TerminalHistoryMessage[] {
 			continue;
 		}
 
-		const roleRaw = sanitizePlainText(
-			(item as { role?: unknown }).role,
-			16,
-		).toLowerCase();
+		const roleRaw = sanitizePlainText((item as { role?: unknown }).role, 16).toLowerCase();
 		if (roleRaw !== "user" && roleRaw !== "assistant") {
 			continue;
 		}
@@ -226,9 +215,7 @@ interface TerminalAiResponsePayload {
 	output: string;
 }
 
-function parseTerminalCommandInput(
-	content: string,
-): ParsedTerminalCommandInput | null {
+function parseTerminalCommandInput(content: string): ParsedTerminalCommandInput | null {
 	const normalized = String(content ?? "").replaceAll("\r", "");
 	const lines = normalized.split("\n");
 	if (lines.length < 2) {
@@ -266,13 +253,11 @@ function buildTerminalTranscriptUserMessage(
 	cwd: string | null,
 	command: string,
 ): string {
-	const lines: string[] = [
-		"以下为终端历史记录与当前输入，仅用于模拟 shell 上下文：",
-	];
+	const lines: string[] = ["以下为终端历史记录与当前输入，仅用于模拟 shell 上下文："];
 
 	for (let index = 0; index < history.length; index += 1) {
 		const item = history[index];
-		if (item.role !== "user") {
+		if (!item || item.role !== "user") {
 			continue;
 		}
 
@@ -291,9 +276,7 @@ function buildTerminalTranscriptUserMessage(
 		}
 	}
 
-	const currentInput = parseTerminalCommandInput(
-		buildTerminalUserContent(cwd, command),
-	);
+	const currentInput = parseTerminalCommandInput(buildTerminalUserContent(cwd, command));
 	if (currentInput) {
 		lines.push(
 			`guest@404:${currentInput.cwd}$ ${normalizeTerminalCommandForTranscript(currentInput.command)}`,
@@ -350,9 +333,7 @@ function parseTerminalAiResponsePayload(
 			: null;
 
 	const clearFlag = isClear || Boolean(payload?.clear);
-	const output = payload
-		? normalizeTerminalOutputText(payload.output)
-		: fallbackOutput;
+	const output = payload ? normalizeTerminalOutputText(payload.output) : fallbackOutput;
 	const normalizedNextCwd = normalizeTerminalCwd(
 		sanitizePlainText(payload?.nextCwd, MAX_TERMINAL_CWD_LENGTH),
 	);
@@ -420,11 +401,7 @@ async function checkRateBudget(c: Context<AdminAppEnv>, ip: string) {
 		10_000,
 	);
 
-	const minuteCount = await incrementKvCounter(
-		c.env.SESSION,
-		getMinuteRateKey(ip),
-		120,
-	);
+	const minuteCount = await incrementKvCounter(c.env.SESSION, getMinuteRateKey(ip), 120);
 	if (minuteCount > minuteLimit) {
 		return {
 			ok: false as const,
@@ -453,10 +430,7 @@ async function checkRateBudget(c: Context<AdminAppEnv>, ip: string) {
 	};
 }
 
-async function verifyTurnstileToken(
-	c: Context<AdminAppEnv>,
-	token: string | null,
-) {
+async function verifyTurnstileToken(c: Context<AdminAppEnv>, token: string | null) {
 	const secret = String(c.env.TURNSTILE_SECRET_KEY || "").trim();
 	if (!secret) {
 		return { success: true, skipped: true } as const;
@@ -475,14 +449,11 @@ async function verifyTurnstileToken(
 	}
 
 	try {
-		const response = await fetch(
-			"https://challenges.cloudflare.com/turnstile/v0/siteverify",
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body: formData.toString(),
-			},
-		);
+		const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: formData.toString(),
+		});
 		if (!response.ok) {
 			return { success: false, reason: "verify-request-failed" } as const;
 		}
@@ -498,10 +469,7 @@ async function verifyTurnstileToken(
 	}
 }
 
-async function handlePublicAiRequest(
-	c: Context<AdminAppEnv>,
-	options: PublicAiRequestOptions,
-) {
+async function handlePublicAiRequest(c: Context<AdminAppEnv>, options: PublicAiRequestOptions) {
 	if (!isSameOriginRequest(c)) {
 		return c.json({ error: "非法来源请求" }, 403);
 	}
@@ -528,9 +496,7 @@ async function handlePublicAiRequest(
 		return c.json({ error: budget.message }, budget.status);
 	}
 
-	const resolvedAi = await getResolvedAiSettings(getDb(c.env.DB), c.env).catch(
-		() => null,
-	);
+	const resolvedAi = await getResolvedAiSettings(getDb(c.env.DB), c.env).catch(() => null);
 	if (!resolvedAi) {
 		return c.json({ error: "公开 AI 接口暂时不可用" }, 503);
 	}
@@ -564,16 +530,12 @@ async function handlePublicAiRequest(
 			});
 		}
 
-		const reply = await requestOpenAICompatibleChatCompletion(
-			publicEndpoint,
-			messages,
-			{
-				temperature: options.temperature,
-				maxTokens: options.maxTokens,
-				timeoutMs: 20_000,
-				jsonMode: options.jsonMode,
-			},
-		);
+		const reply = await requestOpenAICompatibleChatCompletion(publicEndpoint, messages, {
+			temperature: options.temperature,
+			maxTokens: options.maxTokens,
+			timeoutMs: 20_000,
+			jsonMode: options.jsonMode,
+		});
 		if (options.mode === "terminal-404") {
 			const normalized = parseTerminalAiResponsePayload(
 				reply,

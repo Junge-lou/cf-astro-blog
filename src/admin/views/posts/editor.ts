@@ -61,9 +61,7 @@ function clampInteger(
 	return Math.min(max, Math.max(min, Math.round(value)));
 }
 
-function normalizePostBackgroundMode(
-	value: string | null | undefined,
-): PostBackgroundMode {
+function normalizePostBackgroundMode(value: string | null | undefined): PostBackgroundMode {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
@@ -77,19 +75,9 @@ function convertOpacityToTransparency(opacity: number): number {
 }
 
 export function postEditorPage(data: EditorData): string {
-	const {
-		post,
-		categories,
-		tags,
-		defaultAuthorName,
-		selectedTagIds = [],
-		csrfToken,
-		error,
-	} = data;
+	const { post, categories, tags, defaultAuthorName, selectedTagIds = [], csrfToken, error } = data;
 	const isEdit = !!post;
-	const formAction = isEdit
-		? `/api/admin/posts/${post.id}`
-		: "/api/admin/posts";
+	const formAction = isEdit ? `/api/admin/posts/${post.id}` : "/api/admin/posts";
 	const currentStatus = normalizeDisplayStatus(post?.status || "draft");
 	const featuredImageKey = post?.featuredImageKey || "";
 	const featuredImageAlt = post?.featuredImageAlt || "";
@@ -106,45 +94,23 @@ export function postEditorPage(data: EditorData): string {
 	const authorNameValue = post?.authorName?.trim() || defaultAuthorName.trim();
 	const backgroundMode = normalizePostBackgroundMode(post?.backgroundMode);
 	const backgroundImageKey = post?.backgroundImageKey || "";
-	const backgroundImageUrl = backgroundImageKey
-		? `/media/${backgroundImageKey}`
-		: "";
+	const backgroundImageUrl = backgroundImageKey ? `/media/${backgroundImageKey}` : "";
 	const backgroundTransparency = String(
 		convertOpacityToTransparency(
-			clampInteger(
-				post?.backgroundOpacity,
-				0,
-				100,
-				DEFAULT_POST_BACKGROUND.opacity,
-			),
+			clampInteger(post?.backgroundOpacity, 0, 100, DEFAULT_POST_BACKGROUND.opacity),
 		),
 	);
 	const backgroundBlur = String(
 		clampInteger(post?.backgroundBlur, 0, 60, DEFAULT_POST_BACKGROUND.blur),
 	);
 	const backgroundScale = String(
-		clampInteger(
-			post?.backgroundScale,
-			100,
-			180,
-			DEFAULT_POST_BACKGROUND.scale,
-		) - 100,
+		clampInteger(post?.backgroundScale, 100, 180, DEFAULT_POST_BACKGROUND.scale) - 100,
 	);
 	const backgroundPositionX = String(
-		clampInteger(
-			post?.backgroundPositionX,
-			0,
-			100,
-			DEFAULT_POST_BACKGROUND.positionX,
-		) - 50,
+		clampInteger(post?.backgroundPositionX, 0, 100, DEFAULT_POST_BACKGROUND.positionX) - 50,
 	);
 	const backgroundPositionY = String(
-		clampInteger(
-			post?.backgroundPositionY,
-			0,
-			100,
-			DEFAULT_POST_BACKGROUND.positionY,
-		) - 50,
+		clampInteger(post?.backgroundPositionY, 0, 100, DEFAULT_POST_BACKGROUND.positionY) - 50,
 	);
 	const showPostBackgroundControls = backgroundMode !== "global";
 	const showCustomBackgroundUploader = backgroundMode === "custom";

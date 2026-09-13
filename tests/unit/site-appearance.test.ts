@@ -29,10 +29,7 @@ describe("站点外观设置", () => {
 			articlePanelBlur: 130,
 		});
 
-		assert.equal(
-			normalized.backgroundImageKey,
-			"appearance/background/2026-03-07/example.webp",
-		);
+		assert.equal(normalized.backgroundImageKey, "appearance/background/2026-03-07/example.webp");
 		assert.equal(normalized.backgroundOpacity, 0);
 		assert.equal(normalized.backgroundBlur, 60);
 		assert.equal(normalized.backgroundScale, 180);
@@ -54,10 +51,7 @@ describe("站点外观设置", () => {
 			heroTitle: "",
 		});
 
-		assert.equal(
-			normalized.backgroundImageKey,
-			DEFAULT_SITE_APPEARANCE.backgroundImageKey,
-		);
+		assert.equal(normalized.backgroundImageKey, DEFAULT_SITE_APPEARANCE.backgroundImageKey);
 		assert.equal(normalized.heroTitle, DEFAULT_SITE_APPEARANCE.heroTitle);
 		assert.equal(normalized.navLink1Href, "/");
 		assert.equal(normalized.navLink2Href, "/blog");
@@ -91,10 +85,7 @@ describe("站点外观设置", () => {
 			heroMainImagePath: "appearance/home/main.webp",
 		});
 
-		assert.equal(
-			normalized.heroMainImagePath,
-			"/media/appearance/home/main.webp",
-		);
+		assert.equal(normalized.heroMainImagePath, "/media/appearance/home/main.webp");
 	});
 
 	test("normalizeSiteAppearanceInput 支持右侧信息卡图片与标签", () => {
@@ -105,10 +96,7 @@ describe("站点外观设置", () => {
 			heroSignalChip3: "卡片抬升",
 		});
 
-		assert.equal(
-			normalized.heroSignalImagePath,
-			"/media/appearance/home/signal.webp",
-		);
+		assert.equal(normalized.heroSignalImagePath, "/media/appearance/home/signal.webp");
 		assert.equal(normalized.heroSignalChip1, "指针联动");
 		assert.equal(normalized.heroSignalChip2, "柔和轨道");
 		assert.equal(normalized.heroSignalChip3, "卡片抬升");

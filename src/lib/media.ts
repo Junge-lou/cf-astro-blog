@@ -24,9 +24,7 @@ function isValidContentHash(value: string) {
 }
 
 function toHex(bytes: Uint8Array) {
-	return [...bytes]
-		.map((value) => value.toString(16).padStart(2, "0"))
-		.join("");
+	return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
 export function getAllowedMediaAcceptValue() {
@@ -71,9 +69,7 @@ async function readMediaHashIndex(
 	}
 
 	try {
-		const payload = JSON.parse(
-			await indexObject.text(),
-		) as Partial<MediaHashIndexRecord>;
+		const payload = JSON.parse(await indexObject.text()) as Partial<MediaHashIndexRecord>;
 		if (
 			typeof payload.key !== "string" ||
 			typeof payload.contentHash !== "string" ||
@@ -94,10 +90,7 @@ async function readMediaHashIndex(
 	}
 }
 
-async function writeMediaHashIndex(
-	bucket: R2Bucket,
-	record: MediaHashIndexRecord,
-) {
+async function writeMediaHashIndex(bucket: R2Bucket, record: MediaHashIndexRecord) {
 	const indexKey = buildMediaHashIndexKey(record.contentHash);
 	await bucket.put(indexKey, JSON.stringify(record), {
 		httpMetadata: { contentType: "application/json; charset=utf-8" },
@@ -135,10 +128,7 @@ export async function saveMediaObjectWithDedup(options: {
 }): Promise<SaveMediaObjectResult> {
 	const { bucket, file, prefix = "uploads" } = options;
 	const contentHash = await computeFileContentHash(file);
-	const existingKey = await resolveExistingKeyFromHashIndex(
-		bucket,
-		contentHash,
-	);
+	const existingKey = await resolveExistingKeyFromHashIndex(bucket, contentHash);
 	if (existingKey) {
 		return { key: existingKey, deduplicated: true, contentHash };
 	}
@@ -154,10 +144,7 @@ export async function saveMediaObjectWithDedup(options: {
 	});
 
 	// 并发上传同一文件时，后写入者复用已有索引并清理重复对象。
-	const concurrentKey = await resolveExistingKeyFromHashIndex(
-		bucket,
-		contentHash,
-	);
+	const concurrentKey = await resolveExistingKeyFromHashIndex(bucket, contentHash);
 	if (concurrentKey && concurrentKey !== key) {
 		await bucket.delete(key);
 		return { key: concurrentKey, deduplicated: true, contentHash };

@@ -10,7 +10,7 @@
  * - 尊重 prefers-reduced-motion，直接显示内容。
  * - 通过 IntersectionObserver 触发，一次后即解除观察。
  */
-(function () {
+(() => {
 	if (window.__articleRevealBooted) return;
 	window.__articleRevealBooted = true;
 
@@ -18,8 +18,7 @@
 	const STAGGER_MS = 60;
 	const MAX_DELAY_MS = 420;
 
-	const prefersReducedMotion = () =>
-		window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 	const init = () => {
 		const prose = document.querySelector(PROSE_SELECTOR);
@@ -50,7 +49,9 @@
 			{ rootMargin: "0px 0px -10% 0px", threshold: 0.06 },
 		);
 
-		items.forEach((el) => observer.observe(el));
+		for (const el of items) {
+			observer.observe(el);
+		}
 	};
 
 	document.addEventListener("astro:page-load", init);

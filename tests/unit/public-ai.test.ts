@@ -28,20 +28,14 @@ describe("公开 AI 接口防护", () => {
 		assert.match(source, /MAX_TERMINAL_BODY_LENGTH/u);
 		assert.match(source, /MAX_TERMINAL_HISTORY_MESSAGE_LENGTH/u);
 		assert.match(source, /history/u);
-		assert.match(
-			source,
-			/publicAiRoutes\.post\("\/terminal-404"[\s\S]*requireTurnstile:\s*false/u,
-		);
+		assert.match(source, /publicAiRoutes\.post\("\/terminal-404"[\s\S]*requireTurnstile:\s*false/u);
 		assert.match(source, /你必须只返回一个 JSON 对象/u);
 		assert.match(source, /"nextCwd": "\/规范路径"/u);
 		assert.match(source, /clear\/cls：clear=true/u);
 		assert.match(source, /zsh: no such file or directory/u);
 		assert.match(source, /isTerminalCdCommand/u);
 		assert.match(source, /parseTerminalAiResponsePayload/u);
-		assert.match(
-			source,
-			/publicAiRoutes\.post\("\/terminal-404"[\s\S]*jsonMode:\s*true/u,
-		);
+		assert.match(source, /publicAiRoutes\.post\("\/terminal-404"[\s\S]*jsonMode:\s*true/u);
 	});
 
 	test("主应用会挂载公开 AI 路由", async () => {

@@ -1,17 +1,15 @@
 // 从 D1 生成 RSS，然后用 @remy/webmention 自动向外发送 Webmention
 import { execSync } from "node:child_process";
-import { writeFile, unlink } from "node:fs/promises";
+import { unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
 
 const ROOT_DIR = process.cwd();
 const BIN_DIR = join(ROOT_DIR, "node_modules", ".bin");
-const WRANGLER = join(
-	BIN_DIR,
-	process.platform === "win32" ? "wrangler.cmd" : "wrangler",
-);
+const WRANGLER = join(BIN_DIR, process.platform === "win32" ? "wrangler.cmd" : "wrangler");
 
-const RSS_QUERY = "SELECT p.title AS title, p.slug AS slug, p.excerpt AS excerpt, p.content AS content, p.published_at AS publishedAt, p.updated_at AS updatedAt FROM blog_posts p WHERE p.status = 'published' OR (p.status = 'scheduled' AND p.publish_at IS NOT NULL AND p.publish_at <= datetime('now')) ORDER BY COALESCE(p.published_at, p.updated_at, p.created_at) DESC LIMIT 30;";
+const RSS_QUERY =
+	"SELECT p.title AS title, p.slug AS slug, p.excerpt AS excerpt, p.content AS content, p.published_at AS publishedAt, p.updated_at AS updatedAt FROM blog_posts p WHERE p.status = 'published' OR (p.status = 'scheduled' AND p.publish_at IS NOT NULL AND p.publish_at <= datetime('now')) ORDER BY COALESCE(p.published_at, p.updated_at, p.created_at) DESC LIMIT 30;";
 
 const SITE_URL = "https://ffaff.fun";
 const SITE_NAME = "Kiwi 的博客";
@@ -75,7 +73,9 @@ async function main() {
 		.map((post) => {
 			const url = `${SITE_URL}/blog/${encodeSlug(post.slug)}`;
 			const pubDate = toRssDate(post.publishedAt) || toRssDate(post.updatedAt) || now;
-			const raw = (post.excerpt?.trim() || post.content?.trim() || "").replace(/\s+/g, " ").slice(0, 220);
+			const raw = (post.excerpt?.trim() || post.content?.trim() || "")
+				.replace(/\s+/g, " ")
+				.slice(0, 220);
 			return `<item>
 	<title>${escapeXml(post.title)}</title>
 	<link>${url}</link>

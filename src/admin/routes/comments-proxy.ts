@@ -32,9 +32,7 @@ commentsProxyRoutes.all("/", async (c) => {
 	const proxyRequest = new Request(targetUrl.toString(), {
 		method: c.req.method,
 		headers: proxyHeaders,
-		body: c.req.method === "GET" || c.req.method === "HEAD"
-			? undefined
-			: c.req.raw.body,
+		body: c.req.method === "GET" || c.req.method === "HEAD" ? undefined : c.req.raw.body,
 	});
 
 	const proxyResponse = await fetch(proxyRequest);

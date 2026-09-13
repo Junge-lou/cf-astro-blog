@@ -4,7 +4,7 @@
  * 仿 Momo 博客 #main-header：移动端下滚隐藏导航、上滚恢复；桌面端始终显示。
  * 通过给 <html> 添加/移除 data-header-hidden 属性驱动 CSS 过渡。
  */
-(function () {
+(() => {
 	if (window.__headerScrollHideBooted) return;
 	window.__headerScrollHideBooted = true;
 

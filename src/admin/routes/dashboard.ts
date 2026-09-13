@@ -2,11 +2,7 @@ import { desc, isNull, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { analyticsEvents, analyticsSessions, blogPosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
-import {
-	type AdminAppEnv,
-	getAuthenticatedSession,
-	requireAuth,
-} from "../middleware/auth";
+import { type AdminAppEnv, getAuthenticatedSession, requireAuth } from "../middleware/auth";
 import { dashboardPage } from "../views/dashboard";
 
 const dashboard = new Hono<AdminAppEnv>();
@@ -31,9 +27,7 @@ dashboard.get("/", async (c) => {
 			.select({ total: sql<number>`count(*)` })
 			.from(analyticsSessions);
 
-		const [eventStats] = await db
-			.select({ total: sql<number>`count(*)` })
-			.from(analyticsEvents);
+		const [eventStats] = await db.select({ total: sql<number>`count(*)` }).from(analyticsEvents);
 
 		const recentPosts = await db
 			.select({

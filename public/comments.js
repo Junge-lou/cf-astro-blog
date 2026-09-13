@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	const PANEL_SELECTOR = "[data-comments-panel]";
 	const TOGGLE_SELECTOR = "[data-comments-toggle]";
 	const BODY_SELECTOR = "[data-comments-body]";
@@ -18,7 +18,7 @@
 			return;
 		}
 
-		host.innerHTML = "<div id=\"momo-comment\"></div>";
+		host.innerHTML = '<div id="momo-comment"></div>';
 
 		const script = document.createElement("script");
 		script.src = "/momo-comment.min.js";

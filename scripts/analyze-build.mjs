@@ -11,7 +11,7 @@
  *   - Top-10 最大文件列表
  *   - 与上次构建的差异对比（若存在 .build-snapshot.json）
  */
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
 const DIST_DIR = resolve(import.meta.dirname ?? ".", "..", "dist");
@@ -21,10 +21,7 @@ const OUTPUT_JSON = process.argv.includes("--json");
 // ─── 工具函数 ────────────────────────────────────────────────────────────────
 
 /** 递归收集目录下所有文件信息 */
-async function collectFiles(
-	dir,
-	base = dir,
-) {
+async function collectFiles(dir, base = dir) {
 	const entries = [];
 	const items = await readdir(dir, { withFileTypes: true });
 
@@ -92,9 +89,7 @@ async function main() {
 
 	if (prev?.totalSize) {
 		const delta = totalSize - prev.totalSize;
-		const deltaPercent = prev.totalSize > 0
-			? ((delta / prev.totalSize) * 100).toFixed(2)
-			: "0";
+		const deltaPercent = prev.totalSize > 0 ? ((delta / prev.totalSize) * 100).toFixed(2) : "0";
 		const sign = delta >= 0 ? "+" : "";
 		diffText = ` (${sign}${formatSize(delta)}, ${sign}${deltaPercent}%)`;
 	}

@@ -29,10 +29,7 @@ describe("前端本地时间渲染保护", () => {
 	});
 
 	test("搜索结果日期使用浏览器默认本地化格式", async () => {
-		const searchScriptSource = await readFile(
-			"public/pagefind-search.js",
-			"utf8",
-		);
+		const searchScriptSource = await readFile("public/pagefind-search.js", "utf8");
 
 		assert.match(searchScriptSource, /toLocaleDateString\(\)/u);
 		assert.doesNotMatch(searchScriptSource, /toLocaleDateString\("zh-CN"\)/u);

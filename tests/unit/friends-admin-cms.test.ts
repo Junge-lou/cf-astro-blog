@@ -6,10 +6,7 @@ describe("后台友链直录能力", () => {
 	test("友链管理页提供后台直接新增按钮和完整配置项", async () => {
 		const source = await readFile("src/admin/routes/friends.ts", "utf8");
 
-		assert.match(
-			source,
-			/href="#friend-create-form" class="btn btn-primary">添加友链/u,
-		);
+		assert.match(source, /href="#friend-create-form" class="btn btn-primary">添加友链/u);
 		assert.match(source, /action="\/api\/admin\/friends\/settings"/u);
 		assert.match(source, /name="friendApplyNotice"/u);
 		assert.match(source, /仅在「\/friends\/apply」申请页面展示/u);
@@ -20,10 +17,7 @@ describe("后台友链直录能力", () => {
 		assert.match(source, /name="createAvatarUrl"/u);
 		assert.match(source, /name="createDescription"/u);
 		assert.match(source, /站点简介（可选）/u);
-		assert.doesNotMatch(
-			source,
-			/<textarea[^>]*name="createDescription"[^>]*required/u,
-		);
+		assert.doesNotMatch(source, /<textarea[^>]*name="createDescription"[^>]*required/u);
 		assert.match(source, /name="createContact"/u);
 		assert.match(source, /name="createStatus"/u);
 		assert.match(source, /name="createReviewNote"/u);
@@ -40,10 +34,7 @@ describe("后台友链直录能力", () => {
 		assert.match(source, /sanitizeCanonicalUrl/u);
 		assert.match(source, /friendApplyNotice/u);
 		assert.match(source, /siteAppearanceSettings/u);
-		assert.match(
-			source,
-			/if \(!name \|\| !siteUrl \|\| !contact \|\| !status\)/u,
-		);
+		assert.match(source, /if \(!name \|\| !siteUrl \|\| !contact \|\| !status\)/u);
 		assert.match(source, /status=create-invalid/u);
 		assert.match(source, /status=create-duplicate/u);
 		assert.match(source, /status=created/u);

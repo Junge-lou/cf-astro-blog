@@ -125,12 +125,10 @@ function parseDeviceType(userAgent: string): string {
 
 function parseBrowser(userAgent: string): string {
 	const normalized = userAgent.toLowerCase();
-	if (normalized.includes("opr/") || normalized.includes("opera/"))
-		return "Opera";
+	if (normalized.includes("opr/") || normalized.includes("opera/")) return "Opera";
 	if (normalized.includes("edg/")) return "Edge";
 	if (normalized.includes("firefox/")) return "Firefox";
-	if (normalized.includes("safari/") && !normalized.includes("chrome/"))
-		return "Safari";
+	if (normalized.includes("safari/") && !normalized.includes("chrome/")) return "Safari";
 	if (normalized.includes("chrome/")) return "Chrome";
 	return "Other";
 }
@@ -140,8 +138,7 @@ function parseOs(userAgent: string): string {
 	if (normalized.includes("windows")) return "Windows";
 	if (normalized.includes("mac os")) return "macOS";
 	if (normalized.includes("android")) return "Android";
-	if (normalized.includes("iphone") || normalized.includes("ipad"))
-		return "iOS";
+	if (normalized.includes("iphone") || normalized.includes("ipad")) return "iOS";
 	if (normalized.includes("linux")) return "Linux";
 	return "Other";
 }

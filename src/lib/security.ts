@@ -1,5 +1,5 @@
-import { marked, type Tokens } from "marked";
 import katex from "katex";
+import { marked, type Tokens } from "marked";
 import { emojify } from "node-emoji";
 import sanitizeHtml from "sanitize-html";
 
@@ -7,8 +7,7 @@ const POST_STATUS_VALUES = ["draft", "published", "scheduled"] as const;
 const SAFE_HTTP_URL_PROTOCOLS = new Set(["http:", "https:"]);
 const SAFE_URL_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
 const SLUG_SEGMENT_PATTERN = /[^\p{Letter}\p{Number}]+/gu;
-const SLUG_VALID_PATTERN =
-	/^[\p{Letter}\p{Number}]+(?:-[\p{Letter}\p{Number}]+)*$/u;
+const SLUG_VALID_PATTERN = /^[\p{Letter}\p{Number}]+(?:-[\p{Letter}\p{Number}]+)*$/u;
 
 export type PostStatus = (typeof POST_STATUS_VALUES)[number];
 
@@ -61,8 +60,7 @@ export function buildUrlSlug(
 	value: unknown,
 	options?: { fallbackPrefix?: string; maxLength?: number },
 ): string {
-	const fallbackPrefix =
-		sanitizeSlug(options?.fallbackPrefix || "post") || "post";
+	const fallbackPrefix = sanitizeSlug(options?.fallbackPrefix || "post") || "post";
 	const maxLength = Math.max(8, options?.maxLength ?? 120);
 	const normalized = String(value ?? "")
 		.toLowerCase()
@@ -83,9 +81,7 @@ export function buildUrlSlug(
 
 export function sanitizePostStatus(value: unknown): PostStatus | null {
 	const normalized = String(value ?? "").trim();
-	return POST_STATUS_VALUES.includes(normalized as PostStatus)
-		? (normalized as PostStatus)
-		: null;
+	return POST_STATUS_VALUES.includes(normalized as PostStatus) ? (normalized as PostStatus) : null;
 }
 
 export function parseOptionalPositiveInt(value: unknown): number | null {
@@ -191,11 +187,7 @@ function sanitizeUrl(
 		return normalized.startsWith("//") ? null : normalized;
 	}
 
-	if (
-		normalized.startsWith("./") ||
-		normalized.startsWith("../") ||
-		normalized.startsWith("#")
-	) {
+	if (normalized.startsWith("./") || normalized.startsWith("../") || normalized.startsWith("#")) {
 		return normalized;
 	}
 
@@ -286,15 +278,8 @@ function extractDetailsShortcodes(markdown: string): {
 
 	const markdownWithPlaceholders = markdown.replace(
 		pattern,
-		(
-			_match,
-			doubleQuotedSummary,
-			singleQuotedSummary,
-			plainSummary,
-			content,
-		) => {
-			const summarySource =
-				doubleQuotedSummary ?? singleQuotedSummary ?? plainSummary ?? "";
+		(_match, doubleQuotedSummary, singleQuotedSummary, plainSummary, content) => {
+			const summarySource = doubleQuotedSummary ?? singleQuotedSummary ?? plainSummary ?? "";
 			const summary = String(summarySource).trim() || "详情";
 			const cleanedContent = String(content ?? "")
 				.replaceAll(/\r/g, "")
@@ -327,21 +312,18 @@ function extractSpoilerShortcodes(markdown: string): {
 	let index = 0;
 	const blocks: SpoilerShortcodeBlock[] = [];
 
-	const markdownWithPlaceholders = markdown.replace(
-		pattern,
-		(_match, content) => {
-			const cleanedContent = String(content ?? "").replaceAll(/\r/g, "");
-			const placeholder = `@@SPOILER_BLOCK_${index}@@`;
+	const markdownWithPlaceholders = markdown.replace(pattern, (_match, content) => {
+		const cleanedContent = String(content ?? "").replaceAll(/\r/g, "");
+		const placeholder = `@@SPOILER_BLOCK_${index}@@`;
 
-			blocks.push({
-				placeholder,
-				content: cleanedContent,
-			});
+		blocks.push({
+			placeholder,
+			content: cleanedContent,
+		});
 
-			index += 1;
-			return placeholder;
-		},
-	);
+		index += 1;
+		return placeholder;
+	});
 
 	return {
 		markdown: markdownWithPlaceholders,
@@ -484,7 +466,7 @@ function extractEmoji(markdown: string): {
 } {
 	// 要求 :code: 中至少有一个非 dash 字符（字母/数字/下划线/+），
 	// 避免误匹配表格分隔行如 | :---: |
-	const pattern = /(:(?=[a-zA-Z0-9_+\-]*[a-zA-Z0-9_+])[a-zA-Z0-9_+\-]+:)/g;
+	const pattern = /(:(?=[a-zA-Z0-9_+-]*[a-zA-Z0-9_+])[a-zA-Z0-9_+-]+:)/g;
 	let index = 0;
 	const blocks: EmojiBlock[] = [];
 
@@ -621,12 +603,7 @@ function sanitizeHtmlTag(html: string): string {
 		},
 		// 协议白名单——阻止 javascript:, data:, vbscript: 等危险协议
 		allowedSchemes: ["http", "https", "mailto"],
-		allowedSchemesAppliedToAttributes: [
-			"src",
-			"href",
-			"poster",
-			"action",
-		],
+		allowedSchemesAppliedToAttributes: ["src", "href", "poster", "action"],
 		// 不安全的标签转义为文本（而非丢弃），与原行为一致
 		disallowedTagsMode: "escape",
 		// 保持原行为：不对 style 属性值进行 CSS 解析清洗
@@ -657,10 +634,7 @@ function extractCallouts(markdown: string): {
 	// > content line 2
 	//
 	// 或紧接的块引用行
-	const pattern = new RegExp(
-		`^> \\[!(${CALLOUT_TYPES.join("|")})\\]\\s*\\n((?:^> .*\\n?)*)`,
-		"gm",
-	);
+	const pattern = new RegExp(`^> \\[!(${CALLOUT_TYPES.join("|")})\\]\\s*\\n((?:^> .*\\n?)*)`, "gm");
 
 	const markdownWithPlaceholders = markdown.replace(pattern, (_match, type, content) => {
 		const cleanedType = String(type ?? "").toUpperCase();
@@ -722,10 +696,7 @@ function buildHeadingSlug(rawText: string): string {
 	return normalized || "section";
 }
 
-function buildUniqueHeadingId(
-	baseSlug: string,
-	headingSlugCount: Map<string, number>,
-): string {
+function buildUniqueHeadingId(baseSlug: string, headingSlugCount: Map<string, number>): string {
 	const currentCount = headingSlugCount.get(baseSlug) ?? 0;
 	headingSlugCount.set(baseSlug, currentCount + 1);
 
@@ -755,15 +726,9 @@ export async function renderSafeMarkdownWithToc(markdown: string): Promise<{
 
 	// 在所有递归渲染完成后，统一在末尾渲染脚注列表
 	if (state.footnoteDefs.length > 0) {
-		const footnoteHtmlParts: string[] = [
-			'<section class="prose-footnotes"><ol>',
-		];
+		const footnoteHtmlParts: string[] = ['<section class="prose-footnotes"><ol>'];
 		for (const def of state.footnoteDefs) {
-			const renderedDef = await renderSafeMarkdownInternal(
-				def.content,
-				1,
-				state,
-			);
+			const renderedDef = await renderSafeMarkdownInternal(def.content, 1, state);
 			footnoteHtmlParts.push(
 				`<li id="fn-${escapeAttribute(def.id)}">${renderedDef} <a class="prose-footnote-backref" href="#fnref-${escapeAttribute(def.id)}" aria-label="返回">↩</a></li>`,
 			);
@@ -788,7 +753,7 @@ async function renderSafeMarkdownInternal(
 	}
 
 	const renderer = new marked.Renderer();
-	let diagramBlocks: DiagramBlock[] = [];
+	const diagramBlocks: DiagramBlock[] = [];
 	let diagramIndex = 0;
 
 	renderer.html = (token: Tokens.HTML | Tokens.Tag) => {
@@ -823,8 +788,10 @@ async function renderSafeMarkdownInternal(
 		return `<div class="prose-table-wrapper"><table>${header}${body}</table></div>`;
 	};
 
-	renderer.code = function (token: Tokens.Code) {
-		const lang = String(token.lang ?? "").trim().toLowerCase();
+	renderer.code = (token: Tokens.Code) => {
+		const lang = String(token.lang ?? "")
+			.trim()
+			.toLowerCase();
 		const code = String(token.text ?? "");
 
 		if (DIAGRAM_LANGUAGES.has(lang)) {
@@ -852,9 +819,7 @@ async function renderSafeMarkdownInternal(
 			return text;
 		}
 
-		const title = token.title
-			? ` title="${escapeAttribute(String(token.title))}"`
-			: "";
+		const title = token.title ? ` title="${escapeAttribute(String(token.title))}"` : "";
 
 		return `<a href="${escapeAttribute(href)}"${title} rel="nofollow ugc noopener noreferrer">${text}</a>`;
 	};
@@ -865,9 +830,7 @@ async function renderSafeMarkdownInternal(
 			return escapeHtml(String(token.text ?? ""));
 		}
 
-		const title = token.title
-			? ` title="${escapeAttribute(String(token.title))}"`
-			: "";
+		const title = token.title ? ` title="${escapeAttribute(String(token.title))}"` : "";
 
 		return `<img src="${escapeAttribute(href)}" alt="${escapeAttribute(String(token.text ?? ""))}"${title} loading="lazy" decoding="async" />`;
 	};
@@ -875,13 +838,9 @@ async function renderSafeMarkdownInternal(
 	renderer.heading = function (token: Tokens.Heading) {
 		const depthLevel = Number(token.depth);
 		const level =
-			Number.isInteger(depthLevel) && depthLevel >= 1 && depthLevel <= 6
-				? depthLevel
-				: 2;
+			Number.isInteger(depthLevel) && depthLevel >= 1 && depthLevel <= 6 ? depthLevel : 2;
 		const headingText = sanitizePlainText(token.text ?? "", 160);
-		const baseSlug = buildHeadingSlug(
-			headingText || `section-${state.toc.length + 1}`,
-		);
+		const baseSlug = buildHeadingSlug(headingText || `section-${state.toc.length + 1}`);
 		const headingId = buildUniqueHeadingId(baseSlug, state.headingSlugCount);
 
 		if (level >= 2 && level <= 4 && headingText) {
@@ -945,18 +904,11 @@ async function renderSafeMarkdownInternal(
 
 	// 替换 details
 	for (const block of extractedDetails.blocks) {
-		const innerHtml = await renderSafeMarkdownInternal(
-			block.content,
-			depth + 1,
-			state,
-		);
+		const innerHtml = await renderSafeMarkdownInternal(block.content, depth + 1, state);
 		const detailsHtml = `<details class="prose-details"><summary>${escapeHtml(block.summary)}</summary>${innerHtml}</details>`;
 		const placeholderPattern = escapeRegExp(block.placeholder);
 
-		html = html.replaceAll(
-			new RegExp(`<p>${placeholderPattern}</p>\\n?`, "gu"),
-			detailsHtml,
-		);
+		html = html.replaceAll(new RegExp(`<p>${placeholderPattern}</p>\\n?`, "gu"), detailsHtml);
 		html = html.replaceAll(new RegExp(placeholderPattern, "gu"), detailsHtml);
 	}
 
@@ -970,10 +922,7 @@ async function renderSafeMarkdownInternal(
 			});
 			html = html.replaceAll(escapeRegExp(block.placeholder), mathHtml);
 		} catch {
-			html = html.replaceAll(
-				escapeRegExp(block.placeholder),
-				escapeHtml(block.content),
-			);
+			html = html.replaceAll(escapeRegExp(block.placeholder), escapeHtml(block.content));
 		}
 	}
 
@@ -986,10 +935,7 @@ async function renderSafeMarkdownInternal(
 			});
 			html = html.replaceAll(escapeRegExp(block.placeholder), mathHtml);
 		} catch {
-			html = html.replaceAll(
-				escapeRegExp(block.placeholder),
-				escapeHtml(block.content),
-			);
+			html = html.replaceAll(escapeRegExp(block.placeholder), escapeHtml(block.content));
 		}
 	}
 
@@ -1020,27 +966,19 @@ async function renderSafeMarkdownInternal(
 	// 替换 emoji (:emoji: → 🎉)
 	for (const block of extractedEmoji.blocks) {
 		const emojiHtml = emojify(block.content);
-		html = html.replaceAll(
-			escapeRegExp(block.placeholder),
-			emojiHtml,
-		);
+		html = html.replaceAll(escapeRegExp(block.placeholder), emojiHtml);
 	}
 
 	// 替换脚注引用（仅替换引用标记，不在此处渲染脚注列表）
 	// 脚注定义会被收集到 state.footnoteDefs，由顶层统一渲染
 	for (const ref of extractedFootnotes.refs) {
-		const defIndex = extractedFootnotes.defs.findIndex(
-			(d) => d.id === ref.id,
-		);
+		const defIndex = extractedFootnotes.defs.findIndex((d) => d.id === ref.id);
 		if (defIndex !== -1) {
 			const fnNum = defIndex + 1;
 			const fnLink = `<sup class="prose-footnote-ref" id="fnref-${escapeAttribute(ref.id)}"><a href="#fn-${escapeAttribute(ref.id)}">${fnNum}</a></sup>`;
 			html = html.replaceAll(escapeRegExp(ref.placeholder), fnLink);
 		} else {
-			html = html.replaceAll(
-				escapeRegExp(ref.placeholder),
-				`[${escapeHtml(ref.id)}]`,
-			);
+			html = html.replaceAll(escapeRegExp(ref.placeholder), `[${escapeHtml(ref.id)}]`);
 		}
 	}
 
@@ -1054,11 +992,7 @@ async function renderSafeMarkdownInternal(
 
 	// 替换 Callouts
 	for (const block of extractedCallouts.blocks) {
-		const innerHtml = await renderSafeMarkdownInternal(
-			block.content,
-			depth + 1,
-			state,
-		);
+		const innerHtml = await renderSafeMarkdownInternal(block.content, depth + 1, state);
 		const typeLower = block.type.toLowerCase();
 		const calloutHtml = [
 			`<div class="prose-callout prose-callout-${escapeAttribute(typeLower)}">`,
@@ -1156,7 +1090,6 @@ function renderKanban(code: string): string {
 		if (cardMatch) {
 			const content = escapeHtml(cardMatch[1]!.trim()).replace(/\\n/g, "<br>");
 			html += `<div class="prose-kanban-card">${content}</div>`;
-			continue;
 		}
 	}
 
@@ -1201,7 +1134,10 @@ function parseChatConfig(yamlBlock: string): ChatConfig {
 		if (nestedMatch && /^\s/.test(line) && currentKey === "avatars") {
 			const avatarName = nestedMatch[1]!.trim();
 			// 去除行内 # 注释
-			const avatarUrl = nestedMatch[2]!.trim().replace(/\s+#.*$/, "").trim();
+			const avatarUrl = nestedMatch[2]!
+				.trim()
+				.replace(/\s+#.*$/, "")
+				.trim();
 			config.avatars[avatarName] = avatarUrl;
 			continue;
 		}
@@ -1322,7 +1258,10 @@ function renderChat(code: string): string {
 			let avatarHtml = "";
 			if (config.showAvatar) {
 				const lowerName = name.toLowerCase();
-				const avatarUrl = config.avatars[name] || Object.entries(config.avatars).find(([k]) => k.toLowerCase() === lowerName)?.[1] || "";
+				const avatarUrl =
+					config.avatars[name] ||
+					Object.entries(config.avatars).find(([k]) => k.toLowerCase() === lowerName)?.[1] ||
+					"";
 				if (avatarUrl) {
 					avatarHtml = `<img class="prose-chat-avatar" src="${escapeAttribute(avatarUrl)}" alt="${escapeAttribute(name)}" loading="lazy" />`;
 				} else {
@@ -1331,9 +1270,10 @@ function renderChat(code: string): string {
 			}
 
 			// 昵称（仅接收方显示，与原版一致）
-			const nicknameHtml = (config.showNickname && !isSender)
-				? `<div class="prose-chat-nickname">${escapeHtml(name)}</div>`
-				: "";
+			const nicknameHtml =
+				config.showNickname && !isSender
+					? `<div class="prose-chat-nickname">${escapeHtml(name)}</div>`
+					: "";
 
 			const textHtml = renderChatMessageText(content, config.allowMarkdown);
 
@@ -1444,7 +1384,6 @@ function renderCalendar(code: string): string {
 				html += `<span class="prose-calendar-event-tag">${tag}</span>`;
 			}
 			html += "</div>";
-			continue;
 		}
 	}
 

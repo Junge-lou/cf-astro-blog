@@ -89,14 +89,8 @@ try {
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-		.where(
-			and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, true)),
-		)
-		.orderBy(
-			asc(blogPosts.pinnedOrder),
-			desc(blogPosts.publishedAt),
-			desc(blogPosts.createdAt),
-		)
+		.where(and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, true)))
+		.orderBy(asc(blogPosts.pinnedOrder), desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
 		.limit(6);
 	pinnedPosts = pinnedRows.map(toHomePostCardRow);
 
@@ -114,9 +108,7 @@ try {
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-		.where(
-			and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, false)),
-		)
+		.where(and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, false)))
 		.orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
 		.limit(3);
 	recentPosts = recentRows.map(toHomePostCardRow);
@@ -127,18 +119,12 @@ try {
 const latestPost = [...pinnedPosts, ...recentPosts]
 	.filter((post) => Boolean(post.publishedAt))
 	.sort(
-		(a, b) =>
-			new Date(b.publishedAt ?? 0).getTime() -
-			new Date(a.publishedAt ?? 0).getTime(),
+		(a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime(),
 	)[0];
 const latestUpdateAt = latestPost?.publishedAt || null;
-const latestUpdate = latestUpdateAt
-	? formatDate(latestUpdateAt)
-	: "等待第一篇正式发布的文章";
+const latestUpdate = latestUpdateAt ? formatDate(latestUpdateAt) : "等待第一篇正式发布的文章";
 const recentSectionSubheading =
-	pinnedPosts.length > 0
-		? ""
-		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
+	pinnedPosts.length > 0 ? "" : "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
 const heroPinnedPost = pinnedPosts[0] ?? null;
 const heroRecentPost = recentPosts[0] ?? null;

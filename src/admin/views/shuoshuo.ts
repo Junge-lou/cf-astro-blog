@@ -1,4 +1,11 @@
-import { encodeRouteParam, escapeAttribute, escapeHtml, escapeTextarea, getPostStatusLabel, normalizeDisplayStatus } from "@/lib/security";
+import {
+	encodeRouteParam,
+	escapeAttribute,
+	escapeHtml,
+	escapeTextarea,
+	getPostStatusLabel,
+	normalizeDisplayStatus,
+} from "@/lib/security";
 import { adminLayout } from "./layout";
 
 interface ShuoshuoEntry {
@@ -28,7 +35,9 @@ export function shuoshuoListPage(options: ShuoshuoListPageOptions): string {
 		<div class="page-actions">
 			<a href="/api/admin/shuoshuo/new" class="btn btn-primary">发布说说</a>
 		</div>
-		${options.entries.length > 0 ? `<div class="table-card"><table class="data-table">
+		${
+			options.entries.length > 0
+				? `<div class="table-card"><table class="data-table">
 			<thead>
 				<tr>
 					<th>内容</th>
@@ -53,11 +62,12 @@ export function shuoshuoListPage(options: ShuoshuoListPageOptions): string {
 								</form>
 							</td>
 						</tr>`,
-				)
-				.join("")}
+					)
+					.join("")}
 			</tbody>
 		</table></div>`
-		: '<p class="empty-state">还没有说说，<a href="/api/admin/shuoshuo/new">发布第一条说说</a>。</p>'}
+				: '<p class="empty-state">还没有说说，<a href="/api/admin/shuoshuo/new">发布第一条说说</a>。</p>'
+		}
 	`;
 
 	return adminLayout("说说管理", content, { csrfToken: options.csrfToken });
@@ -65,7 +75,9 @@ export function shuoshuoListPage(options: ShuoshuoListPageOptions): string {
 
 export function shuoshuoEditorPage(options: ShuoshuoEditorPageOptions): string {
 	const entry = options.entry ?? { content: "", status: "published" };
-	const action = entry.id ? `/api/admin/shuoshuo/${encodeRouteParam(String(entry.id))}/update` : "/api/admin/shuoshuo";
+	const action = entry.id
+		? `/api/admin/shuoshuo/${encodeRouteParam(String(entry.id))}/update`
+		: "/api/admin/shuoshuo";
 	const heading = entry.id ? "编辑说说" : "发布说说";
 	const errorBanner = options.error
 		? `<div class="alert alert-error">${escapeHtml(options.error)}</div>`

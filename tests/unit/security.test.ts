@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { describe, test } from "node:test";
-import {
-	hashPassword,
-	isLegacyPasswordHash,
-	verifyPassword,
-} from "../../src/lib/password";
+import { hashPassword, isLegacyPasswordHash, verifyPassword } from "../../src/lib/password";
 import {
 	buildUrlSlug,
 	renderSafeMarkdown,
@@ -16,9 +12,7 @@ import {
 
 describe("安全工具", () => {
 	test("renderSafeMarkdown 会转义原始 HTML ", async () => {
-		const html = await renderSafeMarkdown(
-			'# 标题\n<script>alert("xss")</script>',
-		);
+		const html = await renderSafeMarkdown('# 标题\n<script>alert("xss")</script>');
 
 		assert.match(html, /<h1 id="标题">标题<\/h1>/u);
 		assert.ok(!html.includes("<script>"));
@@ -55,10 +49,7 @@ describe("安全工具", () => {
 			'前文\n\n[details="总结"]\n隐藏 **内容**\n[/details]\n\n后文',
 		);
 
-		assert.match(
-			html,
-			/<details class="prose-details"><summary>总结<\/summary>/u,
-		);
+		assert.match(html, /<details class="prose-details"><summary>总结<\/summary>/u);
 		assert.match(html, /隐藏 <strong>内容<\/strong>/u);
 		assert.match(html, /<p>后文<\/p>/u);
 	});
@@ -77,16 +68,11 @@ describe("安全工具", () => {
 			"这是一段文本 [spoiler]此文本将被模糊处理[/spoiler] 结束。",
 		);
 
-		assert.match(
-			html,
-			/<span class="prose-spoiler">此文本将被模糊处理<\/span>/u,
-		);
+		assert.match(html, /<span class="prose-spoiler">此文本将被模糊处理<\/span>/u);
 	});
 
 	test("renderSafeMarkdown 会转义 spoiler 内的危险标签", async () => {
-		const html = await renderSafeMarkdown(
-			"[spoiler]<img src=x onerror=alert(1)>[/spoiler]",
-		);
+		const html = await renderSafeMarkdown("[spoiler]<img src=x onerror=alert(1)>[/spoiler]");
 
 		assert.ok(!html.includes("<img"));
 		assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/u);
@@ -159,10 +145,7 @@ describe("安全工具", () => {
 	});
 
 	test("sanitizeSlug 支持解析 URL 编码后的中文路径", () => {
-		assert.equal(
-			sanitizeSlug("%E5%9C%A8-ucg-fiber-%E4%B8%8A"),
-			"在-ucg-fiber-上",
-		);
+		assert.equal(sanitizeSlug("%E5%9C%A8-ucg-fiber-%E4%B8%8A"), "在-ucg-fiber-上");
 	});
 
 	test("sanitizeCanonicalUrl 仅允许 http 与 https 协议", () => {
@@ -179,16 +162,11 @@ describe("安全工具", () => {
 	test("renderSafeMarkdown 支持 Typora 高亮语法 ==text==", async () => {
 		const html = await renderSafeMarkdown("这是一段 ==重要内容== 文本。");
 
-		assert.match(
-			html,
-			/<mark class="prose-mark">重要内容<\/mark>/u,
-		);
+		assert.match(html, /<mark class="prose-mark">重要内容<\/mark>/u);
 	});
 
 	test("renderSafeMarkdown 会转义高亮语法中的危险标签", async () => {
-		const html = await renderSafeMarkdown(
-			"==<img src=x onerror=alert(1)>==",
-		);
+		const html = await renderSafeMarkdown("==<img src=x onerror=alert(1)>==");
 
 		assert.ok(!html.includes("<img"));
 		assert.match(html, /&lt;img/u);
@@ -197,10 +175,7 @@ describe("安全工具", () => {
 	test("renderSafeMarkdown 支持 Typora 下划线语法 ++text++", async () => {
 		const html = await renderSafeMarkdown("这是 ++下划线文本++ 示例。");
 
-		assert.match(
-			html,
-			/<u class="prose-underline">下划线文本<\/u>/u,
-		);
+		assert.match(html, /<u class="prose-underline">下划线文本<\/u>/u);
 	});
 
 	test("renderSafeMarkdown 支持 Typora 下标语法 ~text~", async () => {
@@ -230,9 +205,7 @@ describe("安全工具", () => {
 	});
 
 	test("renderSafeMarkdown 支持脚注语法 [^id]", async () => {
-		const html = await renderSafeMarkdown(
-			"这是一段带有脚注的文本[^1]。\n\n[^1]: 这是脚注的内容。",
-		);
+		const html = await renderSafeMarkdown("这是一段带有脚注的文本[^1]。\n\n[^1]: 这是脚注的内容。");
 
 		assert.match(html, /<sup class="prose-footnote-ref"/u);
 		assert.match(html, /href="#fn-1"/u);
@@ -242,9 +215,7 @@ describe("安全工具", () => {
 	});
 
 	test("renderSafeMarkdown 支持 [TOC] 标记（会被移除）", async () => {
-		const html = await renderSafeMarkdown(
-			"[TOC]\n\n# 标题\n\n正文内容",
-		);
+		const html = await renderSafeMarkdown("[TOC]\n\n# 标题\n\n正文内容");
 
 		assert.ok(!html.includes("[TOC]"));
 		assert.match(html, /<h1 id="标题">标题<\/h1>/u);
@@ -283,7 +254,7 @@ describe("安全工具", () => {
 				"",
 				"公式：$a^2 + b^2 = c^2$",
 				"",
-				"[details=\"提示\"]",
+				'[details="提示"]',
 				"这是折叠内容",
 				"[/details]",
 			].join("\n"),
@@ -303,9 +274,7 @@ describe("安全工具", () => {
 	// ── Callouts ──────────────────────────────────────────────────────────
 
 	test("renderSafeMarkdown 支持 Callout > [!NOTE]", async () => {
-		const html = await renderSafeMarkdown(
-			"> [!NOTE]\n> 这是一个提示信息。\n> 第二行内容。",
-		);
+		const html = await renderSafeMarkdown("> [!NOTE]\n> 这是一个提示信息。\n> 第二行内容。");
 
 		assert.match(html, /<div class="prose-callout prose-callout-note">/u);
 		assert.match(html, /<span class="prose-callout-label">NOTE<\/span>/u);
@@ -338,9 +307,7 @@ describe("安全工具", () => {
 	// ── 安全 HTML ─────────────────────────────────────────────────────────
 
 	test("renderSafeMarkdown 允许安全 HTML 标签通过", async () => {
-		const html = await renderSafeMarkdown(
-			'<video src="test.mp4" controls width="100%"></video>',
-		);
+		const html = await renderSafeMarkdown('<video src="test.mp4" controls width="100%"></video>');
 
 		// 安全标签被保留，但属性重新序列化后可能含额外空格
 		assert.ok(html.includes("<video"), "video 标签应被保留");
@@ -364,9 +331,7 @@ describe("安全工具", () => {
 	// ── 图表代码块 ────────────────────────────────────────────────────────
 
 	test("renderSafeMarkdown 支持 Mermaid 图表", async () => {
-		const html = await renderSafeMarkdown(
-			"```mermaid\ngraph TD\n    A-->B\n```",
-		);
+		const html = await renderSafeMarkdown("```mermaid\ngraph TD\n    A-->B\n```");
 
 		assert.match(html, /<div class="prose-mermaid">/u);
 		assert.match(html, /graph TD/u);
@@ -483,9 +448,7 @@ describe("安全工具", () => {
 	});
 
 	test("renderSafeMarkdown Callout 内部支持 Markdown 格式", async () => {
-		const html = await renderSafeMarkdown(
-			"> [!TIP]\n> 这是 **加粗** 和 `代码`。",
-		);
+		const html = await renderSafeMarkdown("> [!TIP]\n> 这是 **加粗** 和 `代码`。");
 
 		assert.match(html, /<strong>/u);
 		assert.match(html, /<code>/u);

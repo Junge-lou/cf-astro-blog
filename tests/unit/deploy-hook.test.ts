@@ -69,6 +69,7 @@ describe("部署钩子", () => {
 		assert.equal(triggered, true);
 		assert.equal(calls.length, 1);
 		const requestInfo = calls[0];
+		assert.ok(requestInfo);
 		assert.equal(requestInfo.input, "https://example.com/deploy");
 		assert.equal(requestInfo.init?.method, "POST");
 
@@ -95,8 +96,7 @@ describe("部署钩子", () => {
 
 		const triggered = await triggerDeployHook(
 			createEnv({
-				AUTO_DEPLOY_WEBHOOK_URL:
-					"https://api.github.com/repos/Junge-lou/cf-astro-blog/dispatches",
+				AUTO_DEPLOY_WEBHOOK_URL: "https://api.github.com/repos/Junge-lou/cf-astro-blog/dispatches",
 				AUTO_DEPLOY_WEBHOOK_SECRET: "ghp_test_token",
 				AUTO_DEPLOY_GITHUB_EVENT_TYPE: "rebuild-search-index",
 			}),
@@ -111,6 +111,7 @@ describe("部署钩子", () => {
 		assert.equal(triggered, true);
 		assert.equal(calls.length, 1);
 		const requestInfo = calls[0];
+		assert.ok(requestInfo);
 
 		const headers = new Headers(requestInfo.init?.headers);
 		assert.equal(headers.get("authorization"), "Bearer ghp_test_token");

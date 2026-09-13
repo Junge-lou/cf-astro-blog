@@ -81,10 +81,7 @@ export interface ResolvedAiSettings {
 	};
 }
 
-export type SiteAppearanceInput = Omit<
-	Partial<SiteAppearance>,
-	"mcpEnabled"
-> & {
+export type SiteAppearanceInput = Omit<Partial<SiteAppearance>, "mcpEnabled"> & {
 	navLinksJson?: unknown;
 	heroActionsJson?: unknown;
 	mcpEnabled?: unknown;
@@ -137,8 +134,7 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 	heroLayout: "default",
 	heroSignalLabel: "Scene Depth",
 	heroSignalHeading: "首页会跟着你的视线轻轻转一下",
-	heroSignalCopy:
-		"不是把页面做得很吵，而是只让首屏层次、信息胶囊和按钮反馈更有呼吸感。",
+	heroSignalCopy: "不是把页面做得很吵，而是只让首屏层次、信息胶囊和按钮反馈更有呼吸感。",
 	heroSignalImagePath: null,
 	heroSignalChip1: "Mouse Sync",
 	heroSignalChip2: "Soft Orbit",
@@ -161,12 +157,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
 	},
 };
 
-function clampInteger(
-	value: unknown,
-	min: number,
-	max: number,
-	fallback: number,
-) {
+function clampInteger(value: unknown, min: number, max: number, fallback: number) {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) {
 		return fallback;
@@ -180,11 +171,7 @@ function normalizeText(value: unknown, maxLength: number, fallback: string) {
 	return normalized || fallback;
 }
 
-function normalizeLongText(
-	value: unknown,
-	maxLength: number,
-	fallback: string,
-) {
+function normalizeLongText(value: unknown, maxLength: number, fallback: string) {
 	const normalized = sanitizePlainText(value, maxLength, {
 		allowNewlines: true,
 	});
@@ -212,10 +199,10 @@ function normalizeApiKey(value: unknown, fallback: string) {
 	return normalized || fallback;
 }
 
-function resolveApiKeyFromSecretOrWeb(options: {
-	secretValue: unknown;
-	webValue: string;
-}): { apiKey: string; source: AiApiKeySource } {
+function resolveApiKeyFromSecretOrWeb(options: { secretValue: unknown; webValue: string }): {
+	apiKey: string;
+	source: AiApiKeySource;
+} {
 	const secret = sanitizePlainText(options.secretValue, 400);
 	if (secret) {
 		return { apiKey: secret, source: "cloudflare-secret" };
@@ -279,10 +266,7 @@ function normalizeLinkHref(value: unknown, fallback: string) {
 	return normalizeOptionalLinkHref(value) ?? fallback;
 }
 
-function normalizeLinkItems(
-	source: unknown,
-	fallbackItems: SiteNavLink[],
-): SiteNavLink[] {
+function normalizeLinkItems(source: unknown, fallbackItems: readonly SiteNavLink[]): SiteNavLink[] {
 	let rawItems: unknown[] = [];
 
 	if (Array.isArray(source)) {
@@ -304,13 +288,8 @@ function normalizeLinkItems(
 			continue;
 		}
 
-		const label = sanitizePlainText(
-			(rawItem as Record<string, unknown>).label,
-			24,
-		);
-		const href = normalizeOptionalLinkHref(
-			(rawItem as Record<string, unknown>).href,
-		);
+		const label = sanitizePlainText((rawItem as Record<string, unknown>).label, 24);
+		const href = normalizeOptionalLinkHref((rawItem as Record<string, unknown>).href);
 
 		if (!label || !href) {
 			continue;
@@ -418,9 +397,7 @@ export function resolveAiSettingsWithSecrets(
 	};
 }
 
-export function normalizeSiteAppearanceInput(
-	input: SiteAppearanceInput,
-): SiteAppearance {
+export function normalizeSiteAppearanceInput(input: SiteAppearanceInput): SiteAppearance {
 	const legacyNavLink1Label = normalizeText(
 		input.navLink1Label,
 		24,
@@ -530,24 +507,14 @@ export function normalizeSiteAppearanceInput(
 			100,
 			DEFAULT_SITE_APPEARANCE.heroCardOpacity,
 		),
-		heroCardBlur: clampInteger(
-			input.heroCardBlur,
-			0,
-			48,
-			DEFAULT_SITE_APPEARANCE.heroCardBlur,
-		),
+		heroCardBlur: clampInteger(input.heroCardBlur, 0, 48, DEFAULT_SITE_APPEARANCE.heroCardBlur),
 		postCardOpacity: clampInteger(
 			input.postCardOpacity,
 			0,
 			100,
 			DEFAULT_SITE_APPEARANCE.postCardOpacity,
 		),
-		postCardBlur: clampInteger(
-			input.postCardBlur,
-			0,
-			48,
-			DEFAULT_SITE_APPEARANCE.postCardBlur,
-		),
+		postCardBlur: clampInteger(input.postCardBlur, 0, 48, DEFAULT_SITE_APPEARANCE.postCardBlur),
 		articlePanelOpacity: clampInteger(
 			input.articlePanelOpacity,
 			0,
@@ -572,21 +539,9 @@ export function normalizeSiteAppearanceInput(
 		navLink2Href: normalizedNavLink2.href,
 		navLink3Label: normalizedNavLink3.label,
 		navLink3Href: normalizedNavLink3.href,
-		heroKicker: normalizeText(
-			input.heroKicker,
-			24,
-			DEFAULT_SITE_APPEARANCE.heroKicker,
-		),
-		heroTitle: normalizeText(
-			input.heroTitle,
-			120,
-			DEFAULT_SITE_APPEARANCE.heroTitle,
-		),
-		heroIntro: normalizeLongText(
-			input.heroIntro,
-			600,
-			DEFAULT_SITE_APPEARANCE.heroIntro,
-		),
+		heroKicker: normalizeText(input.heroKicker, 24, DEFAULT_SITE_APPEARANCE.heroKicker),
+		heroTitle: normalizeText(input.heroTitle, 120, DEFAULT_SITE_APPEARANCE.heroTitle),
+		heroIntro: normalizeLongText(input.heroIntro, 600, DEFAULT_SITE_APPEARANCE.heroIntro),
 		heroMainImagePath:
 			normalizeOptionalImagePath(input.heroMainImagePath) ??
 			DEFAULT_SITE_APPEARANCE.heroMainImagePath,
@@ -629,22 +584,15 @@ export function normalizeSiteAppearanceInput(
 			24,
 			DEFAULT_SITE_APPEARANCE.heroSignalChip3,
 		),
-		mcpEnabled: normalizeBoolean(
-			input.mcpEnabled,
-			DEFAULT_SITE_APPEARANCE.mcpEnabled,
-		),
+		mcpEnabled: normalizeBoolean(input.mcpEnabled, DEFAULT_SITE_APPEARANCE.mcpEnabled),
 	};
 }
 
 export function buildSiteNavLinks(appearance: SiteAppearance): SiteNavLink[] {
-	return ensureFriendNavLink(
-		normalizeLinkItems(appearance.navLinks, DEFAULT_NAV_LINKS),
-	);
+	return ensureFriendNavLink(normalizeLinkItems(appearance.navLinks, DEFAULT_NAV_LINKS));
 }
 
-export function buildHeroActionLinks(
-	appearance: SiteAppearance,
-): SiteNavLink[] {
+export function buildHeroActionLinks(appearance: SiteAppearance): SiteNavLink[] {
 	return normalizeLinkItems(appearance.heroActions, DEFAULT_HERO_ACTIONS);
 }
 
@@ -836,10 +784,7 @@ export async function saveAiSettings(db: Database, input: AiSettingsInput) {
 	return normalized;
 }
 
-export async function saveSiteAppearance(
-	db: Database,
-	input: SiteAppearanceInput,
-) {
+export async function saveSiteAppearance(db: Database, input: SiteAppearanceInput) {
 	const normalized = normalizeSiteAppearanceInput(input);
 	const navLinksJson = JSON.stringify(normalized.navLinks);
 	const heroActionsJson = JSON.stringify(normalized.heroActions);

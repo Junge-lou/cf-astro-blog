@@ -35,8 +35,7 @@ function normalizeDateInput(value: string | null) {
 }
 
 const query = Astro.url.searchParams.get("q")?.trim() || "";
-const rawSelectedCategory =
-	Astro.url.searchParams.get("category")?.trim().toLowerCase() || "";
+const rawSelectedCategory = Astro.url.searchParams.get("category")?.trim().toLowerCase() || "";
 const selectedCategory = sanitizeSlug(rawSelectedCategory) || "";
 const selectedTags = [
 	...new Set(
@@ -46,17 +45,11 @@ const selectedTags = [
 			.filter((item): item is string => Boolean(item)),
 	),
 ];
-const selectedDateFrom = normalizeDateInput(
-	Astro.url.searchParams.get("dateFrom"),
-);
+const selectedDateFrom = normalizeDateInput(Astro.url.searchParams.get("dateFrom"));
 const selectedDateTo = normalizeDateInput(Astro.url.searchParams.get("dateTo"));
 
 const hasSearchCriteria = Boolean(
-	query ||
-		selectedCategory ||
-		selectedTags.length > 0 ||
-		selectedDateFrom ||
-		selectedDateTo,
+	query || selectedCategory || selectedTags.length > 0 || selectedDateFrom || selectedDateTo,
 );
 
 let categories: Array<{ slug: string; name: string }> = [];
@@ -69,10 +62,7 @@ try {
 			.select({ slug: blogCategories.slug, name: blogCategories.name })
 			.from(blogCategories)
 			.orderBy(blogCategories.name),
-		db
-			.select({ slug: blogTags.slug, name: blogTags.name })
-			.from(blogTags)
-			.orderBy(blogTags.name),
+		db.select({ slug: blogTags.slug, name: blogTags.name }).from(blogTags).orderBy(blogTags.name),
 	]);
 
 	categories = allCategories;

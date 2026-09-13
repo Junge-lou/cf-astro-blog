@@ -14,10 +14,7 @@ export interface AnalyticsCleanupResult {
 	lastCleanupAt: string;
 }
 
-function shouldRunCleanup(
-	lastCleanupAt: string | null,
-	force: boolean,
-): boolean {
+function shouldRunCleanup(lastCleanupAt: string | null, force: boolean): boolean {
 	if (force) {
 		return true;
 	}
@@ -31,9 +28,7 @@ function shouldRunCleanup(
 		return true;
 	}
 
-	return (
-		Date.now() - parsed >= ANALYTICS_RETENTION_CHECK_INTERVAL_SECONDS * 1000
-	);
+	return Date.now() - parsed >= ANALYTICS_RETENTION_CHECK_INTERVAL_SECONDS * 1000;
 }
 
 function readChangesCount(result: unknown): number {

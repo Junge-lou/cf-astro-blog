@@ -9,10 +9,7 @@ export function getInitialNavCondensedState(scrollY: number): boolean {
 	return normalizeScrollY(scrollY) >= NAV_CONDENSE_ENTER_Y;
 }
 
-export function getNextNavCondensedState(
-	scrollY: number,
-	isCondensed: boolean,
-): boolean {
+export function getNextNavCondensedState(scrollY: number, isCondensed: boolean): boolean {
 	const normalizedScrollY = normalizeScrollY(scrollY);
 
 	if (isCondensed) {

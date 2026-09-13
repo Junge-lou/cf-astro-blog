@@ -68,12 +68,31 @@ function isValidUrl(value: unknown): boolean {
 
 const ENV_RULES: EnvRule[] = [
 	// ── 站点元信息 ──
-	{ key: "SITE_NAME", required: true, validate: (v) => (!isNonEmptyString(v) ? "SITE_NAME 不能为空" : null) },
-	{ key: "SITE_URL", required: true, validate: (v) => (!isValidUrl(v) ? "SITE_URL 必须是有效 URL" : null) },
+	{
+		key: "SITE_NAME",
+		required: true,
+		validate: (v) => (!isNonEmptyString(v) ? "SITE_NAME 不能为空" : null),
+	},
+	{
+		key: "SITE_URL",
+		required: true,
+		validate: (v) => (!isValidUrl(v) ? "SITE_URL 必须是有效 URL" : null),
+	},
 
 	// ── 安全密钥 ──
-	{ key: "JWT_SECRET", required: true, validate: (v) => (!isNonEmptyString(v) || (typeof v === "string" && v.length < 16) ? "JWT_SECRET 至少需要 16 个字符" : null) },
-	{ key: "ADMIN_USERNAME", required: true, validate: (v) => (!isNonEmptyString(v) ? "ADMIN_USERNAME 不能为空" : null) },
+	{
+		key: "JWT_SECRET",
+		required: true,
+		validate: (v) =>
+			!isNonEmptyString(v) || (typeof v === "string" && v.length < 16)
+				? "JWT_SECRET 至少需要 16 个字符"
+				: null,
+	},
+	{
+		key: "ADMIN_USERNAME",
+		required: true,
+		validate: (v) => (!isNonEmptyString(v) ? "ADMIN_USERNAME 不能为空" : null),
+	},
 	{ key: "ADMIN_PASSWORD_HASH", required: false },
 
 	// ── 可选变量（不校验，仅记录缺失） ──
@@ -97,10 +116,8 @@ const ENV_RULES: EnvRule[] = [
 
 // ─── 校验逻辑 ────────────────────────────────────────────────────────────────
 
-let validationResult:
-	| { ok: true; env: ValidatedEnv }
-	| { ok: false; errors: string[] }
-	| null = null;
+let validationResult: { ok: true; env: ValidatedEnv } | { ok: false; errors: string[] } | null =
+	null;
 
 /**
  * 校验 Cloudflare Workers 环境变量。

@@ -69,9 +69,7 @@ function extractJsonObject(content: string): Record<string, unknown> | null {
 	function parseJsonObject(value: string): Record<string, unknown> | null {
 		try {
 			const parsed = JSON.parse(value);
-			return parsed && typeof parsed === "object"
-				? (parsed as Record<string, unknown>)
-				: null;
+			return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
 		} catch {
 			return null;
 		}
@@ -128,9 +126,7 @@ function extractJsonObject(content: string): Record<string, unknown> | null {
 		return result;
 	}
 
-	function parseJsonObjectWithRepair(
-		value: string,
-	): Record<string, unknown> | null {
+	function parseJsonObjectWithRepair(value: string): Record<string, unknown> | null {
 		const direct = parseJsonObject(value);
 		if (direct) {
 			return direct;
@@ -174,15 +170,9 @@ function extractJsonObject(content: string): Record<string, unknown> | null {
 }
 
 function normalizeKeywords(value: unknown): string | null {
-	const rawItems = Array.isArray(value)
-		? value
-		: String(value ?? "").split(/[\n,，]/u);
+	const rawItems = Array.isArray(value) ? value : String(value ?? "").split(/[\n,，]/u);
 	const keywords = [
-		...new Set(
-			rawItems
-				.map((item) => sanitizePlainText(item, 24))
-				.filter((item) => Boolean(item)),
-		),
+		...new Set(rawItems.map((item) => sanitizePlainText(item, 24)).filter((item) => Boolean(item))),
 	].slice(0, 12);
 	if (keywords.length === 0) {
 		return null;
@@ -191,13 +181,10 @@ function normalizeKeywords(value: unknown): string | null {
 	return sanitizePlainText(keywords.join(", "), 200);
 }
 
-function normalizeGeneratedSeoFields(
-	generated: GeneratedSeoPayload,
-): GeneratedPostSeoFields {
+function normalizeGeneratedSeoFields(generated: GeneratedSeoPayload): GeneratedPostSeoFields {
 	const excerpt = normalizeGeneratedExcerpt(generated.excerpt);
 	const metaTitle = sanitizePlainText(generated.metaTitle, 200) || null;
-	const metaDescription =
-		sanitizePlainText(generated.metaDescription, 160) || null;
+	const metaDescription = sanitizePlainText(generated.metaDescription, 160) || null;
 	const metaKeywords = normalizeKeywords(generated.metaKeywords);
 
 	return {
@@ -224,10 +211,7 @@ function normalizeGeneratedExcerpt(value: unknown): string | null {
 
 	// 将常见第三人称主语改为第一人称，避免“作者/本文”口吻。
 	excerpt = excerpt
-		.replaceAll(
-			/(作者|博主)(?=分享|记录|介绍|提到|讲述|总结|复盘|展示|完善|讨论|反思)/gu,
-			"我",
-		)
+		.replaceAll(/(作者|博主)(?=分享|记录|介绍|提到|讲述|总结|复盘|展示|完善|讨论|反思)/gu, "我")
 		.replaceAll(
 			/(本文|该文|这篇文章|文章)(?=分享|记录|介绍|提到|讲述|总结|复盘|展示|完善|讨论|反思)/gu,
 			"我",
@@ -235,9 +219,7 @@ function normalizeGeneratedExcerpt(value: unknown): string | null {
 	excerpt = excerpt.replaceAll(/我我+/g, "我");
 
 	if (excerpt.length > EXCERPT_MAX_CHARS) {
-		const firstSentence = excerpt
-			.match(/^[\s\S]{0,220}?[。！？!?]/u)?.[0]
-			?.trim();
+		const firstSentence = excerpt.match(/^[\s\S]{0,220}?[。！？!?]/u)?.[0]?.trim();
 		if (firstSentence && firstSentence.length >= 18) {
 			excerpt = firstSentence;
 		}
@@ -264,9 +246,7 @@ function normalizeLooseTextField(
 	);
 }
 
-function extractLooseGeneratedSeoPayload(
-	content: string,
-): GeneratedSeoPayload | null {
+function extractLooseGeneratedSeoPayload(content: string): GeneratedSeoPayload | null {
 	const source = content
 		.replace(/^```(?:json)?\s*/iu, "")
 		.replace(/```$/u, "")
@@ -288,10 +268,7 @@ function extractLooseGeneratedSeoPayload(
 					}
 				: null;
 		})
-		.filter(
-			(item): item is { key: string; index: number; valueStart: number } =>
-				item !== null,
-		)
+		.filter((item): item is { key: string; index: number; valueStart: number } => item !== null)
 		.sort((left, right) => left.index - right.index);
 
 	if (matches.length === 0) {
@@ -301,18 +278,20 @@ function extractLooseGeneratedSeoPayload(
 	const payload: GeneratedSeoPayload = {};
 	for (let index = 0; index < matches.length; index += 1) {
 		const current = matches[index];
+		if (!current) {
+			continue;
+		}
 		const next = matches[index + 1];
-		const rawValue = source
-			.slice(current.valueStart, next ? next.index : source.length)
-			.trim();
+		const rawValue = source.slice(current.valueStart, next ? next.index : source.length).trim();
 		if (!rawValue) {
 			continue;
 		}
 
 		if (current.key === "metaKeywords") {
 			const arrayMatch = rawValue.match(/\[([\s\S]*?)\]/u);
-			if (arrayMatch) {
-				payload.metaKeywords = arrayMatch[1]
+			const keywordsSource = arrayMatch?.[1];
+			if (keywordsSource !== undefined) {
+				payload.metaKeywords = keywordsSource
 					.split(/[,，\n]/u)
 					.map((item) => normalizeLooseTextField(item, 24))
 					.filter(Boolean);
@@ -330,11 +309,7 @@ function extractLooseGeneratedSeoPayload(
 		}
 
 		const maxLength =
-			current.key === "excerpt"
-				? 200
-				: current.key === "metaDescription"
-					? 160
-					: 200;
+			current.key === "excerpt" ? 200 : current.key === "metaDescription" ? 160 : 200;
 		const value = normalizeLooseTextField(rawValue, maxLength, {
 			allowNewlines: current.key === "excerpt",
 		});
@@ -435,17 +410,11 @@ export async function generatePostSeoWithInternalAi(
 		endpoint,
 	);
 	const parsedPayload =
-		generatedResponse.payload ||
-		extractLooseGeneratedSeoPayload(generatedResponse.rawResponse);
+		generatedResponse.payload || extractLooseGeneratedSeoPayload(generatedResponse.rawResponse);
 	if (!parsedPayload) {
 		const snippet =
-			sanitizePlainText(
-				generatedResponse.rawResponse,
-				ERROR_RESPONSE_SNIPPET_LENGTH,
-			) || "空响应";
-		throw new Error(
-			`AI 返回内容无法解析为 JSON，请确认模型支持 JSON 输出。响应片段：${snippet}`,
-		);
+			sanitizePlainText(generatedResponse.rawResponse, ERROR_RESPONSE_SNIPPET_LENGTH) || "空响应";
+		throw new Error(`AI 返回内容无法解析为 JSON，请确认模型支持 JSON 输出。响应片段：${snippet}`);
 	}
 
 	const normalized = normalizeGeneratedSeoFields(parsedPayload);

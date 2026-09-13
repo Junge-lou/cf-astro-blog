@@ -12,21 +12,16 @@ import {
 	sanitizePlainText,
 	sanitizeSlug,
 } from "@/lib/security";
+
 const VIEW_COUNT_DEDUP_TTL_SECONDS = 60 * 60;
 
 function getClientIpFromRequest(request: Request): string | null {
-	const directIp = sanitizePlainText(
-		request.headers.get("cf-connecting-ip"),
-		64,
-	);
+	const directIp = sanitizePlainText(request.headers.get("cf-connecting-ip"), 64);
 	if (directIp) {
 		return directIp;
 	}
 
-	const forwarded = sanitizePlainText(
-		request.headers.get("x-forwarded-for"),
-		255,
-	);
+	const forwarded = sanitizePlainText(request.headers.get("x-forwarded-for"), 255);
 	if (!forwarded) {
 		return null;
 	}
@@ -43,10 +38,7 @@ function buildPostViewDedupKey(slug: string, clientIp: string): string {
 		.replaceAll(/[^a-z0-9-]/gu, "-")
 		.replaceAll(/-+/g, "-")
 		.replaceAll(/^-|-$/g, "");
-	const safeIp = sanitizePlainText(clientIp.toLowerCase(), 64).replaceAll(
-		/[^a-z0-9:._-]/gu,
-		"_",
-	);
+	const safeIp = sanitizePlainText(clientIp.toLowerCase(), 64).replaceAll(/[^a-z0-9:._-]/gu, "_");
 	return `post:view:dedup:${safeSlug || "post"}:${safeIp || "unknown"}`;
 }
 
@@ -164,13 +156,9 @@ if (!post) {
 	return Astro.redirect("/blog");
 }
 
-const { html: htmlContent, toc } = await renderSafeMarkdownWithToc(
-	post.content,
-);
+const { html: htmlContent, toc } = await renderSafeMarkdownWithToc(post.content);
 const readingStats = estimateArticleReadStats(post.content);
-const featuredImageUrl = post.featuredImageKey
-	? `/media/${post.featuredImageKey}`
-	: undefined;
+const featuredImageUrl = post.featuredImageKey ? `/media/${post.featuredImageKey}` : undefined;
 const postBackgroundImageKey =
 	post.backgroundMode === "custom"
 		? post.backgroundImageKey

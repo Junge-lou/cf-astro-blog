@@ -1,9 +1,7 @@
 {
 	"version": 1,
 	"description": "Static assets bypass Worker; all page/API routes use SSR Worker.",
-	"include": [
-		"/*"
-	],
+	"include": ["/*"],
 	"exclude": [
 		"/_astro/*",
 		"/pagefind/*",

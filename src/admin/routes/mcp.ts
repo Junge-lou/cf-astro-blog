@@ -152,12 +152,7 @@ interface McpJsonRpcMeta {
 	requestId: string | null;
 }
 
-type McpAuditAuthState =
-	| "disabled"
-	| "blocked"
-	| "token_missing"
-	| "token_invalid"
-	| "authorized";
+type McpAuditAuthState = "disabled" | "blocked" | "token_missing" | "token_invalid" | "authorized";
 
 type McpAuditOutcome =
 	| "not_found"
@@ -230,10 +225,7 @@ function parseBearerToken(headerValue: string | undefined): string | null {
 
 function parseMcpJsonRpcMeta(body: unknown): McpJsonRpcMeta {
 	const candidate =
-		Array.isArray(body) &&
-		body.length > 0 &&
-		body[0] &&
-		typeof body[0] === "object"
+		Array.isArray(body) && body.length > 0 && body[0] && typeof body[0] === "object"
 			? body[0]
 			: body;
 	if (!candidate || typeof candidate !== "object") {
@@ -250,10 +242,7 @@ function parseMcpJsonRpcMeta(body: unknown): McpJsonRpcMeta {
 		requestRecord.params && typeof requestRecord.params === "object"
 			? (requestRecord.params as Record<string, unknown>)
 			: null;
-	const toolName =
-		method === "tools/call"
-			? sanitizePlainText(params?.name, 120) || null
-			: null;
+	const toolName = method === "tools/call" ? sanitizePlainText(params?.name, 120) || null : null;
 
 	const rawId = requestRecord.id;
 	const requestId =
@@ -273,9 +262,7 @@ function toJsonRpcMessages(body: unknown): unknown[] {
 }
 
 function hasInitializeRequest(body: unknown): boolean {
-	return toJsonRpcMessages(body).some((message) =>
-		isInitializeRequest(message),
-	);
+	return toJsonRpcMessages(body).some((message) => isInitializeRequest(message));
 }
 
 function getRequestPath(c: Context<AdminAppEnv>): string {
@@ -284,10 +271,7 @@ function getRequestPath(c: Context<AdminAppEnv>): string {
 	return path || "/mcp";
 }
 
-async function recordMcpAuditLog(
-	env: Env,
-	input: McpAuditLogInput,
-): Promise<void> {
+async function recordMcpAuditLog(env: Env, input: McpAuditLogInput): Promise<void> {
 	try {
 		const db = getDb(env.DB);
 		await db.insert(mcpAuditLogs).values({
@@ -312,12 +296,7 @@ async function recordMcpAuditLog(
 	}
 }
 
-function parseLimit(
-	value: unknown,
-	fallback: number,
-	min: number,
-	max: number,
-): number {
+function parseLimit(value: unknown, fallback: number, min: number, max: number): number {
 	const parsed = Number.parseInt(String(value ?? ""), 10);
 	if (!Number.isFinite(parsed)) {
 		return fallback;
@@ -404,11 +383,7 @@ async function checkRateBudget(c: Context<AdminAppEnv>, ip: string) {
 		600,
 	);
 
-	const minuteCount = await incrementKvCounter(
-		c.env.SESSION,
-		getMinuteRateKey(ip),
-		120,
-	);
+	const minuteCount = await incrementKvCounter(c.env.SESSION, getMinuteRateKey(ip), 120);
 	if (minuteCount > minuteLimit) {
 		return {
 			ok: false as const,
@@ -440,11 +415,7 @@ async function recordAuthFailure(c: Context<AdminAppEnv>, ip: string) {
 		60,
 		86_400,
 	);
-	const failureCount = await incrementKvCounter(
-		c.env.SESSION,
-		getAuthFailMinuteRateKey(ip),
-		120,
-	);
+	const failureCount = await incrementKvCounter(c.env.SESSION, getAuthFailMinuteRateKey(ip), 120);
 
 	if (failureCount <= failLimitPerMinute) {
 		return;
@@ -471,11 +442,7 @@ function isPostPublic(
 	return !Number.isNaN(timestamp) && timestamp <= Date.now();
 }
 
-function buildSlugCandidate(
-	baseSlug: string,
-	index: number,
-	maxLength: number,
-): string {
+function buildSlugCandidate(baseSlug: string, index: number, maxLength: number): string {
 	const suffix = index === 0 ? "" : `-${index + 1}`;
 	const trimmedBase = baseSlug
 		.slice(0, Math.max(1, maxLength - suffix.length))
@@ -483,10 +450,7 @@ function buildSlugCandidate(
 	return `${trimmedBase}${suffix}`;
 }
 
-async function resolveUniquePostSlug(
-	db: BlogDb,
-	baseSlug: string,
-): Promise<string> {
+async function resolveUniquePostSlug(db: BlogDb, baseSlug: string): Promise<string> {
 	for (let index = 0; index < 120; index += 1) {
 		const candidate = buildSlugCandidate(baseSlug, index, MAX_SLUG_LENGTH);
 		const [existing] = await db
@@ -500,17 +464,10 @@ async function resolveUniquePostSlug(
 		}
 	}
 
-	return buildSlugCandidate(
-		`${baseSlug}-${crypto.randomUUID().slice(0, 8)}`,
-		0,
-		MAX_SLUG_LENGTH,
-	);
+	return buildSlugCandidate(`${baseSlug}-${crypto.randomUUID().slice(0, 8)}`, 0, MAX_SLUG_LENGTH);
 }
 
-async function createOrGetCategoryId(
-	db: BlogDb,
-	categoryName: string,
-): Promise<number | null> {
+async function createOrGetCategoryId(db: BlogDb, categoryName: string): Promise<number | null> {
 	const [existingByName] = await db
 		.select({ id: blogCategories.id })
 		.from(blogCategories)
@@ -555,10 +512,7 @@ async function createOrGetCategoryId(
 	return null;
 }
 
-async function createOrGetTagId(
-	db: BlogDb,
-	tagName: string,
-): Promise<number | null> {
+async function createOrGetTagId(db: BlogDb, tagName: string): Promise<number | null> {
 	const [existingByName] = await db
 		.select({ id: blogTags.id })
 		.from(blogTags)
@@ -658,9 +612,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 
 	const input = args as Record<string, unknown>;
 	const seoInput =
-		input.seo && typeof input.seo === "object"
-			? (input.seo as Record<string, unknown>)
-			: null;
+		input.seo && typeof input.seo === "object" ? (input.seo as Record<string, unknown>) : null;
 	const title = sanitizePlainText(input.title, MAX_TITLE_LENGTH);
 	if (!title) {
 		return { error: "标题不能为空" };
@@ -674,10 +626,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 		return { error: "正文不能为空" };
 	}
 
-	const authorName = sanitizePlainText(
-		input.authorName,
-		MAX_AUTHOR_NAME_LENGTH,
-	);
+	const authorName = sanitizePlainText(input.authorName, MAX_AUTHOR_NAME_LENGTH);
 	if (!authorName) {
 		return { error: "AI 发帖必须填写作者名" };
 	}
@@ -699,9 +648,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 		});
 
 	const statusRaw = sanitizePlainText(input.status, 24);
-	const status = statusRaw
-		? sanitizePostStatus(statusRaw)
-		: ("published" as const);
+	const status = statusRaw ? sanitizePostStatus(statusRaw) : ("published" as const);
 	if (!status) {
 		return { error: "文章状态不合法" };
 	}
@@ -722,20 +669,13 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 	const categoryName = normalizeCategoryName(
 		pickFirstDefined([input], ["categoryName", "category", "category_name"]),
 	);
-	const tagNames = normalizeTagNames(
-		pickFirstDefined([input], ["tagNames", "tags", "tag_names"]),
-	);
+	const tagNames = normalizeTagNames(pickFirstDefined([input], ["tagNames", "tags", "tag_names"]));
 
 	const canonicalUrlRaw = sanitizePlainText(
-		pickFirstDefined(
-			[input, seoInput],
-			["canonicalUrl", "canonical", "url", "canonical_url"],
-		),
+		pickFirstDefined([input, seoInput], ["canonicalUrl", "canonical", "url", "canonical_url"]),
 		MAX_CANONICAL_URL_LENGTH,
 	);
-	const canonicalUrl = canonicalUrlRaw
-		? sanitizeCanonicalUrl(canonicalUrlRaw)
-		: null;
+	const canonicalUrl = canonicalUrlRaw ? sanitizeCanonicalUrl(canonicalUrlRaw) : null;
 	if (canonicalUrlRaw && !canonicalUrl) {
 		return { error: "规范链接地址不合法" };
 	}
@@ -744,9 +684,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 		input.featuredImageKey,
 		MAX_FEATURED_IMAGE_KEY_LENGTH,
 	);
-	const featuredImageKey = featuredImageKeyRaw
-		? sanitizeMediaKey(featuredImageKeyRaw)
-		: null;
+	const featuredImageKey = featuredImageKeyRaw ? sanitizeMediaKey(featuredImageKeyRaw) : null;
 	if (featuredImageKeyRaw && !featuredImageKey) {
 		return { error: "封面图片键名不合法" };
 	}
@@ -759,10 +697,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 			authorName,
 			excerpt:
 				sanitizePlainText(
-					pickFirstDefined(
-						[input],
-						["excerpt", "summary", "description", "excerptText"],
-					),
+					pickFirstDefined([input], ["excerpt", "summary", "description", "excerptText"]),
 					MAX_EXCERPT_LENGTH,
 					{
 						allowNewlines: true,
@@ -774,10 +709,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 			tagNames,
 			featuredImageKey,
 			featuredImageAlt:
-				sanitizePlainText(
-					input.featuredImageAlt,
-					MAX_FEATURED_IMAGE_ALT_LENGTH,
-				) || null,
+				sanitizePlainText(input.featuredImageAlt, MAX_FEATURED_IMAGE_ALT_LENGTH) || null,
 			metaTitle:
 				sanitizePlainText(
 					pickFirstDefined([input], ["metaTitle", "seoTitle", "meta_title"]) ??
@@ -786,17 +718,13 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 				) || null,
 			metaDescription:
 				sanitizePlainText(
-					pickFirstDefined(
-						[input],
-						["metaDescription", "seoDescription", "meta_description"],
-					) ?? pickFirstDefined([seoInput], ["description"]),
+					pickFirstDefined([input], ["metaDescription", "seoDescription", "meta_description"]) ??
+						pickFirstDefined([seoInput], ["description"]),
 					MAX_META_DESCRIPTION_LENGTH,
 				) || null,
 			metaKeywords: normalizeMetaKeywords(
-				pickFirstDefined(
-					[input],
-					["metaKeywords", "seoKeywords", "meta_keywords", "keywords"],
-				) ?? pickFirstDefined([seoInput], ["keywords"]),
+				pickFirstDefined([input], ["metaKeywords", "seoKeywords", "meta_keywords", "keywords"]) ??
+					pickFirstDefined([seoInput], ["keywords"]),
 			),
 			canonicalUrl,
 		},
@@ -804,8 +732,7 @@ function parseCreatePostInput(args: unknown): ParseCreatePostInputResult {
 }
 
 function parseListPostsInput(args: unknown): ParseListPostsInputResult {
-	const input =
-		args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+	const input = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
 	const statusRaw = sanitizePlainText(input.status, 24);
 	const status = statusRaw ? sanitizePostStatus(statusRaw) : null;
 	if (statusRaw && !status) {
@@ -817,10 +744,8 @@ function parseListPostsInput(args: unknown): ParseListPostsInputResult {
 			limit: parseLimit(input.limit, 10, 1, MAX_LIST_LIMIT),
 			status,
 			keyword:
-				sanitizePlainText(
-					pickFirstDefined([input], ["keyword", "query"]),
-					MAX_KEYWORD_LENGTH,
-				) || null,
+				sanitizePlainText(pickFirstDefined([input], ["keyword", "query"]), MAX_KEYWORD_LENGTH) ||
+				null,
 			includeContent: parseBoolean(input.includeContent, false),
 		},
 	};
@@ -856,11 +781,7 @@ function parseGetPostInput(args: unknown): ParseGetPostInputResult {
 	};
 }
 
-function buildPostReadPayload(
-	row: PostReadRow,
-	tags: string[],
-	includeContent: boolean,
-) {
+function buildPostReadPayload(row: PostReadRow, tags: string[], includeContent: boolean) {
 	return {
 		id: row.id,
 		title: row.title,
@@ -922,13 +843,14 @@ async function listPostsFromMcpInput(env: Env, input: ListPostsInput) {
 
 	if (input.keyword) {
 		const likeValue = `%${input.keyword}%`;
-		conditions.push(
-			or(
-				like(blogPosts.title, likeValue),
-				like(blogPosts.slug, likeValue),
-				like(blogPosts.excerpt, likeValue),
-			),
+		const keywordCondition = or(
+			like(blogPosts.title, likeValue),
+			like(blogPosts.slug, likeValue),
+			like(blogPosts.excerpt, likeValue),
 		);
+		if (keywordCondition) {
+			conditions.push(keywordCondition);
+		}
 	}
 
 	const whereCondition =
@@ -1006,9 +928,7 @@ async function listPostsFromMcpInput(env: Env, input: ListPostsInput) {
 async function getPostFromMcpInput(env: Env, input: GetPostInput) {
 	const db = getDb(env.DB);
 	const whereCondition = and(
-		input.id
-			? eq(blogPosts.id, input.id)
-			: eq(blogPosts.slug, input.slug as string),
+		input.id ? eq(blogPosts.id, input.id) : eq(blogPosts.slug, input.slug as string),
 		isNull(blogPosts.deletedAt),
 	);
 
@@ -1043,11 +963,7 @@ async function getPostFromMcpInput(env: Env, input: GetPostInput) {
 	}
 
 	const tagMap = await getPostTagsMap(db, [row.id]);
-	return buildPostReadPayload(
-		row,
-		tagMap.get(row.id) ?? [],
-		input.includeContent,
-	);
+	return buildPostReadPayload(row, tagMap.get(row.id) ?? [], input.includeContent);
 }
 
 async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
@@ -1055,11 +971,7 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 	const now = new Date().toISOString();
 	const slug = await resolveUniquePostSlug(db, input.slug);
 	const publishAt =
-		input.status === "scheduled"
-			? input.publishAt
-			: input.status === "published"
-				? now
-				: null;
+		input.status === "scheduled" ? input.publishAt : input.status === "published" ? now : null;
 	const publishedAt = input.status === "published" ? now : null;
 
 	let categoryId: number | null = null;
@@ -1132,10 +1044,7 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 	};
 }
 
-async function deletePostFromMcpInput(
-	env: Env,
-	input: { id?: number; slug?: string },
-) {
+async function deletePostFromMcpInput(env: Env, input: { id?: number; slug?: string }) {
 	const db = getDb(env.DB);
 	const whereCondition = input.id
 		? eq(blogPosts.id, input.id)
@@ -1157,10 +1066,7 @@ async function deletePostFromMcpInput(
 	}
 
 	const deletedAt = new Date().toISOString();
-	await db
-		.update(blogPosts)
-		.set({ deletedAt })
-		.where(eq(blogPosts.id, existing.id));
+	await db.update(blogPosts).set({ deletedAt }).where(eq(blogPosts.id, existing.id));
 
 	if (isPostPublic(existing.status, existing.publishAt)) {
 		await triggerDeployHook(env, {
@@ -1185,22 +1091,16 @@ interface CreateShuoshuoInput {
 	status: "draft" | "published";
 }
 
-type ParseCreateShuoshuoInputResult =
-	| { data: CreateShuoshuoInput }
-	| { error: string };
+type ParseCreateShuoshuoInputResult = { data: CreateShuoshuoInput } | { error: string };
 
 interface ListShuoshuoInput {
 	limit: number;
 	status: "draft" | "published" | null;
 }
 
-type ParseListShuoshuoInputResult =
-	| { data: ListShuoshuoInput }
-	| { error: string };
+type ParseListShuoshuoInputResult = { data: ListShuoshuoInput } | { error: string };
 
-function parseCreateShuoshuoInput(
-	args: unknown,
-): ParseCreateShuoshuoInputResult {
+function parseCreateShuoshuoInput(args: unknown): ParseCreateShuoshuoInputResult {
 	if (!args || typeof args !== "object") {
 		return { error: "参数格式不合法，必须是对象" };
 	}
@@ -1225,11 +1125,8 @@ function parseCreateShuoshuoInput(
 	return { data: { content, status } };
 }
 
-function parseListShuoshuoInput(
-	args: unknown,
-): ParseListShuoshuoInputResult {
-	const input =
-		args && typeof args === "object" ? (args as Record<string, unknown>) : {};
+function parseListShuoshuoInput(args: unknown): ParseListShuoshuoInputResult {
+	const input = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
 	const statusRaw = sanitizePlainText(input.status, 24);
 	let status: "draft" | "published" | null = null;
 	if (statusRaw === "draft" || statusRaw === "published") {
@@ -1246,10 +1143,7 @@ function parseListShuoshuoInput(
 	};
 }
 
-async function createShuoshuoFromMcpInput(
-	env: Env,
-	input: CreateShuoshuoInput,
-) {
+async function createShuoshuoFromMcpInput(env: Env, input: CreateShuoshuoInput) {
 	const db = getDb(env.DB);
 	const now = new Date().toISOString();
 
@@ -1271,10 +1165,7 @@ async function createShuoshuoFromMcpInput(
 	};
 }
 
-async function listShuoshuoFromMcpInput(
-	env: Env,
-	input: ListShuoshuoInput,
-) {
+async function listShuoshuoFromMcpInput(env: Env, input: ListShuoshuoInput) {
 	const db = getDb(env.DB);
 	const conditions = [];
 
@@ -1282,8 +1173,7 @@ async function listShuoshuoFromMcpInput(
 		conditions.push(eq(shuoshuoPosts.status, input.status));
 	}
 
-	const whereCondition =
-		conditions.length === 0 ? undefined : conditions[0];
+	const whereCondition = conditions.length === 0 ? undefined : conditions[0];
 
 	const rows = whereCondition
 		? await db
@@ -1314,8 +1204,7 @@ function createMcpServer(env: Env): McpServer {
 		"create_post",
 		{
 			title: "创建博客文章",
-			description:
-				"创建一篇博客文章并写入站点数据库。authorName 必填，status 默认为 published。",
+			description: "创建一篇博客文章并写入站点数据库。authorName 必填，status 默认为 published。",
 			inputSchema: {
 				title: z.string().describe("文章标题"),
 				content: z.string().describe("Markdown 正文"),
@@ -1332,10 +1221,7 @@ function createMcpServer(env: Env): McpServer {
 					.enum(["draft", "published", "scheduled"])
 					.optional()
 					.describe("文章状态，可选，默认 published"),
-				publishAt: z
-					.string()
-					.optional()
-					.describe("定时发布时间，仅 scheduled 时必填"),
+				publishAt: z.string().optional().describe("定时发布时间，仅 scheduled 时必填"),
 				categoryName: z.string().optional().describe("分类名称，可选"),
 				category: z
 					.union([
@@ -1367,10 +1253,7 @@ function createMcpServer(env: Env): McpServer {
 					.optional()
 					.describe("标签别名，可传逗号字符串、字符串数组或对象数组"),
 				featuredImageKey: z.string().optional().describe("封面图键名，可选"),
-				featuredImageAlt: z
-					.string()
-					.optional()
-					.describe("封面图替代文本，可选"),
+				featuredImageAlt: z.string().optional().describe("封面图替代文本，可选"),
 				metaTitle: z.string().optional().describe("SEO 标题，可选"),
 				seoTitle: z.string().optional().describe("SEO 标题别名，可选"),
 				metaDescription: z.string().optional().describe("SEO 描述，可选"),
@@ -1429,10 +1312,7 @@ function createMcpServer(env: Env): McpServer {
 					content: [
 						{
 							type: "text",
-							text:
-								error instanceof Error
-									? error.message
-									: "创建文章失败，请稍后重试",
+							text: error instanceof Error ? error.message : "创建文章失败，请稍后重试",
 						},
 					],
 				};
@@ -1459,10 +1339,7 @@ function createMcpServer(env: Env): McpServer {
 					.describe("按文章状态筛选，可选"),
 				keyword: z.string().optional().describe("按标题、slug、摘要模糊匹配"),
 				query: z.string().optional().describe("keyword 的别名"),
-				includeContent: z
-					.boolean()
-					.optional()
-					.describe("是否在列表中返回正文，默认 false"),
+				includeContent: z.boolean().optional().describe("是否在列表中返回正文，默认 false"),
 			},
 		},
 		async (args) => {
@@ -1499,10 +1376,7 @@ function createMcpServer(env: Env): McpServer {
 					content: [
 						{
 							type: "text",
-							text:
-								error instanceof Error
-									? error.message
-									: "读取文章列表失败，请稍后重试",
+							text: error instanceof Error ? error.message : "读取文章列表失败，请稍后重试",
 						},
 					],
 				};
@@ -1517,22 +1391,14 @@ function createMcpServer(env: Env): McpServer {
 			description: "按 id 或 slug 读取单篇文章详情，默认包含正文内容。",
 			inputSchema: {
 				id: z.number().int().positive().optional().describe("文章 ID，可选"),
-				postId: z
-					.number()
-					.int()
-					.positive()
-					.optional()
-					.describe("id 的别名，可选"),
+				postId: z.number().int().positive().optional().describe("id 的别名，可选"),
 				slug: z.string().optional().describe("文章 slug，可选"),
 				path: z.string().optional().describe("slug 的别名，可选"),
 				pathName: z.string().optional().describe("slug 的别名，可选"),
 				pathname: z.string().optional().describe("slug 的别名，可选"),
 				postSlug: z.string().optional().describe("slug 的别名，可选"),
 				postPath: z.string().optional().describe("slug 的别名，可选"),
-				includeContent: z
-					.boolean()
-					.optional()
-					.describe("是否返回正文，默认 true"),
+				includeContent: z.boolean().optional().describe("是否返回正文，默认 true"),
 			},
 		},
 		async (args) => {
@@ -1576,10 +1442,7 @@ function createMcpServer(env: Env): McpServer {
 					content: [
 						{
 							type: "text",
-							text:
-								error instanceof Error
-									? error.message
-									: "读取文章失败，请稍后重试",
+							text: error instanceof Error ? error.message : "读取文章失败，请稍后重试",
 						},
 					],
 				};
@@ -1591,18 +1454,14 @@ function createMcpServer(env: Env): McpServer {
 		"delete_post",
 		{
 			title: "删除博客文章（移入回收站）",
-			description:
-				"按 id 或 slug 将文章移入回收站（软删除）。删除已发布文章后会触发站点重新部署。",
+			description: "按 id 或 slug 将文章移入回收站（软删除）。删除已发布文章后会触发站点重新部署。",
 			inputSchema: {
 				id: z.number().int().positive().optional().describe("文章 ID，可选"),
 				slug: z.string().optional().describe("文章 slug，可选"),
 			},
 		},
 		async (args) => {
-			const input =
-				args && typeof args === "object"
-					? (args as Record<string, unknown>)
-					: {};
+			const input = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
 			const idRaw = Number(input.id);
 			const id = Number.isInteger(idRaw) && idRaw > 0 ? idRaw : undefined;
 			const slug = sanitizePlainText(input.slug, 120) || undefined;
@@ -1645,10 +1504,7 @@ function createMcpServer(env: Env): McpServer {
 					content: [
 						{
 							type: "text",
-							text:
-								error instanceof Error
-									? error.message
-									: "删除文章失败，请稍后重试",
+							text: error instanceof Error ? error.message : "删除文章失败，请稍后重试",
 						},
 					],
 				};
@@ -1660,8 +1516,7 @@ function createMcpServer(env: Env): McpServer {
 		"create_shuoshuo",
 		{
 			title: "发布说说",
-			description:
-				"发布一条说说（类似微博/微动态），content 必填，status 默认为 published。",
+			description: "发布一条说说（类似微博/微动态），content 必填，status 默认为 published。",
 			inputSchema: {
 				content: z.string().describe("说说内容，必填，最长 3000 字"),
 				status: z
@@ -1704,10 +1559,7 @@ function createMcpServer(env: Env): McpServer {
 					content: [
 						{
 							type: "text",
-							text:
-								error instanceof Error
-									? error.message
-									: "发布说说失败，请稍后重试",
+							text: error instanceof Error ? error.message : "发布说说失败，请稍后重试",
 						},
 					],
 				};
@@ -1728,10 +1580,7 @@ function createMcpServer(env: Env): McpServer {
 					.max(MAX_SHUOSHUO_LIST_LIMIT)
 					.optional()
 					.describe(`返回数量，默认 10，最大 ${MAX_SHUOSHUO_LIST_LIMIT}`),
-				status: z
-					.enum(["draft", "published"])
-					.optional()
-					.describe("按状态筛选，可选"),
+				status: z.enum(["draft", "published"]).optional().describe("按状态筛选，可选"),
 			},
 		},
 		async (args) => {
@@ -1768,10 +1617,7 @@ function createMcpServer(env: Env): McpServer {
 					content: [
 						{
 							type: "text",
-							text:
-								error instanceof Error
-									? error.message
-									: "读取说说列表失败，请稍后重试",
+							text: error instanceof Error ? error.message : "读取说说列表失败，请稍后重试",
 						},
 					],
 				};
@@ -1945,10 +1791,7 @@ mcpRoutes.all("/", async (c) => {
 			detail: "限流计数服务异常",
 			userAgent,
 		});
-		return c.json(
-			buildJsonRpcErrorPayload(-32002, "MCP 限流服务暂时不可用，请稍后再试"),
-			503,
-		);
+		return c.json(buildJsonRpcErrorPayload(-32002, "MCP 限流服务暂时不可用，请稍后再试"), 503);
 	}
 	if (!budget.ok) {
 		await recordMcpAuditLog(c.env, {
@@ -1962,10 +1805,7 @@ mcpRoutes.all("/", async (c) => {
 			detail: budget.message,
 			userAgent,
 		});
-		return c.json(
-			buildJsonRpcErrorPayload(-32002, budget.message),
-			budget.status,
-		);
+		return c.json(buildJsonRpcErrorPayload(-32002, budget.message), budget.status);
 	}
 
 	if (method === "POST") {
@@ -1990,10 +1830,7 @@ mcpRoutes.all("/", async (c) => {
 				detail: "请求体不是合法 JSON",
 				userAgent,
 			});
-			return c.json(
-				buildJsonRpcErrorPayload(-32700, "请求体不是合法 JSON"),
-				400,
-			);
+			return c.json(buildJsonRpcErrorPayload(-32700, "请求体不是合法 JSON"), 400);
 		}
 
 		let transport: WebStandardStreamableHTTPServerTransport;
@@ -2015,10 +1852,7 @@ mcpRoutes.all("/", async (c) => {
 					detail: "会话不存在或已过期",
 					userAgent,
 				});
-				return c.json(
-					buildJsonRpcErrorPayload(-32000, "无效会话，请重新发起 initialize"),
-					404,
-				);
+				return c.json(buildJsonRpcErrorPayload(-32000, "无效会话，请重新发起 initialize"), 404);
 			}
 
 			existing.updatedAt = Date.now();
@@ -2088,10 +1922,7 @@ mcpRoutes.all("/", async (c) => {
 							: "MCP 无会话兼容模式内部异常",
 					userAgent,
 				});
-				return c.json(
-					buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"),
-					500,
-				);
+				return c.json(buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"), 500);
 			}
 		}
 
@@ -2110,10 +1941,7 @@ mcpRoutes.all("/", async (c) => {
 				mcpMethod: requestMeta.mcpMethod,
 				toolName: requestMeta.toolName,
 				requestId: requestMeta.requestId,
-				detail:
-					response.status >= 400
-						? `MCP POST 请求返回状态 ${response.status}`
-						: null,
+				detail: response.status >= 400 ? `MCP POST 请求返回状态 ${response.status}` : null,
 				userAgent,
 			});
 			return response;
@@ -2131,15 +1959,10 @@ mcpRoutes.all("/", async (c) => {
 				toolName: requestMeta.toolName,
 				requestId: requestMeta.requestId,
 				detail:
-					error instanceof Error
-						? sanitizePlainText(error.message, 500)
-						: "MCP POST 请求内部异常",
+					error instanceof Error ? sanitizePlainText(error.message, 500) : "MCP POST 请求内部异常",
 				userAgent,
 			});
-			return c.json(
-				buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"),
-				500,
-			);
+			return c.json(buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"), 500);
 		}
 	}
 
@@ -2156,10 +1979,7 @@ mcpRoutes.all("/", async (c) => {
 				detail: "缺少 mcp-session-id 请求头",
 				userAgent,
 			});
-			return c.json(
-				buildJsonRpcErrorPayload(-32000, "缺少 mcp-session-id 请求头"),
-				400,
-			);
+			return c.json(buildJsonRpcErrorPayload(-32000, "缺少 mcp-session-id 请求头"), 400);
 		}
 
 		const existing = mcpSessions.get(sessionId);
@@ -2189,10 +2009,7 @@ mcpRoutes.all("/", async (c) => {
 				responseStatus: response.status,
 				authState: "authorized",
 				outcome: "success",
-				detail:
-					response.status >= 400
-						? `MCP ${method} 会话请求返回状态 ${response.status}`
-						: null,
+				detail: response.status >= 400 ? `MCP ${method} 会话请求返回状态 ${response.status}` : null,
 				userAgent,
 			});
 			return response;
@@ -2207,15 +2024,10 @@ mcpRoutes.all("/", async (c) => {
 				authState: "authorized",
 				outcome: "internal_error",
 				detail:
-					error instanceof Error
-						? sanitizePlainText(error.message, 500)
-						: "MCP 会话请求内部异常",
+					error instanceof Error ? sanitizePlainText(error.message, 500) : "MCP 会话请求内部异常",
 				userAgent,
 			});
-			return c.json(
-				buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"),
-				500,
-			);
+			return c.json(buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"), 500);
 		}
 	}
 

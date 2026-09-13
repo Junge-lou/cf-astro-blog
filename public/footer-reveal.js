@@ -1,4 +1,4 @@
-(function () {
+(() => {
 	const FOOTER_SELECTOR = "[data-footer-reveal]";
 	let disposeFooterReveal = () => {};
 
@@ -6,14 +6,8 @@
 		const height = Math.ceil(footer.getBoundingClientRect().height);
 		const revealSpace = Math.ceil(height * 1.28);
 
-		document.documentElement.style.setProperty(
-			"--footer-reveal-height",
-			`${height}px`,
-		);
-		document.documentElement.style.setProperty(
-			"--footer-reveal-space",
-			`${revealSpace}px`,
-		);
+		document.documentElement.style.setProperty("--footer-reveal-height", `${height}px`);
+		document.documentElement.style.setProperty("--footer-reveal-space", `${revealSpace}px`);
 
 		return revealSpace;
 	};
@@ -34,10 +28,7 @@
 			frame = 0;
 			revealThreshold = setFooterMetrics(footer);
 
-			const remaining =
-				document.documentElement.scrollHeight -
-				window.innerHeight -
-				window.scrollY;
+			const remaining = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
 			const shouldReveal = remaining <= Math.max(96, revealThreshold * 0.72);
 
 			footer.classList.toggle("is-visible", shouldReveal);
