@@ -120,7 +120,7 @@ jobs:
         if: ${{ env.WEBMENTION_ONLY == '1' && steps.cf_token.outputs.skip != 'true' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ steps.cf_token.outputs.token }}
-        run: node scripts/send-webmentions.mjs --remote
+        run: node scripts/send-webmentions.mjs --remote --slug=${{ github.event.client_payload.postSlug }}
 
       - name: 输出跳过原因
         if: ${{ steps.cf_token.outputs.skip == 'true' }}
