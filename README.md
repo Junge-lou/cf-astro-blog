@@ -318,8 +318,10 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 内容存于 D1，公开页面由 Worker SSR 直读数据库。发文 / 改文 / 删文时：
 
 1. Worker 递增 KV 中的内容版本号，边缘缓存键随版本号变化，旧缓存立即失效（秒级生效）
-2. Webmention 由 Worker 在发文时异步发送（`waitUntil`）
-3. 部署只发生在代码变更（git push）时，无需为内容重建站点
+2. 触发 GitHub Actions 轻量任务补发 Webmention（`scripts/send-webmentions.mjs`，不构建不部署，约 1 分钟）
+3. 完整构建部署只发生在代码变更（git push）时
+
+> 需配置 `AUTO_DEPLOY_WEBHOOK_URL` 与 `AUTO_DEPLOY_WEBHOOK_SECRET`（与旧版相同）；未配置时 Webmention 自动跳过，不影响发文。
 
 ---
 
@@ -404,11 +406,11 @@ const COMMENTS_ORIGIN = "https://comments.你的域名.com";
 
 | 触发方式 | 说明 |
 |----------|------|
-| `push` 到 `main` 分支 | 推送代码自动部署 |
-| `repository_dispatch`（`rebuild-search-index`） | 手动重建入口（保留兼容） |
+| `push` 到 `main` 分支 | 推送代码自动部署（部署后补发 Webmention） |
+| `repository_dispatch`（`rebuild-search-index`） | 发文触发，仅补发 Webmention（轻量，不构建） |
 | `workflow_dispatch` | 在 GitHub Actions 页面手动触发 |
 
-> 发文不再触发部署：内容变更由 Worker 即时生效（见 5.3.2 发文免部署）。
+> 发文不触发构建部署：内容变更由 Worker 即时生效（见 5.3.2 发文免部署），dispatch 只跑 Webmention 轻量任务。
 
 ---
 

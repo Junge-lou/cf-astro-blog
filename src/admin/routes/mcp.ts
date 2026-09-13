@@ -4,6 +4,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { and, desc, eq, inArray, isNull, like, or } from "drizzle-orm";
 import { type Context, Hono } from "hono";
 import * as z from "zod/v3";
+import { triggerDeployHook } from "@/admin/lib/deploy-hook";
 import {
 	blogCategories,
 	blogPosts,
@@ -1025,8 +1026,14 @@ async function createPostFromMcpInput(env: Env, input: CreatePostInput) {
 	}
 
 	if (isPostPublic(input.status, publishAt)) {
-		// 公开内容变化：递增缓存版本号并异步发送 Webmention（无需重新部署）
+		// 公开内容变化：递增缓存版本号 + 触发轻量 Webmention 任务（无需重新部署）
 		await bumpContentCacheVersion(env);
+		await triggerDeployHook(env, {
+			event: "post-created",
+			postId: inserted?.id,
+			postSlug: slug,
+			postStatus: input.status,
+		});
 	}
 
 	return {
@@ -1066,6 +1073,12 @@ async function deletePostFromMcpInput(env: Env, input: { id?: number; slug?: str
 
 	if (isPostPublic(existing.status, existing.publishAt)) {
 		await bumpContentCacheVersion(env);
+		await triggerDeployHook(env, {
+			event: "post-deleted",
+			postId: existing.id,
+			postSlug: existing.slug,
+			postStatus: existing.status,
+		});
 	}
 
 	return {

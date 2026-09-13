@@ -354,7 +354,7 @@ describe("源码回归保护", () => {
 		assert.ok(globalStyleSource.includes(".prose strong {"));
 	});
 
-	test("后台文章变更即时生效：递增缓存版本号并异步发送 Webmention", async () => {
+	test("后台文章变更即时生效：缓存版本号失效 + 轻量 Webmention 任务", async () => {
 		const [postRouteSource, workflowSource, middlewareSource, contentVersionSource] =
 			await Promise.all([
 				readFile("src/admin/routes/posts.ts", "utf8"),
@@ -363,17 +363,19 @@ describe("源码回归保护", () => {
 				readFile("src/lib/content-version.ts", "utf8"),
 			]);
 
-		// 发文/改文/删文不再触发整站部署，改为缓存版本号失效 + Worker 内 Webmention
+		// 发文/改文/删文：递增缓存版本号即时生效；Webmention 走 Actions 轻量任务（不整站构建）
 		assert.ok(postRouteSource.includes("handlePublicContentChange"));
 		assert.ok(postRouteSource.includes("bumpContentCacheVersion"));
-		assert.ok(postRouteSource.includes("sendWebmentionsForPost"));
-		assert.ok(!postRouteSource.includes("triggerDeployHook"));
+		assert.ok(postRouteSource.includes("triggerDeployHook"));
+		assert.ok(!postRouteSource.includes("sendWebmentionsForPost"));
 		// 边缘缓存键携带内容版本号
 		assert.ok(contentVersionSource.includes("CONTENT_VERSION_KEY"));
 		assert.ok(middlewareSource.includes("__cv"));
 		assert.ok(middlewareSource.includes("getContentCacheVersion"));
-		// 代码部署工作流保留（仅 git push / 手动触发）
+		// dispatch 触发轻量 Webmention 任务，push 触发完整部署 + 补发
 		assert.ok(workflowSource.includes("repository_dispatch"));
+		assert.ok(workflowSource.includes("WEBMENTION_ONLY"));
+		assert.ok(workflowSource.includes("send-webmentions.mjs"));
 		assert.ok(workflowSource.includes("npm run deploy"));
 	});
 

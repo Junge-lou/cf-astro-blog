@@ -18,6 +18,10 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.client_payload.source == 'admin-posts' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # 发文触发的 dispatch 只补发 Webmention（轻量，不构建不部署）；
+    # 代码推送 / 手动触发才执行完整构建部署。
+    env:
+      WEBMENTION_ONLY: ${{ github.event_name == 'repository_dispatch' && '1' || '0' }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v6
@@ -32,6 +36,7 @@ jobs:
         run: npm ci
 
       - name: 缓存 Astro/Vite 构建产物
+        if: ${{ env.WEBMENTION_ONLY != '1' }}
         uses: actions/cache@v4
         with:
           path: |
@@ -100,10 +105,22 @@ jobs:
           gh secret set CLOUDFLARE_REFRESH_TOKEN --repo "${{ github.repository }}" --body "$NEXT_REFRESH_TOKEN"
 
       - name: 执行部署
-        if: ${{ steps.cf_token.outputs.skip != 'true' }}
+        if: ${{ env.WEBMENTION_ONLY != '1' && steps.cf_token.outputs.skip != 'true' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ steps.cf_token.outputs.token }}
         run: npm run deploy
+
+      - name: 代码部署后补发 Webmention
+        if: ${{ env.WEBMENTION_ONLY != '1' && steps.cf_token.outputs.skip != 'true' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ steps.cf_token.outputs.token }}
+        run: node scripts/send-webmentions.mjs --remote
+
+      - name: 发文触发的 Webmention 轻量任务
+        if: ${{ env.WEBMENTION_ONLY == '1' && steps.cf_token.outputs.skip != 'true' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ steps.cf_token.outputs.token }}
+        run: node scripts/send-webmentions.mjs --remote
 
       - name: 输出跳过原因
         if: ${{ steps.cf_token.outputs.skip == 'true' }}
