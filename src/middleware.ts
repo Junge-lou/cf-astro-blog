@@ -174,13 +174,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
 		try {
 			const cachedResponse = await edgeCache.match(cacheKey);
 			if (cachedResponse) {
-				const response = cachedResponse.clone();
+				// Cloudflare 的 cache.match() 返回的 Response（含 clone）headers 不可变，
+				// 直接 set 会抛 "Can't modify immutable headers"，
+				// 需用 new Response(body, init) 重建可变副本
+				const response = new Response(cachedResponse.body, cachedResponse);
 				response.headers.set("X-Edge-Cache", "HIT");
 				applySecurityHeaders(pathname, response, isAdminPreview);
 				return response;
 			}
-		} catch {
+		} catch (error) {
 			// 边缘缓存读取失败时回退实时渲染，避免影响主链路
+			console.error("[edge-cache] match 失败", cacheKey.url, error);
 		}
 	}
 
@@ -207,8 +211,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 			responseForCache.headers.set("Cache-Control", cacheControl);
 			try {
 				await edgeCache.put(cacheKey, responseForCache);
-			} catch {
+			} catch (error) {
 				// 边缘缓存写入失败时忽略，避免影响正文返回
+				console.error("[edge-cache] put 失败", cacheKey.url, error);
 			}
 		}
 	}
