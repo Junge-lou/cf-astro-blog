@@ -318,8 +318,10 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 内容存于 D1，公开页面由 Worker SSR 直读数据库。发文 / 改文 / 删文时：
 
 1. Worker 递增 KV 中的内容版本号，边缘缓存键随版本号变化，旧缓存立即失效（秒级生效）
-2. 触发 GitHub Actions 轻量任务补发 Webmention（`scripts/send-webmentions.mjs`，不构建不部署，约 1 分钟）
-3. 完整构建部署只发生在代码变更（git push）时
+2. 触发 GitHub Actions 轻量任务，按 W3C Webmention 规范重发该文章正文全部外链的 Webmention（`scripts/send-webmentions.mjs --slug=xxx`，不构建不部署，约 1 分钟）：
+   - **发文/更新**（规范 3.1.4）：全文扫描外链（不再局限于摘要前 220 字符），重新发现 endpoint 并发送
+   - **删除**（规范 3.1.5）：文章页返回 `410 Gone`，同时按原链接重发，接收方重新验证后自动移除展示
+3. 完整构建部署只发生在代码变更（git push）时，部署后补发最近 5 篇（已删除文章除外）
 
 > 需配置 `AUTO_DEPLOY_WEBHOOK_URL` 与 `AUTO_DEPLOY_WEBHOOK_SECRET`（与旧版相同）；未配置时 Webmention 自动跳过，不影响发文。
 

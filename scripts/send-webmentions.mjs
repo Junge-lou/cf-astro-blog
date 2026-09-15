@@ -1,7 +1,10 @@
 // 从 D1 生成 RSS，然后用 @remy/webmention 自动向外发送 Webmention
+// 遵循 W3C Webmention 规范 3.1.4（更新重发）/ 3.1.5（删除重发）：
 // --remote / --local：D1 读取模式
-// --slug=xxx：只处理指定文章（发文触发时使用，精准发送）
-// 默认：处理最近 LIMIT 篇（部署后补发 / 手动重试）
+// --slug=xxx：只处理指定文章（发文/更新/删除触发时使用，精准重发）
+//   注意：按 slug 查询不限 status/deleted_at——删除文章也要重发，
+//   让接收方重新验证 source（410 Gone）后移除展示（规范 3.1.5）
+// 默认：处理最近 5 篇已发布文章（部署后补发/手动重试，不含已删除）
 import { execSync } from "node:child_process";
 import { unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -15,14 +18,18 @@ const IS_WINDOWS = process.platform === "win32";
 const WRANGLER = join(BIN_DIR, IS_WINDOWS ? "wrangler.cmd" : "wrangler");
 const WM = join(BIN_DIR, IS_WINDOWS ? "wm.cmd" : "wm");
 
-const BASE_QUERY =
-	"SELECT p.title AS title, p.slug AS slug, p.excerpt AS excerpt, p.content AS content, p.published_at AS publishedAt, p.updated_at AS updatedAt FROM blog_posts p WHERE (p.status = 'published' OR (p.status = 'scheduled' AND p.publish_at IS NOT NULL AND p.publish_at <= datetime('now')))";
+const SELECT_FIELDS =
+	"p.title AS title, p.slug AS slug, p.excerpt AS excerpt, p.content AS content, p.published_at AS publishedAt, p.updated_at AS updatedAt FROM blog_posts p";
 
 const SITE_URL = "https://ffaff.fun";
 const SITE_NAME = "Kiwi 的博客";
 const SITE_DESC = "记录 生活";
 const SITE_LANG = "zh-CN";
-const LIMIT = 5;
+const RECENT_POSTS = 5;
+// wm CLI 的 --limit 会截断"已解析 endpoint 的总数"（get-wm-endpoints.js
+// 中的 slice(0, limit)），不能用它控制文章数，否则一篇多外链文章只能
+// 发出第一条。文章数由 SQL 控制，这里只设一个足够高的安全上限。
+const WM_ENDPOINT_CAP = 100;
 
 function escapeXml(value) {
 	return value
@@ -50,7 +57,8 @@ function toRssDate(value) {
 	return parsed.toUTCString();
 }
 
-// 渲染为安全 HTML：与站点正文一致地清洗，wm 工具从中扫描 <a href> 外链
+// 渲染为安全 HTML：仅保留超链接（Webmention 规范中"链接"指 <a href>
+// 超链接；img/video 等资源嵌入不属于 mention 目标，全部剔除）
 function renderContentHtml(content) {
 	const raw = String(content || "").trim();
 	if (!raw) {
@@ -59,10 +67,9 @@ function renderContentHtml(content) {
 
 	const html = marked.parse(raw, { async: false });
 	return sanitizeHtml(html, {
-		allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+		allowedTags: sanitizeHtml.defaults.allowedTags.filter((tag) => tag !== "img"),
 		allowedAttributes: {
 			a: ["href", "title", "rel", "target"],
-			img: ["src", "alt", "title", "loading", "decoding"],
 		},
 	});
 }
@@ -73,11 +80,14 @@ async function main() {
 	const slugArg = process.argv.find((arg) => arg.startsWith("--slug="));
 	const targetSlug = slugArg ? slugArg.slice("--slug=".length).trim() : "";
 
-	let query = BASE_QUERY;
+	let query;
 	if (targetSlug) {
-		query += ` AND p.slug = '${escapeSqlString(targetSlug)}'`;
+		// 单篇模式：不限 status/deleted_at——更新（3.1.4）与删除（3.1.5）
+		// 都需要按原链接重发，接收方重新验证 source 后更新或移除展示
+		query = `SELECT ${SELECT_FIELDS} WHERE p.slug = '${escapeSqlString(targetSlug)}';`;
+	} else {
+		query = `SELECT ${SELECT_FIELDS} WHERE (p.status = 'published' OR (p.status = 'scheduled' AND p.publish_at IS NOT NULL AND p.publish_at <= datetime('now'))) AND p.deleted_at IS NULL ORDER BY COALESCE(p.published_at, p.updated_at, p.created_at) DESC LIMIT ${RECENT_POSTS};`;
 	}
-	query += " ORDER BY COALESCE(p.published_at, p.updated_at, p.created_at) DESC LIMIT 30;";
 
 	console.log(
 		targetSlug
@@ -148,12 +158,12 @@ async function main() {
 	await writeFile(tmpFile, rss.trim(), "utf-8");
 	console.log(`[Webmention Send] 已生成临时 RSS（${posts.length} 篇文章，全文渲染）`);
 
-	const wmLimit = targetSlug ? 1 : Math.min(LIMIT, posts.length);
+	const wmLimit = WM_ENDPOINT_CAP;
 	try {
 		console.log(
 			targetSlug
-				? `[Webmention Send] 扫描指定文章的正文外链并发送 Webmention...`
-				: `[Webmention Send] 扫描最近 ${wmLimit} 篇文章的正文外链并发送 Webmention...`,
+				? "[Webmention Send] 扫描指定文章的正文外链并发送 Webmention..."
+				: `[Webmention Send] 扫描最近 ${RECENT_POSTS} 篇文章的正文外链并发送 Webmention...`,
 		);
 		execSync(`"${WM}" "${tmpFile}" --limit ${wmLimit} --send`, {
 			encoding: "utf-8",

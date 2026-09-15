@@ -153,6 +153,28 @@ try {
 }
 
 if (!post) {
+	// W3C Webmention 3.1.5：已删除的 source 应返回 410 Gone，
+	// 让接收方重新验证时据此移除该文章的 mention 展示；
+	// 从未存在过的 slug 仍保持跳转到 /blog
+	try {
+		const tombstoneDb = getDb(env.DB);
+		const [tombstoneRow] = await tombstoneDb
+			.select({ deletedAt: blogPosts.deletedAt })
+			.from(blogPosts)
+			.where(eq(blogPosts.slug, slug))
+			.limit(1);
+		if (tombstoneRow?.deletedAt) {
+			return new Response(
+				'<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>410 文章已删除</title></head><body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;color:#666;background:#f6f6f6"><div style="text-align:center"><h1 style="font-size:3rem;margin:0;color:#444">410</h1><p>这篇文章已被作者删除。</p><p><a href="/blog" style="color:#555">返回文章列表</a></p></div></body></html>',
+				{
+					status: 410,
+					headers: { "content-type": "text/html; charset=utf-8" },
+				},
+			);
+		}
+	} catch {
+		// D1 不可用时按"不存在"处理，走原有跳转
+	}
 	return Astro.redirect("/blog");
 }
 
