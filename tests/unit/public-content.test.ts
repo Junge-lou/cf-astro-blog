@@ -304,6 +304,36 @@ describe("源码回归保护", () => {
 		assert.ok(globalStyleSource.includes(".prose .prose-code-block pre"));
 	});
 
+	test("代码块包装后会通知 reveal 重扫描，避免刷新后代码块透明不可见", async () => {
+		const [enhanceScript, revealScript, globalStyleSource, postLayoutSource] = await Promise.all([
+			readFile("public/code-block-enhance.js", "utf8"),
+			readFile("public/article-reveal.js", "utf8"),
+			readFile("src/styles/global.css", "utf8"),
+			readFile("src/layouts/Post.astro", "utf8"),
+		]);
+
+		// 硬刷新时 article-reveal.js 先执行（无 readyState 守卫），
+		// code-block-enhance.js 等 DOMContentLoaded 后把 <pre> 包进 <figure>；
+		// 新的正文直接子元素 <figure> 必须触发 reveal 重扫描，否则永远 opacity:0
+		assert.ok(enhanceScript.includes("prose:restructured"));
+		assert.ok(enhanceScript.includes("CustomEvent"));
+		assert.ok(
+			enhanceScript.includes('preElement.removeAttribute("data-reveal")'),
+			"包装时应清理 pre 上失效的 reveal 标记",
+		);
+		assert.ok(revealScript.includes("prose:restructured"));
+		// 重扫描必须可重入：跳过已标记的子元素，只处理新增节点
+		assert.ok(revealScript.includes('!el.hasAttribute("data-reveal")'));
+		// reveal 不得再因 js-reveal 已存在而提前返回（否则重扫描被跳过）
+		assert.doesNotMatch(revealScript, /classList\.contains\("js-reveal"\)\)\s*return/u);
+		// CSS 隐藏态必须以直接子元素为目标（包装节点 figure 会成为直接子元素）
+		assert.match(globalStyleSource, /\.article-prose\.js-reveal\s*>\s*\*/u);
+		// 两个脚本的加载顺序：enhance 在 reveal 之前
+		const enhanceIndex = postLayoutSource.indexOf("/code-block-enhance.js");
+		const revealIndex = postLayoutSource.indexOf("/article-reveal.js");
+		assert.ok(enhanceIndex !== -1 && revealIndex !== -1 && enhanceIndex < revealIndex);
+	});
+
 	test("全局字体配置会加载文楷与分层英文字体", async () => {
 		const [globalStyleSource, packageSource] = await Promise.all([
 			readFile("src/styles/global.css", "utf8"),

@@ -170,6 +170,13 @@
 		wrapper.className = "prose-code-block";
 		wrapper.dataset.codeLanguage = language;
 
+		// pre 上可能残留 article-reveal.js 的观察标记（硬刷新时序下
+		// reveal 先于本脚本执行）；包装后标记随嵌套失效，清理掉，
+		// 由 prose:restructured 事件触发的重扫描统一处理包装节点
+		preElement.removeAttribute("data-reveal");
+		preElement.classList.remove("is-revealed");
+		preElement.style.removeProperty("--reveal-delay");
+
 		const head = document.createElement("figcaption");
 		head.className = "prose-code-head";
 
@@ -219,8 +226,18 @@
 
 	const enhanceAll = (root = document) => {
 		const targets = root.querySelectorAll(PRE_SELECTOR);
+		let enhancedCount = 0;
 		for (const preElement of targets) {
-			enhanceCodeBlock(preElement);
+			if (preElement instanceof HTMLPreElement && preElement.dataset[ENHANCED_MARK] !== "true") {
+				enhanceCodeBlock(preElement);
+				enhancedCount += 1;
+			}
+		}
+
+		if (enhancedCount > 0) {
+			// 通知 article-reveal.js 重新扫描：<figure> 包装节点是正文
+			// 新的直接子元素，需要被标记并观察，否则会一直隐藏
+			document.dispatchEvent(new CustomEvent("prose:restructured"));
 		}
 	};
 
