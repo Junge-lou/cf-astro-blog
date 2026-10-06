@@ -29,7 +29,7 @@ function runD1(query, mode) {
 	const jsonStart = stdout.indexOf("[");
 	const jsonEnd = stdout.lastIndexOf("]");
 	if (jsonStart < 0 || jsonEnd < jsonStart) {
-		throw new Error("wrangler 输出中未找到可解析的 JSON 结果: " + stdout.slice(0, 500));
+		throw new Error(`wrangler 输出中未找到可解析的 JSON 结果: ${stdout.slice(0, 500)}`);
 	}
 
 	const parsed = JSON.parse(stdout.slice(jsonStart, jsonEnd + 1));
