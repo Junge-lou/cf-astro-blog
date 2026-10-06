@@ -453,4 +453,161 @@ describe("安全工具", () => {
 		assert.match(html, /<strong>/u);
 		assert.match(html, /<code>/u);
 	});
+
+	// ── 代码块保护（Typora 扩展语法不得破坏代码内容）──────────────────────
+
+	test("代码块中的 == 不会被当成 Typora 高亮语法", async () => {
+		const html = await renderSafeMarkdown(
+			"```js\nif (a == 1) { x = 1; }\nif (b == 2) { y = 2; }\n```",
+		);
+
+		assert.ok(!html.includes("<mark"), "代码块内不应注入 <mark>");
+		assert.ok(!html.includes("@@CODEREGION"), "不应残留占位符");
+		assert.match(html, /a == 1/u);
+		assert.match(html, /b == 2/u);
+	});
+
+	test("代码块中的 ++ 不会被当成 Typora 下划线语法", async () => {
+		const html = await renderSafeMarkdown(
+			"```js\nfor (let i = 0; i < 3; i++) {}\nfor (let j = 0; j < 3; j++) {}\n```",
+		);
+
+		assert.ok(!html.includes("<u"), "代码块内不应注入 <u>");
+		assert.match(html, /i\+\+/u);
+		assert.match(html, /j\+\+/u);
+	});
+
+	test("代码块中的 [^..] 不会被当成脚注引用", async () => {
+		const html = await renderSafeMarkdown('```js\nconst r = /[^\\s]+/;\nconst s = "[^abc]";\n```');
+
+		assert.ok(!html.includes("prose-footnote"), "代码块内不应注入脚注链接");
+		assert.match(html, /\[\^\\s\]\+/u);
+		assert.match(html, /\[\^abc\]/u);
+	});
+
+	test("代码块中同一行的 $..$ 不会被当成行内数学公式", async () => {
+		const html = await renderSafeMarkdown('```bash\necho "$HOME and $USER"\n```');
+
+		assert.ok(!html.includes("katex"), "代码块内不应注入 KaTeX 输出");
+		assert.match(html, /\$HOME and \$USER/u);
+	});
+
+	test("math/katex 代码块中的 ^ 上标符号保持原样", async () => {
+		const html = await renderSafeMarkdown(
+			"```math\n\\left( \\sum\\_{k=1}^n a\\_k b\\_k \\right)^2\n```",
+		);
+
+		assert.ok(!html.includes("<sup"), "代码块内不应注入 <sup>");
+		assert.match(html, /\^n/u);
+		assert.match(html, /\)\^2/u);
+	});
+
+	test("mermaid 粗箭头 ==> 不会被当成 Typora 高亮语法", async () => {
+		const html = await renderSafeMarkdown(
+			"```mermaid\nflowchart LR\n    A ==> B\n    C ==> D\n```",
+		);
+
+		assert.ok(!html.includes("<mark"), "mermaid 源码内不应注入 <mark>");
+		assert.match(html, /<div class="prose-mermaid">/u);
+		assert.match(html, /A ==&gt; B/u);
+	});
+
+	test("列表内缩进的代码块同样受保护", async () => {
+		const html = await renderSafeMarkdown(
+			"- 项目一\n\n  ```js\n  if (a == b && c == d) {}\n  ```\n\n- 项目二",
+		);
+
+		assert.ok(!html.includes("<mark"), "缩进代码块内不应注入 <mark>");
+		assert.match(html, /a == b &amp;&amp; c == d/u);
+	});
+
+	test("行内代码中的 == 与 $ 保持原样", async () => {
+		const html = await renderSafeMarkdown("判断 `a == b && c == d` 与 `echo $A $B` 的结果。");
+
+		assert.ok(!html.includes("<mark"), "行内代码内不应注入 <mark>");
+		assert.ok(!html.includes("katex"), "行内代码内不应注入 KaTeX 输出");
+		assert.match(html, /<code>a == b &amp;&amp; c == d<\/code>/u);
+		assert.match(html, /<code>echo \$A \$B<\/code>/u);
+	});
+
+	test("代码块外的 Typora 扩展语法仍然生效", async () => {
+		const html = await renderSafeMarkdown(
+			"==高亮== 与 $E=mc^2$ 正常，代码块：\n\n```\nx == y\n```",
+		);
+
+		assert.match(html, /<mark class="prose-mark">高亮<\/mark>/u);
+		assert.match(html, /katex/u);
+		assert.match(html, /x == y/u);
+	});
+
+	test("代码块内被转义的 HTML 不会被清洗器二次处理", async () => {
+		const html = await renderSafeMarkdown('```html\n<img src=x onerror="alert(1)">\n```');
+
+		assert.match(html, /&lt;img src=x onerror=/u);
+		assert.ok(!html.includes("<img"), "代码块内的 HTML 必须以纯文本展示");
+	});
+
+	test("Callout 之后的代码块仍能正确恢复（嵌套渲染共享存储）", async () => {
+		const md = [
+			"> [!TIP]",
+			"> 提示内容 **加粗**",
+			"",
+			"```js",
+			"if (a == 1 && b == 2) {}",
+			"```",
+			"",
+			"> [!WARNING]",
+			"> 另一个提示",
+			"",
+			"```js",
+			"for (let i = 0; i < 2; i++) {}",
+			"```",
+		].join("\n");
+
+		const html = await renderSafeMarkdown(md);
+
+		assert.ok(!html.includes("@@CODEREGION"), "不应残留占位符");
+		assert.ok(!html.includes("<mark"), "代码块内不应注入 <mark>");
+		assert.ok(!html.includes("<u "), "代码块内不应注入 <u>");
+		assert.match(html, /prose-callout-tip/u);
+		assert.match(html, /a == 1 &amp;&amp; b == 2/u);
+		assert.match(html, /i\+\+/u);
+	});
+
+	test("details 内的代码块与行内代码都能恢复", async () => {
+		const md = [
+			'[details="代码示例"]',
+			"说明 `a == b` 的判断：",
+			"",
+			"```js",
+			"if (x == 1) {}",
+			"```",
+			"[/details]",
+		].join("\n");
+
+		const html = await renderSafeMarkdown(md);
+
+		assert.ok(!html.includes("@@CODEREGION"), "不应残留占位符");
+		assert.match(html, /<details class="prose-details">/u);
+		assert.match(html, /<code>a == b<\/code>/u);
+		assert.match(html, /<pre><code class="language-js">if \(x == 1\) \{\}<\/code><\/pre>/u);
+	});
+
+	test("脚注定义内的代码块能正确恢复", async () => {
+		const md = [
+			"正文含脚注[^1]。",
+			"",
+			"[^1]: 脚注里的代码：",
+			"",
+			"  ```js",
+			"  if (a == b) {}",
+			"  ```",
+		].join("\n");
+
+		const html = await renderSafeMarkdown(md);
+
+		assert.ok(!html.includes("@@CODEREGION"), "不应残留占位符");
+		assert.match(html, /prose-footnotes/u);
+		assert.match(html, /if \(a == b\) \{\}/u);
+	});
 });

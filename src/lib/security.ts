@@ -265,6 +265,8 @@ interface MarkdownRenderState {
 	toc: MarkdownTocItem[];
 	headingSlugCount: Map<string, number>;
 	footnoteDefs: { id: string; content: string }[];
+	// 本渲染树（含 Callout/Details/脚注的嵌套渲染）共享的代码区域存储
+	codeRegions: Map<string, ProtectedCodeRegion>;
 }
 
 function extractDetailsShortcodes(markdown: string): {
@@ -707,6 +709,175 @@ function buildUniqueHeadingId(baseSlug: string, headingSlugCount: Map<string, nu
 	return `${baseSlug}-${currentCount + 1}`;
 }
 
+// ── 代码区域保护 ──────────────────────────────────────────────────────────
+// Typora 扩展语法（$..$、==..==、++..++、~..~、^..^、[^..]、:emoji: 等）
+// 通过正则在 marked 解析前做全文替换，会把代码块里的 ==、++、^、[^..] 等
+// 误当成扩展语法破坏掉。因此先把围栏代码块与行内代码替换为占位符，
+// 全部预处理与渲染完成后再恢复为正确的 <pre><code> / <code> 输出。
+
+interface ProtectedCodeRegion {
+	kind: "fenced" | "inline";
+	language: string;
+	code: string;
+}
+
+// 占位符 id 带「递增计数 + 随机后缀」，全进程唯一；
+// 区域存储挂在每次渲染的 state 上（渲染树内共享，请求间隔离），
+// 避免并发渲染互相干扰，也不会在长驻 Worker 中泄漏
+let codeRegionSeq = 0;
+
+function nextCodeRegionId(): string {
+	codeRegionSeq += 1;
+	const randomSuffix = Math.random().toString(36).slice(2, 8);
+	return `@@CODEREGION_${codeRegionSeq}_${randomSuffix}@@`;
+}
+
+/**
+ * 在同一行中为行内代码寻找与起始反引号串「长度完全一致」的闭合串。
+ * 与 CommonMark 规则一致：1 个反引号只能被 1 个反引号闭合，2 个闭合 2 个。
+ */
+function findInlineCodeClose(line: string, from: number, backtickCount: number): number {
+	for (let i = from; i < line.length; i += 1) {
+		if (line[i] !== "`") {
+			continue;
+		}
+		let runLength = 1;
+		while (line[i + runLength] === "`") {
+			runLength += 1;
+		}
+		if (runLength === backtickCount) {
+			return i;
+		}
+		// 长度不一致的反引号串属于代码内容，跳过
+		i += runLength - 1;
+	}
+	return -1;
+}
+
+function protectInlineCode(line: string, store: Map<string, ProtectedCodeRegion>): string {
+	if (!line.includes("`")) {
+		return line;
+	}
+
+	let result = "";
+	let cursor = 0;
+
+	while (cursor < line.length) {
+		if (line[cursor] !== "`") {
+			result += line[cursor];
+			cursor += 1;
+			continue;
+		}
+
+		let backtickCount = 1;
+		while (line[cursor + backtickCount] === "`") {
+			backtickCount += 1;
+		}
+
+		const closeIndex = findInlineCodeClose(line, cursor + backtickCount, backtickCount);
+		if (closeIndex === -1) {
+			// 未闭合的反引号保持原样，交给 marked 处理
+			result += line.slice(cursor, cursor + backtickCount);
+			cursor += backtickCount;
+			continue;
+		}
+
+		const code = line.slice(cursor + backtickCount, closeIndex);
+		const id = nextCodeRegionId();
+		store.set(id, { kind: "inline", language: "", code });
+		result += id;
+		cursor = closeIndex + backtickCount;
+	}
+
+	return result;
+}
+
+/**
+ * 保护围栏代码块（``` / ~~~，含缩进的围栏，如列表内的代码块）
+ * 与行内代码，返回带占位符的 markdown。未闭合的围栏保持原样交给 marked。
+ */
+function protectCodeRegions(markdown: string, store: Map<string, ProtectedCodeRegion>): string {
+	const lines = markdown.split("\n");
+	const output: string[] = [];
+
+	let i = 0;
+	while (i < lines.length) {
+		const line = lines[i] ?? "";
+		const fenceMatch = /^([^\S\n]*)(`{3,}|~{3,})(.*)$/.exec(line);
+
+		if (fenceMatch) {
+			const indent = fenceMatch[1] ?? "";
+			const marker = fenceMatch[2] ?? "```";
+			const info = fenceMatch[3] ?? "";
+			// 闭合围栏：同一字符、长度不小于起始围栏、整行除空白外无其它内容
+			const fenceChar = marker[0] === "~" ? "~" : "`";
+			const closePattern = new RegExp(`^[^\\S\\n]*${fenceChar}{${marker.length},}[^\\S\\n]*$`);
+
+			let closeIndex = -1;
+			for (let j = i + 1; j < lines.length; j += 1) {
+				if (closePattern.test(lines[j] ?? "")) {
+					closeIndex = j;
+					break;
+				}
+			}
+
+			if (closeIndex !== -1) {
+				const code = lines.slice(i + 1, closeIndex).join("\n");
+				const language = info.trim().split(/\s+/)[0] ?? "";
+				const id = nextCodeRegionId();
+				store.set(id, { kind: "fenced", language, code });
+				// 保留缩进，确保列表项等块级结构不被破坏
+				output.push(`${indent}${id}`);
+				i = closeIndex + 1;
+				continue;
+			}
+		}
+
+		output.push(protectInlineCode(line, store));
+		i += 1;
+	}
+
+	return output.join("\n");
+}
+
+/**
+ * 把占位符恢复为最终的代码 HTML。必须在其它所有占位符替换之后调用。
+ * 只删除「确实完成替换」的条目：嵌套渲染（Callout/Details/脚注）会共享
+ * 同一渲染树的存储，此处 html 不含某占位符并不代表它不会在渲染树的
+ * 其它环节被恢复，剩余条目由渲染树结束时统一清理。
+ */
+function restoreCodeRegions(html: string, store: Map<string, ProtectedCodeRegion>): string {
+	for (const [id, region] of [...store.entries()]) {
+		if (!html.includes(id)) {
+			continue;
+		}
+
+		if (region.kind === "fenced") {
+			const language = region.language.trim().toLowerCase();
+			let replacement: string;
+
+			if (DIAGRAM_LANGUAGES.has(language)) {
+				replacement = renderDiagramBlock({ placeholder: id, language, code: region.code });
+			} else {
+				const escapedCode = escapeHtml(region.code);
+				const langAttr = language ? ` class="language-${escapeAttribute(language)}"` : "";
+				replacement = `<pre><code${langAttr}>${escapedCode}</code></pre>`;
+			}
+
+			const idPattern = escapeRegExp(id);
+			// 优先去掉 marked 包裹的 <p>，避免 <p><pre> 非法嵌套
+			html = html.replaceAll(new RegExp(`<p>${idPattern}</p>\\n?`, "gu"), replacement);
+			html = html.replaceAll(id, replacement);
+		} else {
+			html = html.replaceAll(id, `<code>${escapeHtml(region.code)}</code>`);
+		}
+
+		store.delete(id);
+	}
+
+	return html;
+}
+
 export async function renderSafeMarkdown(markdown: string): Promise<string> {
 	const rendered = await renderSafeMarkdownWithToc(markdown);
 	return rendered.html;
@@ -720,6 +891,7 @@ export async function renderSafeMarkdownWithToc(markdown: string): Promise<{
 		toc: [],
 		headingSlugCount: new Map<string, number>(),
 		footnoteDefs: [],
+		codeRegions: new Map<string, ProtectedCodeRegion>(),
 	};
 
 	let html = await renderSafeMarkdownInternal(markdown, 0, state);
@@ -737,6 +909,10 @@ export async function renderSafeMarkdownWithToc(markdown: string): Promise<{
 		html += footnoteHtmlParts.join("");
 	}
 
+	// 渲染树结束：清理所有未被恢复的代码区域条目（如被丢弃的脚注内容），
+	// 防止同一 Worker 实例处理多个请求时累积残留
+	state.codeRegions.clear();
+
 	return {
 		html,
 		toc: state.toc,
@@ -751,6 +927,10 @@ async function renderSafeMarkdownInternal(
 	if (depth > 5) {
 		return escapeHtml(markdown);
 	}
+
+	// 0. 规范换行符，并保护代码块/行内代码不被 Typora 扩展语法预处理破坏
+	const normalizedMarkdown = markdown.replaceAll(/\r\n?/g, "\n");
+	const protectedMarkdown = protectCodeRegions(normalizedMarkdown, state.codeRegions);
 
 	const renderer = new marked.Renderer();
 	const diagramBlocks: DiagramBlock[] = [];
@@ -859,7 +1039,7 @@ async function renderSafeMarkdownInternal(
 	// 顺序：先处理 $$ 再处理 $（避免冲突），然后处理 Typora 扩展语法
 
 	// 1. 移除 [TOC] 标记（TOC 由外部独立生成）
-	const noToc = removeTocMarkers(markdown);
+	const noToc = removeTocMarkers(protectedMarkdown);
 
 	// 2. 数学公式（先 display math 再 inline math）
 	const extractedDisplayMath = extractDisplayMath(noToc);
@@ -1016,7 +1196,8 @@ async function renderSafeMarkdownInternal(
 		html = html.replaceAll(escapeRegExp(block.placeholder), diagramHtml);
 	}
 
-	return html;
+	// 恢复被保护的代码块/行内代码（必须在所有其它占位符替换之后）
+	return restoreCodeRegions(html, state.codeRegions);
 }
 
 function renderCalloutIcon(type: string): string {
