@@ -1,7 +1,18 @@
 import { defineMiddleware } from "astro:middleware";
+import { runInBackground } from "@/lib/background";
 import { getContentCacheVersion } from "@/lib/content-version";
+import { buildContentImgSrc } from "@/lib/csp";
+// 缓存键归一化、TTL 决策等纯逻辑都在这里，便于单元测试与跨文件共用同一规则。
+// 注意：不要从 @/lib/security 引入任何东西——它顶层依赖 katex/marked/
+// sanitize-html，会把整个 Markdown 渲染栈拖进中间件的模块图。
+import {
+	buildEdgeCacheKeyUrl,
+	canUseEdgeCache,
+	isMediaPath,
+	normalizePathname,
+	resolveEdgeCacheTtl,
+} from "@/lib/edge-cache-key";
 
-const EDGE_CACHE_TTL_SECONDS = 300;
 const CONTENT_VERSION_MEMO_TTL_MS = 15_000;
 
 // 内容版本号进程级缓存：避免每次请求都读 KV。
@@ -24,71 +35,6 @@ async function resolveContentVersion(): Promise<string> {
 	}
 }
 
-function normalizePathname(pathname: string): string {
-	if (!pathname || pathname === "/") {
-		return "/";
-	}
-
-	return pathname.replace(/\/+$/u, "") || "/";
-}
-
-function resolveEdgeCacheTtl(pathname: string): number {
-	switch (pathname) {
-		case "/":
-		case "/blog":
-		case "/friends":
-			return EDGE_CACHE_TTL_SECONDS;
-		default:
-			// 文章详情页同样缓存 300 秒，大幅降低 D1 查询压力和导航延迟
-			if (pathname.startsWith("/blog/")) {
-				return EDGE_CACHE_TTL_SECONDS;
-			}
-			return 0;
-	}
-}
-
-function buildEdgeCacheKeyUrl(url: URL, contentVersion: string): URL {
-	const cacheUrl = new URL(url.toString());
-	const pathname = normalizePathname(cacheUrl.pathname);
-	cacheUrl.pathname = pathname;
-	cacheUrl.hash = "";
-
-	if (pathname === "/" || pathname === "/friends") {
-		cacheUrl.search = "";
-	} else if (pathname === "/blog") {
-		const page = Number.parseInt(cacheUrl.searchParams.get("page") || "", 10);
-		cacheUrl.search = "";
-		if (Number.isInteger(page) && page > 1 && page <= 500) {
-			cacheUrl.searchParams.set("page", String(page));
-		}
-	}
-
-	// 文章详情页不含任何影响内容的查询参数，清空 search 确保缓存命中稳定
-	if (pathname.startsWith("/blog/")) {
-		cacheUrl.search = "";
-	}
-
-	// 缓存键携带内容版本号：发文后版本号变化，旧缓存在所有节点立即失效
-	cacheUrl.searchParams.set("__cv", contentVersion);
-
-	return cacheUrl;
-}
-
-function canUseEdgeCache(options: {
-	method: string;
-	isAdminPreview: boolean;
-	pathname: string;
-	hasAuthorization: boolean;
-}): boolean {
-	if (options.method !== "GET") {
-		return false;
-	}
-	if (options.isAdminPreview || options.hasAuthorization) {
-		return false;
-	}
-	return resolveEdgeCacheTtl(options.pathname) > 0;
-}
-
 function getEdgeCache(): Cache | null {
 	if (typeof caches === "undefined") {
 		return null;
@@ -107,21 +53,27 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 	response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 	response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
-	// 告知 CDN/浏览器响应可因 Accept-Encoding 和 Cookie 而不同
-	const existingVary = response.headers.get("Vary") || "";
-	const varySegments = new Set(
-		existingVary
-			.split(",")
-			.map((s) => s.trim())
-			.filter(Boolean),
-	);
-	varySegments.add("Accept-Encoding");
-	if (response.headers.has("set-cookie")) {
-		varySegments.add("Cookie");
+	// 媒体资源跳过 Vary：图片已按目标格式编码，按 Accept-Encoding 拆分会
+	// 产生多个缓存条目，降低边缘命中率且没有收益。
+	if (!isMediaPath(normalizedPath)) {
+		// 告知 CDN/浏览器响应可因 Accept-Encoding 和 Cookie 而不同
+		const existingVary = response.headers.get("Vary") || "";
+		const varySegments = new Set(
+			existingVary
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean),
+		);
+		varySegments.add("Accept-Encoding");
+		if (response.headers.has("set-cookie")) {
+			varySegments.add("Cookie");
+		}
+		response.headers.set("Vary", [...varySegments].join(", "));
 	}
-	response.headers.set("Vary", [...varySegments].join(", "));
 
-	if (!normalizedPath.startsWith("/api/")) {
+	// 媒体资源只写入边缘缓存，不改写 Cache-Control：
+	// 媒体路由已设置了准确的 `immutable` 语义，此处覆盖会把它冲掉。
+	if (!isMediaPath(normalizedPath) && !normalizedPath.startsWith("/api/")) {
 		const frameAncestors = isAdminPreview ? "'self'" : "'none'";
 		// Astro ClientRouter (View Transitions) 客户端导航时不会刷新文档级 CSP，
 		// 且在页面切换时会执行内联脚本片段，未放行时会在控制台持续报错。
@@ -146,7 +98,7 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 				"media-src 'self' https: data:",
 				`script-src ${scriptSources.join(" ")}`,
 				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data: https: https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com",
+				`img-src ${buildContentImgSrc({ allowAnyHttps: true })}`,
 				"font-src 'self' data: https:",
 				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun https://webmention.io",
 				"frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com https://webmention.io",
@@ -166,7 +118,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 	});
 	const edgeCache = getEdgeCache();
 	const edgeCacheTtl = resolveEdgeCacheTtl(pathname);
-	const contentVersion = shouldUseEdgeCache ? await resolveContentVersion() : "0";
+	// 媒体资源不参与内容版本号，避免白白读取一次 KV
+	const shouldResolveVersion = shouldUseEdgeCache && !isMediaPath(pathname);
+	const contentVersion = shouldResolveVersion ? await resolveContentVersion() : "0";
 	const cacheKeyUrl = buildEdgeCacheKeyUrl(context.url, contentVersion);
 	const cacheKey = new Request(cacheKeyUrl.toString(), { method: "GET" });
 
@@ -200,21 +154,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
 	) {
 		const existingCacheControl = response.headers.get("cache-control") || "";
 		if (!/no-store|private/iu.test(existingCacheControl)) {
-			// max-age 与 s-maxage 保持一致：
-			// 浏览器缓存使 Astro prefetch 预取的内容可以被 ClientRouter 的 fetch() 直接命中，
-			// 避免每次导航都需要服务器往返，彻底消除点击延迟。
-			const cacheControl = `public, s-maxage=${edgeCacheTtl}, max-age=${edgeCacheTtl}, stale-while-revalidate=86400`;
+			const cacheControl = isMediaPath(pathname)
+				? existingCacheControl
+				: // max-age 与 s-maxage 保持一致：
+					// 浏览器缓存使 Astro prefetch 预取的内容可以被 ClientRouter 的 fetch() 直接命中，
+					// 避免每次导航都需要服务器往返，彻底消除点击延迟。
+					`public, s-maxage=${edgeCacheTtl}, max-age=${edgeCacheTtl}, stale-while-revalidate=86400`;
 			response.headers.set("Cache-Control", cacheControl);
 			response.headers.set("X-Edge-Cache", "MISS");
 
 			const responseForCache = response.clone();
 			responseForCache.headers.set("Cache-Control", cacheControl);
-			try {
-				await edgeCache.put(cacheKey, responseForCache);
-			} catch (error) {
-				// 边缘缓存写入失败时忽略，避免影响正文返回
-				console.error("[edge-cache] put 失败", cacheKey.url, error);
-			}
+			// 写缓存不需要挡在响应前面：它对本请求的结果没有任何影响，
+			// 失败只会让下一次请求重新渲染（与今天 put 抛错时的行为一致）。
+			// 交给 waitUntil 后，缓存未命中的请求可以立刻把正文交给客户端。
+			runInBackground(
+				edgeCache.put(cacheKey, responseForCache).catch((error) => {
+					console.error("[edge-cache] put 失败", cacheKey.url, error);
+				}),
+			);
 		}
 	}
 

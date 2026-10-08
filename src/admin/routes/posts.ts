@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { generatePostSeoWithInternalAi } from "@/admin/lib/ai-post-seo";
 import { triggerDeployHook } from "@/admin/lib/deploy-hook";
 import { blogCategories, blogPosts, blogPostTags, blogTags } from "@/db/schema";
+import { runInBackground } from "@/lib/background";
 import { bumpContentCacheVersion } from "@/lib/content-version";
 import { getDb } from "@/lib/db";
 import { isOpenAICompatibleEndpointReady } from "@/lib/openai-compatible";
@@ -45,8 +46,16 @@ async function handlePublicContentChange(
 	c: Context<AdminAppEnv>,
 	hookPayload: { event: string; postId?: number; postSlug?: string; postStatus?: string },
 ): Promise<void> {
+	// 两件事互不依赖：先启动钩子，再等版本号，避免继续串行叠加延迟。
+	//
+	// 部署钩子最长会等 6 秒（见 src/admin/lib/deploy-hook.ts 的超时），而它只负责
+	// 让 GitHub Actions 补发 Webmention——失败仅打日志、不影响保存结果，
+	// 因此没理由让「保存文章」的请求等它，交给 waitUntil 在响应之后继续跑。
+	//
+	// 版本号递增留在关键路径上：它决定新内容对访客何时可见，属于正确性的一部分，
+	// 而且只是一次 KV 写入。
+	runInBackground(triggerDeployHook(c.env, hookPayload));
 	await bumpContentCacheVersion(c.env);
-	await triggerDeployHook(c.env, hookPayload);
 }
 
 interface ParsedPostInput {

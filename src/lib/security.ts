@@ -1,88 +1,96 @@
-import katex from "katex";
-import { marked, type Tokens } from "marked";
-import { emojify } from "node-emoji";
-import sanitizeHtml from "sanitize-html";
+// 重型渲染依赖一律**延迟加载**，见下方 loadMarkdownRuntime()。
+// 只有类型可以留在顶层：`Tokens` 仅在类型位置使用，编译后会被完全擦除。
+import type { Tokens } from "marked";
 
-const POST_STATUS_VALUES = ["draft", "published", "scheduled"] as const;
+type MarkdownRuntime = {
+	marked: typeof import("marked").marked;
+	/**
+	 * sanitize-html 是 CJS（类型声明为 `export =`）：**类型层面模块本身就是那个函数**，
+	 * 但运行时经打包后要走 `.default`。两者的差异在下面加载处用一处断言收敛。
+	 */
+	sanitizeHtml: typeof import("sanitize-html");
+	katex: typeof import("katex").default;
+	emojify: typeof import("node-emoji").emojify;
+};
+
+let markdownRuntime: MarkdownRuntime | null = null;
+
+/**
+ * 延迟加载 Markdown 渲染栈（marked / sanitize-html / katex / node-emoji）。
+ *
+ * 为什么要延迟：`src/admin/app.ts` 把**所有**后台路由静态引入到同一个 Hono 应用，
+ * 而 `src/pages/api/[...route].ts` 会加载这个应用。因此只要这些依赖写在模块顶层
+ * import，每一个 `/api/*` 请求——包括每次页面浏览都会打的埋点接口、登录接口——
+ * 都要解析并执行 katex + sanitize-html + marked + node-emoji；单是它们所在的
+ * server chunk 就有 1.3 MB 左右。改成动态 import 后它们会落到独立的懒加载 chunk，
+ * 只有真正要渲染正文时才被求值。
+ *
+ * 注意：这里**不能**依赖"只改少数引用方就能减小模块图"——虽然有不少文件只需要
+ * 转义/净化这类纯工具，但后台全部路由共享同一个 entry，只要还有一个路由需要
+ * 渲染正文，静态 import 就会把整条链拖进所有请求。所以要从这里切断。
+ */
+async function loadMarkdownRuntime(): Promise<MarkdownRuntime> {
+	if (!markdownRuntime) {
+		const [markedModule, sanitizeModule, katexModule, emojiModule] = await Promise.all([
+			import("marked"),
+			import("sanitize-html"),
+			import("katex"),
+			import("node-emoji"),
+		]);
+		markdownRuntime = {
+			marked: markedModule.marked,
+			sanitizeHtml: sanitizeModule.default as unknown as MarkdownRuntime["sanitizeHtml"],
+			katex: katexModule.default,
+			emojify: emojiModule.emojify,
+		};
+	}
+
+	return markdownRuntime;
+}
+
+/**
+ * 取已加载的渲染栈。若在加载完成前被调用会抛出明确错误，
+ * 而不是以 undefined 静默出错（那类问题极难排查）。
+ */
+function getMarkdownRuntime(): MarkdownRuntime {
+	if (!markdownRuntime) {
+		throw new Error("Markdown 运行时尚未加载：请先 await loadMarkdownRuntime()");
+	}
+
+	return markdownRuntime;
+}
+
+import {
+	buildUrlSlug,
+	decodeRouteParam,
+	encodeRouteParam,
+	escapeAttribute,
+	escapeHtml,
+	escapeTextarea,
+	type PostStatus,
+	sanitizePostStatus,
+	sanitizeSlug,
+} from "@/lib/text";
+
+// 这些工具原先定义在本文件；现统一由零依赖的 @/lib/text 提供，并在此重新导出，
+// 因此历史引用路径 @/lib/security 保持不变。
+// 中间件、埋点、鉴权等轻量路径应**直接从 @/lib/text 引入**：本模块顶层依赖
+// katex / marked / node-emoji / sanitize-html，一旦从这里引入就会被一起打进
+// 该路径的模块图，抬高 Worker 冷启动成本。
+export {
+	buildUrlSlug,
+	decodeRouteParam,
+	encodeRouteParam,
+	escapeAttribute,
+	escapeHtml,
+	escapeTextarea,
+	type PostStatus,
+	sanitizePostStatus,
+	sanitizeSlug,
+};
+
 const SAFE_HTTP_URL_PROTOCOLS = new Set(["http:", "https:"]);
 const SAFE_URL_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
-const SLUG_SEGMENT_PATTERN = /[^\p{Letter}\p{Number}]+/gu;
-const SLUG_VALID_PATTERN = /^[\p{Letter}\p{Number}]+(?:-[\p{Letter}\p{Number}]+)*$/u;
-
-export type PostStatus = (typeof POST_STATUS_VALUES)[number];
-
-export function escapeHtml(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("'", "&#39;");
-}
-
-export function escapeAttribute(value: string): string {
-	return escapeHtml(value).replaceAll("`", "&#96;");
-}
-
-export function escapeTextarea(value: string): string {
-	return escapeHtml(value);
-}
-
-export function encodeRouteParam(value: string): string {
-	return encodeURIComponent(value);
-}
-
-export function decodeRouteParam(value: string): string {
-	try {
-		return decodeURIComponent(value);
-	} catch {
-		return value;
-	}
-}
-
-export function sanitizeSlug(value: unknown): string | null {
-	const normalized = decodeRouteParam(String(value ?? ""))
-		.trim()
-		.toLowerCase()
-		.normalize("NFKC")
-		.replaceAll(/\s+/gu, "-")
-		.replaceAll(/-+/g, "-")
-		.replaceAll(/^-+|-+$/g, "");
-
-	if (!normalized || !SLUG_VALID_PATTERN.test(normalized)) {
-		return null;
-	}
-
-	return normalized;
-}
-
-export function buildUrlSlug(
-	value: unknown,
-	options?: { fallbackPrefix?: string; maxLength?: number },
-): string {
-	const fallbackPrefix = sanitizeSlug(options?.fallbackPrefix || "post") || "post";
-	const maxLength = Math.max(8, options?.maxLength ?? 120);
-	const normalized = String(value ?? "")
-		.toLowerCase()
-		.normalize("NFKC")
-		.replaceAll(SLUG_SEGMENT_PATTERN, "-")
-		.replaceAll(/-+/g, "-")
-		.replaceAll(/^-+|-+$/g, "");
-	const safeSlug = sanitizeSlug(normalized);
-
-	if (!safeSlug) {
-		const fallback = `${fallbackPrefix}-${crypto.randomUUID().slice(0, 8)}`;
-		return fallback.slice(0, maxLength);
-	}
-
-	const truncated = [...safeSlug].slice(0, maxLength).join("");
-	return truncated.replaceAll(/-+$/g, "") || fallbackPrefix;
-}
-
-export function sanitizePostStatus(value: unknown): PostStatus | null {
-	const normalized = String(value ?? "").trim();
-	return POST_STATUS_VALUES.includes(normalized as PostStatus) ? (normalized as PostStatus) : null;
-}
 
 export function parseOptionalPositiveInt(value: unknown): number | null {
 	if (value === null || value === undefined || value === "") {
@@ -598,7 +606,7 @@ const SAFE_ATTRS = [
 ];
 
 function sanitizeHtmlTag(html: string): string {
-	return sanitizeHtml(html, {
+	return getMarkdownRuntime().sanitizeHtml(html, {
 		allowedTags: SAFE_HTML_TAGS,
 		allowedAttributes: {
 			"*": SAFE_ATTRS,
@@ -887,6 +895,10 @@ export async function renderSafeMarkdownWithToc(markdown: string): Promise<{
 	html: string;
 	toc: MarkdownTocItem[];
 }> {
+	// 渲染栈在此处按需加载（首次调用后即缓存）。下面所有内部函数都依赖它，
+	// 因此这里是唯一的加载点。
+	await loadMarkdownRuntime();
+
 	const state: MarkdownRenderState = {
 		toc: [],
 		headingSlugCount: new Map<string, number>(),
@@ -932,7 +944,7 @@ async function renderSafeMarkdownInternal(
 	const normalizedMarkdown = markdown.replaceAll(/\r\n?/g, "\n");
 	const protectedMarkdown = protectCodeRegions(normalizedMarkdown, state.codeRegions);
 
-	const renderer = new marked.Renderer();
+	const renderer = new (getMarkdownRuntime().marked.Renderer)();
 	const diagramBlocks: DiagramBlock[] = [];
 	let diagramIndex = 0;
 
@@ -1066,7 +1078,7 @@ async function renderSafeMarkdownInternal(
 	const extractedSpoilers = extractSpoilerShortcodes(extractedDetails.markdown);
 
 	// ── marked 渲染 ──────────────────────────────────────────────────────
-	const rendered = marked.parse(extractedSpoilers.markdown, {
+	const rendered = getMarkdownRuntime().marked.parse(extractedSpoilers.markdown, {
 		gfm: true,
 		breaks: true,
 		renderer,
@@ -1095,7 +1107,7 @@ async function renderSafeMarkdownInternal(
 	// 替换数学公式
 	for (const block of extractedDisplayMath.blocks) {
 		try {
-			const mathHtml = katex.renderToString(block.content, {
+			const mathHtml = getMarkdownRuntime().katex.renderToString(block.content, {
 				displayMode: true,
 				throwOnError: false,
 				trust: false,
@@ -1108,7 +1120,7 @@ async function renderSafeMarkdownInternal(
 
 	for (const block of extractedInlineMath.blocks) {
 		try {
-			const mathHtml = katex.renderToString(block.content, {
+			const mathHtml = getMarkdownRuntime().katex.renderToString(block.content, {
 				displayMode: false,
 				throwOnError: false,
 				trust: false,
@@ -1145,7 +1157,7 @@ async function renderSafeMarkdownInternal(
 
 	// 替换 emoji (:emoji: → 🎉)
 	for (const block of extractedEmoji.blocks) {
-		const emojiHtml = emojify(block.content);
+		const emojiHtml = getMarkdownRuntime().emojify(block.content);
 		html = html.replaceAll(escapeRegExp(block.placeholder), emojiHtml);
 	}
 

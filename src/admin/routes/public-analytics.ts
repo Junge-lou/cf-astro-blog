@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { maybeCleanupAnalyticsData } from "@/admin/lib/analytics-retention";
+import { runInBackground } from "@/lib/background";
 import { sanitizeCanonicalUrl, sanitizePlainText } from "@/lib/security";
 import type { AdminAppEnv } from "../middleware/auth";
 
@@ -258,7 +259,10 @@ publicAnalyticsRoutes.post("/track", async (c) => {
 
 	try {
 		if (payload.touchSession) {
-			await maybeCleanupAnalyticsData(c.env);
+			// 数据保留清理是纯后台维护：正常情况下只做一次 KV 读就提前返回，
+			// 每 6 小时才会真的执行 DELETE。它既不影响响应内容也不影响状态码，
+			// 而这段代码跑在**每一次页面浏览**的埋点请求上，因此交给 waitUntil。
+			runInBackground(maybeCleanupAnalyticsData(c.env));
 		}
 
 		if (payload.touchSession) {

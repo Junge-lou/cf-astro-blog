@@ -206,13 +206,19 @@ describe("源码回归保护", () => {
 	});
 
 	test("公共页面中间件会对首页/归档/友链启用边缘缓存", async () => {
-		const source = await readFile("src/middleware.ts", "utf8");
+		const [source, keySource] = await Promise.all([
+			readFile("src/middleware.ts", "utf8"),
+			readFile("src/lib/edge-cache-key.ts", "utf8"),
+		]);
+		// 中间件负责缓存读写、响应头与安全头
 		assert.ok(source.includes("getEdgeCache"));
 		assert.ok(source.includes("X-Edge-Cache"));
 		assert.ok(source.includes("s-maxage"));
-		assert.ok(source.includes('case "/blog"'));
-		assert.ok(source.includes('case "/friends"'));
 		assert.ok(source.includes("buildEdgeCacheKeyUrl"));
+		// TTL 路由表位于可单元测试的纯模块里
+		// （行为级断言见 tests/unit/edge-cache-key.test.ts，避免只依赖源码文本）
+		assert.ok(keySource.includes('case "/blog"'));
+		assert.ok(keySource.includes('case "/friends"'));
 	});
 
 	test("搜索组件将标签筛选放入折叠面板并外显已选标签", async () => {
@@ -335,9 +341,10 @@ describe("源码回归保护", () => {
 	});
 
 	test("全局字体配置会加载文楷与分层英文字体", async () => {
-		const [globalStyleSource, packageSource] = await Promise.all([
+		const [globalStyleSource, packageSource, postLayoutSource] = await Promise.all([
 			readFile("src/styles/global.css", "utf8"),
 			readFile("package.json", "utf8"),
+			readFile("src/layouts/Post.astro", "utf8"),
 		]);
 		const dependencies =
 			(
@@ -346,35 +353,57 @@ describe("源码回归保护", () => {
 				}
 			).dependencies ?? {};
 
-		assert.ok(dependencies["lxgw-wenkai-webfont"]);
+		// 全站共享的字体：只保留**拉丁字形**字体；CJK 一律走系统字体。
+		//
+		// 为什么 CJK 不引入网络字体：实测每页字体下载量（scripts/analyze-font-payload.mjs）
+		// 显示，LXGW WenKai 常规子集是每页最大的单项资产——首页 653 KB、文章页 543 KB；
+		// 其粗体部分更是仅为了给 logo 等几个 UI 标签加粗，就在**每个页面**恒定多下 122 KB。
+		// 因此整族移除，CJK 交由系统字体渲染。
+		assert.ok(!dependencies["lxgw-wenkai-webfont"]);
 		assert.ok(dependencies["@fontsource-variable/lora"]);
 		assert.ok(dependencies["@fontsource/cormorant-garamond"]);
-		assert.ok(dependencies["@fontsource/shippori-mincho"]);
 		assert.ok(dependencies["@fontsource/space-grotesk"]);
 		assert.ok(globalStyleSource.includes('@import "@fontsource-variable/lora/wght.css";'));
 		assert.ok(globalStyleSource.includes('@import "@fontsource-variable/lora/wght-italic.css";'));
 		assert.ok(
 			globalStyleSource.includes('@import "@fontsource/cormorant-garamond/500-italic.css";'),
 		);
-		assert.ok(globalStyleSource.includes('@import "@fontsource/shippori-mincho/400.css";'));
-		assert.ok(globalStyleSource.includes('@import "@fontsource/shippori-mincho/700.css";'));
 		assert.ok(globalStyleSource.includes('@import "@fontsource/space-grotesk/700.css";'));
-		assert.ok(globalStyleSource.includes('--font-serif-body: "Lora Variable"'));
-		assert.ok(globalStyleSource.includes("--font-serif-em:"));
-		assert.ok(globalStyleSource.includes('"Cormorant Garamond"'));
-		assert.ok(globalStyleSource.includes('--font-strong: "Space Grotesk"'));
+		// 断言针对 **@import 语句**而不是"源码里出现过这个字符串"——global.css 的
+		// 注释里正当地提到了这个包名，按字符串判断会误报。
+		assert.doesNotMatch(
+			globalStyleSource,
+			/@import\s+"lxgw-wenkai-webfont\//u,
+			"重新引入 CJK 网络字体前，请先用 npm run fonts:payload 复测每页下载量",
+		);
+		// 西文字体在前、系统 CJK 族在后。用正则而不是 `includes("--font-serif-body: X")`：
+		// 格式化工具会把长字体栈折到下一行，按"同一行字符串"断言会无谓地失败。
 		assert.match(
 			globalStyleSource,
-			/--font-serif-body:\s*"Lora Variable",\s*"LXGW WenKai",\s*"Shippori Mincho",\s*serif;/u,
+			/--font-serif-body:\s*"Lora Variable",\s*"Songti SC",[\s\S]*?serif;/u,
 		);
 		assert.match(
 			globalStyleSource,
-			/--font-serif-em:\s*"Cormorant Garamond",\s*"LXGW WenKai",\s*"Shippori Mincho",\s*serif;/u,
+			/--font-serif-em:\s*"Cormorant Garamond",\s*"Songti SC",[\s\S]*?serif;/u,
 		);
 		assert.match(
 			globalStyleSource,
-			/--font-strong:\s*"Space Grotesk",\s*"LXGW WenKai",\s*"Shippori Mincho",\s*sans-serif;/u,
+			/--font-strong:\s*"Space Grotesk",\s*"PingFang SC",[\s\S]*?sans-serif;/u,
 		);
+		// 任何字体栈里都不应再出现 CJK 网络字体族名
+		assert.doesNotMatch(globalStyleSource, /"LXGW WenKai"/u);
+
+		// 回归保护：本文件会被打进每个页面共享且渲染阻塞的 Base.css，因此禁止把
+		// 大体积或单页专用的字体放进来。
+		// Shippori Mincho 曾在此贡献 244 条 @font-face / 261.6 KB（占当时 Base.css
+		// 534 KB 的近一半），但它在每个字体栈里都排在覆盖 CJK 的 LXGW WenKai 之后，
+		// 456 个字体文件几乎永远不会被请求。
+		assert.ok(!dependencies["@fontsource/shippori-mincho"]);
+		assert.doesNotMatch(globalStyleSource, /shippori-mincho/iu);
+		assert.doesNotMatch(globalStyleSource, /"Shippori Mincho"/u);
+		// KaTeX 只服务文章正文的公式，必须留在文章详情页专属的布局里
+		assert.doesNotMatch(globalStyleSource, /katex\.min\.css/u);
+		assert.ok(postLayoutSource.includes("katex/dist/katex.min.css"));
 		assert.ok(globalStyleSource.includes("body {"));
 		assert.ok(globalStyleSource.includes(".prose p {"));
 		assert.ok(globalStyleSource.includes(".prose blockquote {"));
@@ -385,22 +414,28 @@ describe("源码回归保护", () => {
 	});
 
 	test("后台文章变更即时生效：缓存版本号失效 + 轻量 Webmention 任务", async () => {
-		const [postRouteSource, workflowSource, middlewareSource, contentVersionSource] =
-			await Promise.all([
-				readFile("src/admin/routes/posts.ts", "utf8"),
-				readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
-				readFile("src/middleware.ts", "utf8"),
-				readFile("src/lib/content-version.ts", "utf8"),
-			]);
+		const [
+			postRouteSource,
+			workflowSource,
+			middlewareSource,
+			contentVersionSource,
+			edgeCacheKeySource,
+		] = await Promise.all([
+			readFile("src/admin/routes/posts.ts", "utf8"),
+			readFile(".github/workflows/auto-deploy-from-admin.yml", "utf8"),
+			readFile("src/middleware.ts", "utf8"),
+			readFile("src/lib/content-version.ts", "utf8"),
+			readFile("src/lib/edge-cache-key.ts", "utf8"),
+		]);
 
 		// 发文/改文/删文：递增缓存版本号即时生效；Webmention 走 Actions 轻量任务（不整站构建）
 		assert.ok(postRouteSource.includes("handlePublicContentChange"));
 		assert.ok(postRouteSource.includes("bumpContentCacheVersion"));
 		assert.ok(postRouteSource.includes("triggerDeployHook"));
 		assert.ok(!postRouteSource.includes("sendWebmentionsForPost"));
-		// 边缘缓存键携带内容版本号
+		// 边缘缓存键携带内容版本号（键的构造在可单测的纯模块里）
 		assert.ok(contentVersionSource.includes("CONTENT_VERSION_KEY"));
-		assert.ok(middlewareSource.includes("__cv"));
+		assert.ok(edgeCacheKeySource.includes("__cv"));
 		assert.ok(middlewareSource.includes("getContentCacheVersion"));
 		// dispatch 触发轻量 Webmention 任务，push 触发完整部署 + 补发
 		assert.ok(workflowSource.includes("repository_dispatch"));

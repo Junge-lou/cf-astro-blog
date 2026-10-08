@@ -5,11 +5,17 @@ import PostCard from "@/components/PostCard.astro";
 import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
+import { parseBlogCategory, parseBlogPage } from "@/lib/edge-cache-key";
 import { estimateArticleReadStats } from "@/lib/format";
 import { getPublicPostVisibilityCondition } from "@/lib/public-content";
 
-const page = Number(Astro.url.searchParams.get("page") || "1");
-const categorySlug = Astro.url.searchParams.get("category") || null;
+// 分页与分类的解析规则**必须**与边缘缓存键的归一化完全一致，否则会出现
+// "缓存键相同、渲染结果不同"的错位。两者共用 @/lib/edge-cache-key 的实现：
+// - 旧实现直接 `Number(page)`，`?page=abc` 得到 NaN，offset 变成 NaN 后查询
+//   抛错并被空 catch 吞掉，渲染出"空归档"——而空响应恰好能被存进 `/blog` 键。
+// - 分类走 parseBlogCategory（NFKC + 小写归一化 + 长度上限），与 key 同源。
+const page = parseBlogPage(Astro.url.searchParams.get("page"));
+const categorySlug = parseBlogCategory(Astro.url.searchParams.get("category"));
 const limit = 10;
 const offset = (page - 1) * limit;
 

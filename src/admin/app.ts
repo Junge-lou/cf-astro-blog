@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { buildContentImgSrc } from "@/lib/csp";
 import type { AdminAppEnv } from "./middleware/auth";
 import { analyticsRoutes } from "./routes/analytics";
 import { appearanceRoutes } from "./routes/appearance";
@@ -46,7 +47,7 @@ function applySecurityHeaders(pathname: string, response: Response) {
 				"media-src 'self' https: data:",
 				"script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
 				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data: https://assets.ericterminal.com https://pic.ffaff.fun https://junge-lou.github.io https://typora-piclists.oss-cn-shenzhen.aliyuncs.com https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com",
+				`img-src ${buildContentImgSrc()}`,
 				"font-src 'self'",
 				"connect-src 'self' https://challenges.cloudflare.com",
 				"frame-src https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com",
@@ -66,6 +67,8 @@ function applySecurityHeaders(pathname: string, response: Response) {
 				"form-action 'self'",
 				"script-src 'self' https://static.cloudflareinsights.com",
 				"style-src 'self' 'unsafe-inline'",
+				// 后台比 /auth 更严格：只放行后台编辑器实际会引用的那一个图床，
+				// 而不是复用 CONTENT_IMAGE_HOSTS 的整张表。这是有意的，别"顺手统一"。
 				"img-src 'self' data: https://typora-piclists.oss-cn-shenzhen.aliyuncs.com",
 				"font-src 'self'",
 				"connect-src 'self'",
