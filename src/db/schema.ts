@@ -72,6 +72,41 @@ export const blogPosts = sqliteTable(
 		index("posts_pinned_order_idx").on(table.isPinned, table.pinnedOrder, table.publishedAt),
 		index("posts_source_idx").on(table.source),
 		index("posts_deleted_idx").on(table.deletedAt),
+
+		// ─── 公开列表查询的部分索引 ──────────────────────────────────────────
+		// 公开可见性条件（src/lib/public-content.ts）恒为
+		//   `deleted_at IS NULL AND (status='published' OR (status='scheduled' AND …))`
+		// 其中 `deleted_at IS NULL` 是顶层 AND 合取项，因此查询"蕴含"该条件，
+		// SQLite 才允许使用以它作 WHERE 的部分索引（体积更小、也更可能被选中）。
+		//
+		// 注意：**不能**把 status='published' 写进部分索引条件。查询里 status 出现在
+		// OR 中，并不蕴含 status='published'，规划器会直接拒绝该索引。
+		//
+		// 索引形状是按真实查询计划选定的，见 tests/unit/query-plans.test.ts：
+		// 这些索引让 9 条热点公开查询全部消除"全表扫描"与"排序全结果集"。
+		// 改名或调整顺序前请先跑那个测试。
+		//
+		// ⚠ 依赖 ANALYZE 统计：这些以 `published_at DESC` 打头的部分索引，只有在
+		// 数据库存在 sqlite_stat1 统计时才会被规划器选中；没有统计时会退回
+		// "MULTI-INDEX OR + 排序全结果集"。因此迁移 0025 末尾带 `ANALYZE`。
+		// 实测（4000 行）无统计 vs 有统计：归档列表 3.9ms → 0.15ms、
+		// 搜索 25.9ms → 0.67ms、RSS 3.6ms → 0.07ms。
+		// 大量导入内容后可重跑一次 `ANALYZE` 让统计跟上。
+		index("posts_public_rss_idx")
+			.on(sql`${table.publishedAt} DESC`, sql`${table.updatedAt} DESC`)
+			.where(sql`deleted_at IS NULL`),
+		index("posts_public_home_idx")
+			.on(table.isPinned, sql`${table.publishedAt} DESC`, sql`${table.createdAt} DESC`)
+			.where(sql`deleted_at IS NULL`),
+		index("posts_public_pinned_idx")
+			.on(
+				table.isPinned,
+				table.pinnedOrder,
+				sql`${table.publishedAt} DESC`,
+				sql`${table.createdAt} DESC`,
+			)
+			.where(sql`deleted_at IS NULL`),
+		index("posts_public_sitemap_idx").on(table.updatedAt).where(sql`deleted_at IS NULL`),
 	],
 );
 
@@ -87,18 +122,30 @@ export const blogPostTags = sqliteTable(
 			.notNull()
 			.references(() => blogTags.id, { onDelete: "cascade" }),
 	},
-	(table) => [primaryKey({ columns: [table.postId, table.tagId] })],
+	(table) => [
+		primaryKey({ columns: [table.postId, table.tagId] }),
+		// 搜索按标签过滤时连接方向是 blog_tags(slug) → blog_post_tags(tag_id)：
+		// 主键最左列是 post_id，服务不了按 tag_id 的查找，缺这个索引就会对
+		// blog_post_tags 做全表扫描（每个命中的标签一次）。
+		index("blog_post_tags_tag_idx").on(table.tagId),
+	],
 );
 
 // ─── 说说记录 ─────────────────────────────────────────────────────────────────
 
-export const shuoshuoPosts = sqliteTable("shuoshuo_posts", {
-	id: integer("id").primaryKey({ autoIncrement: true }),
-	content: text("content").notNull(),
-	status: text("status").notNull().default("published"),
-	createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
-	updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
-});
+export const shuoshuoPosts = sqliteTable(
+	"shuoshuo_posts",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		content: text("content").notNull(),
+		status: text("status").notNull().default("published"),
+		createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+		updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+	},
+	// 公开列表是 `WHERE status='published' ORDER BY created_at DESC LIMIT 20`，
+	// 此前没有任何索引，等于每次访问都全表扫描再排序。
+	(table) => [index("shuoshuo_status_created_idx").on(table.status, sql`${table.createdAt} DESC`)],
+);
 
 // ─── 友链申请与展示 ───────────────────────────────────────────────────────────
 
