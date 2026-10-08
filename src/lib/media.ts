@@ -191,10 +191,21 @@ export function isImageMediaKey(key: string) {
 	return /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(key);
 }
 
+/**
+ * 公开图片的响应头。
+ *
+ * 关键点：
+ * - 必须带 `s-maxage`，否则 Cloudflare 边缘层不会缓存，每个 <img> 请求都会
+ *   回源 Worker + R2（实测单张图 TTFB 1.0–2.3s，连续请求无改善）。
+ * - `immutable` 表示内容不变。若直接覆盖 R2 中的同名对象，已缓存的浏览器与
+ *   边缘节点在 TTL 内仍会返回旧图；需要换图时请使用新的 key（或等 TTL 过期）。
+ * - 不要在此响应上设置 `Vary`：图片已按格式编码，按 Accept-Encoding 拆分
+ *   缓存条目没有意义，只会降低边缘命中率。
+ */
 export function buildPublicImageHeaders(contentType: string) {
 	return {
 		"Content-Type": contentType,
-		"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+		"Cache-Control": "public, max-age=31536000, s-maxage=31536000, immutable",
 		"X-Content-Type-Options": "nosniff",
 	};
 }
