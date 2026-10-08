@@ -62,6 +62,9 @@ node_modules/.cache/
 # build analysis snapshot
 meta/.build-snapshot.json
 
+# DSH 会话回滚快照（本地协作工具产物，与项目本身无关）
+.dsh/
+
 # markdown
 suibi.md
 

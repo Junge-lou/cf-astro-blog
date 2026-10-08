@@ -102,6 +102,37 @@ function parseDate(value) {
 	return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/**
+ * 递归找出 content/posts/ **子目录**里的 Markdown 文件（返回相对路径）。
+ *
+ * 只用于在"顶层一个都没找到"时给出明确提示：本脚本不递归，
+ * 静默忽略整棵子目录树是很危险的失败模式。
+ */
+function findNestedMarkdownFiles(dir, prefix = "") {
+	const found = [];
+
+	for (const entry of readdirSync(dir, { withFileTypes: true })) {
+		// 跳过 .typora / .vscode 这类工具配置目录，以及 _drafts 这类内部目录
+		// （与顶层逻辑"跳过 _ 开头的文件"保持一致），它们不是待同步的内容
+		if (entry.name.startsWith(".") || entry.name.startsWith("_")) {
+			continue;
+		}
+
+		const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+		if (entry.isDirectory()) {
+			found.push(...findNestedMarkdownFiles(join(dir, entry.name), relative));
+			continue;
+		}
+
+		const ext = extname(entry.name);
+		if ((ext === ".md" || ext === ".mdx") && !entry.name.startsWith("_")) {
+			found.push(relative);
+		}
+	}
+
+	return found;
+}
+
 function collectPosts() {
 	if (!existsSync(POSTS_DIR)) {
 		console.log(`目录不存在: ${POSTS_DIR}`);
@@ -113,6 +144,21 @@ function collectPosts() {
 	);
 
 	if (files.length === 0) {
+		// 注意：这里只扫描 content/posts/ 的**顶层**，不递归子目录。
+		// 如果文章被整理进了子目录（例如 content/posts/随笔/xxx.md），本脚本会
+		// 完全看不到它们，并且此前只打印一句"没有找到 .md 文件" —— 容易被误读成
+		// "同步成功且没有变化"。这里显式把情况说出来，并给出处理方式。
+		const nested = findNestedMarkdownFiles(POSTS_DIR);
+		if (nested.length > 0) {
+			console.warn(
+				`\n⚠ content/posts/ 顶层没有 .md 文件，但子目录里有 ${nested.length} 个，本次不会同步它们。\n` +
+					"  本脚本只扫描顶层目录（不递归）。如果确实要同步这些文章，请把文件移到\n" +
+					"  content/posts/ 顶层，或改用管理后台 / MCP 维护内容。\n" +
+					`  例如：${nested.slice(0, 3).join("、")}${nested.length > 3 ? " 等" : ""}\n`,
+			);
+			return [];
+		}
+
 		console.log("content/posts/ 中没有找到 .md 文件。");
 		return [];
 	}

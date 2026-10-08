@@ -3,9 +3,9 @@
 
 ## [cf-astro-blog v0.1.0 发布说明](https://ffaff.fun/blog/cf-astro-blog-v0-1-0-release)
 
-> 基于 Astro 6 + Hono + Cloudflare Workers 的全栈博客站点，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
+> 基于 Astro 7 + Hono + Cloudflare Workers 的全栈博客站点，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
 
-[快速部署指南](#5-快速部署)
+[快速部署指南](#5-快速部署) · [媒体图片优化手册](./MEDIA-OPTIMIZATION.md)
 
 -----
 
@@ -23,7 +23,9 @@
 
 ### 📝 内容写作
 
-- **Markdown 写作**：文章存储在 `content/posts/`，支持 YAML frontmatter（分类、标签、SEO、封面图、置顶、背景覆盖等）
+- **Markdown 写作**：文章**真源是 D1**。`content/posts/` 只是 `scripts/sync-local-posts.mjs`
+  从 D1 拉下来的**本地副本**（该目录已加入 `.gitignore`，不会提交）。支持 YAML frontmatter
+  （分类、标签、SEO、封面图、置顶、背景覆盖等）；改动要经 `npm run sync:posts` 回写 D1 才生效
 - **本地同步脚本**：`npm run sync:posts` 将 Markdown 同步到远程 D1 数据库
 - **内置管理后台**：`/admin` 路径提供文章 CRUD、富文本编辑、状态管理（草稿/已发布/定时发布）
 - **KaTeX 数学公式**：行内与块级公式渲染
@@ -100,12 +102,12 @@
 
 | 层次 | 技术 |
 |------|------|
-| **框架** | Astro 6（SSR mode） |
+| **框架** | Astro 7（SSR mode） |
 | **API 层** | Hono（集成于 Astro 中间件） |
 | **数据库** | Cloudflare D1（SQLite）+ Drizzle ORM |
 | **文件存储** | Cloudflare R2 |
 | **会话/KV** | Cloudflare Workers KV |
-| **部署** | Cloudflare Workers + Pages |
+| **部署** | Cloudflare Workers（静态资源走 assets 层，不是 Pages） |
 | **样式** | 原生 CSS（无框架依赖） |
 | **字体** | Lora、Cormorant Garamond、思源宋体、Space Grotesk、霞鹜文楷 |
 | **数学** | KaTeX |
@@ -119,7 +121,7 @@
 
 | 依赖 | 版本要求 |
 |------|----------|
-| **Node.js** | ≥ 18 |
+| **Node.js** | ≥ 22（`package.json` 的 `engines` 已声明；CI 用 24，部署工作流用 22.12） |
 | **npm** | ≥ 9 |
 | **Cloudflare 账号** | 需开通 Workers Paid 计划（D1 / R2 / KV 均需） |
 | **Wrangler CLI** | 建议最新版（`npx wrangler --version`） |
@@ -477,14 +479,15 @@ site: "https://your-domain.com",
 npm run deploy
 ```
 
-此命令将依次执行：
+此命令将依次执行（与 `package.json` 的 `deploy` 脚本一致）：
 
 1. **远程数据库迁移** — `npm run db:migrate:remote`
-2. **同步文章** — `npm run sync:posts`
-3. **构建搜索索引** — `npm run search:index:remote`
-4. **Astro 构建** — `astro build`
-5. **构建分析** — 输出各模块体积
-6. **部署到 Cloudflare** — `wrangler deploy`
+2. **Astro 构建** — `astro build`
+3. **构建分析** — `node scripts/analyze-build.mjs --json`
+4. **部署到 Cloudflare** — `wrangler deploy`
+
+> 内容不需要随部署一起发布：文章存在 D1，由 Worker 直读，发文通过递增缓存版本号
+> 即时生效（见 5.3.2）。所以 `deploy` 里**没有**同步文章这一步。
 
 ---
 
@@ -520,7 +523,9 @@ npm run deploy
 
 ### 6.1 写文章
 
-在 `content/posts/` 下创建 `.md` 文件，参考 `_template.md` 的 frontmatter 格式：
+**推荐：直接用管理后台 `/admin` 写作**，内容直接存入 D1，无需同步步骤。
+
+如果偏好本地 Markdown 工作流，`.md` 文件的 frontmatter 格式如下：
 
 ```markdown
 ---
@@ -535,11 +540,14 @@ tags: [Astro, Cloudflare]
 文章正文...
 ```
 
-同步到数据库：
+两种本地工作流的区别（**真源都是 D1，不是文件**）：
 
-```bash
-npm run sync:posts
-```
+| 方式 | 命令 | 说明 |
+| --- | --- | --- |
+| 从 D1 拉取后编辑 | `npm run export:posts` → 改 `content/posts/` → `npm run sync:posts` | `content/` 是本地副本，已被 `.gitignore` 忽略 |
+| 直接回写 | 改 `content/posts/` → `npm run sync:posts` | 同步脚本只管理 `source='file'` 的文章 |
+
+> ⚠️ 只改 `content/posts/` 里的文件、不执行 `sync:posts`，线上不会有任何变化。
 
 ### 6.2 本地开发
 
@@ -624,8 +632,11 @@ cf-astro-blog/
 3. **资源绑定名称 `DB`、`MEDIA_BUCKET`、`SESSION`、`ASSETS` 不可修改**，否则运行时会因绑定名不匹配而报错。
 4. **Turnstile 为可选功能**：不配置时登录无验证码，友链申请页会显示提示但不阻止提交。
 5. **首次部署前**务必执行 `npm run db:migrate:remote` 创建表结构。
-6. **`content/posts/` 中的文章**不会自动同步到线上——需通过 `npm run sync:posts` 或管理后台手动操作。
-7. **自定义域名**需在 Cloudflare Dashboard 中为 Pages 项目绑定，并更新 `SITE_URL` 与 `astro.config.mjs` 中的 `site`。
+6. **`content/posts/` 不是文章的真源**：它是从 D1 同步下来的本地副本，且已被 `.gitignore` 忽略。
+   直接改那里的文件不会有任何效果，必须执行 `npm run sync:posts` 回写 D1；也可以完全跳过它、
+   直接用管理后台写作。
+7. **自定义域名**需在 Cloudflare Dashboard → Workers & Pages → 你的 Worker → **Custom Domains** 中绑定，
+   并更新 `SITE_URL`（`wrangler.jsonc` 的 `vars`）与 `astro.config.mjs` 中的 `site`。
 8. **GitHub OAuth 登录与密码登录互不排斥**：配置了 OAuth 后登录页会显示 GitHub 登录按钮，同时保留密码登录表单。
 9. **Momo 评论系统是独立服务**，需单独部署。本项目仅包含前端组件与反向代理。如不需要评论功能，可移除评论相关组件。
 10. **GitHub Actions 自动部署**需要在仓库 Secrets 中配置 `CLOUDFLARE_API_TOKEN`，否则工作流会跳过部署步骤。
@@ -644,7 +655,10 @@ cf-astro-blog/
 
 ### Q: 后台登录页样式异常 / 资源 404
 
-确认 `wrangler.jsonc` 的 `assets.directory` 指向正确的构建输出目录（通常为 `"./dist"`）。检查 `public/_routes.json` 中静态资源的 exclude 列表是否完整。
+确认 `wrangler.jsonc` 的 `assets` 绑定存在即可。**不要**照字面把 `assets.directory` 改成别的值：
+`@astrojs/cloudflare` 会在构建时生成 `dist/server/wrangler.json` 并把资源目录指向 `dist/client`，
+仓库里写的 `"./dist"` 并不是最终生效值。（另外 `public/_routes.json` 是 Pages 时代遗留文件，
+在本项目的 Workers 部署下不生效，已删除。）
 
 ### Q: GitHub OAuth 登录回调报错
 
@@ -660,7 +674,8 @@ cf-astro-blog/
 
 1. 确认 R2 存储桶已创建且 `wrangler.jsonc` 中 `r2_buckets[0].bucket_name` 正确
 2. 确认 `MEDIA_BUCKET` 绑定名未改动
-3. 如使用自定义域名提供 R2 文件，检查 `public/_headers` 中的 CORS 和缓存配置
+3. 媒体文件由 Worker 从 R2 提供（`/media/*`），缓存头在 `src/lib/media.ts` 中设置，
+   不经过 `public/_headers`；改媒体缓存策略请改代码而不是那个文件
 
 ### Q: 搜索结果不显示最新文章
 

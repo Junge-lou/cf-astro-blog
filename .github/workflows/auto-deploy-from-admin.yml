@@ -29,24 +29,36 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "22.12.0"
+          # 与 ci.yml 保持一致。Node 24 也让 `node:sqlite` 免 flag 可用
+          # （tests/unit/query-plans.test.ts 需要它做查询计划检查）。
+          node-version: "24"
           cache: "npm"
 
       - name: 安装依赖
         run: npm ci
 
-      - name: 缓存 Astro/Vite 构建产物
+      # 部署前的质量门禁。此前这里直接跑 `npm run deploy`，没有任何门禁：
+      # CI 变红也照样部署，而 ci.yml 与部署工作流是两条独立触发路径。
+      - name: 质量门禁（类型检查 / Lint / 测试）
+        if: ${{ env.WEBMENTION_ONLY != '1' }}
+        run: |
+          npm run check
+          npm test
+
+      - name: 缓存 Astro/Vite 中间产物
         if: ${{ env.WEBMENTION_ONLY != '1' }}
         uses: actions/cache@v4
         with:
+          # 只缓存构建中间产物，**不缓存 dist**：
+          # 1. `astro build` 会完整重建输出目录，缓存 dist 没有收益；
+          # 2. 原先的 `restore-keys: astro-build-` 兜底会把任意一次历史构建的
+          #    dist 恢复进来，一旦构建未完整覆盖输出目录就可能部署陈旧产物。
           path: |
-            dist
             .astro
             node_modules/.vite
           key: astro-build-${{ hashFiles('package-lock.json', 'astro.config.mjs', 'tsconfig.json', 'wrangler.jsonc', 'src/**/*.ts', 'src/**/*.astro', 'src/**/*.mjs', 'public/**/*.js') }}
           restore-keys: |
             astro-build-${{ hashFiles('package-lock.json') }}-
-            astro-build-
 
       - name: 准备 Cloudflare Access Token
         id: cf_token
@@ -100,6 +112,11 @@ jobs:
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "缺少 GitHub Secret: GH_ADMIN_TOKEN"
+            echo "本步骤需要它把轮换后的 CLOUDFLARE_REFRESH_TOKEN 写回仓库 Secrets。"
+            echo "两种处理方式（请显式选择其一，不要让它长期失败）："
+            echo "  1) 配置 GH_ADMIN_TOKEN（需要 repo 的 secrets 写权限），让轮换自动回写；"
+            echo "  2) 不再使用 CLOUDFLARE_REFRESH_TOKEN，改用 CLOUDFLARE_API_TOKEN —— "
+            echo "     届时本步骤不会执行（auth_mode 为 api_token）。"
             exit 1
           fi
           gh secret set CLOUDFLARE_REFRESH_TOKEN --repo "${{ github.repository }}" --body "$NEXT_REFRESH_TOKEN"
