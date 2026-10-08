@@ -5,6 +5,14 @@ interface Env {
 	MEDIA_BUCKET: R2Bucket;
 	SESSION: KVNamespace;
 	ASSETS: Fetcher;
+	/**
+	 * Cloudflare Images 绑定。适配器在构建时会自动把它写进生成的 wrangler 配置
+	 * （构建日志可见 "Enabling image processing with Cloudflare Images ... IMAGES"）。
+	 *
+	 * 这里声明为可选：它取决于账号是否开通 Cloudflare Images，以及 image service 的
+	 * 配置。调用处应当把"拿不到绑定"当成正常分支处理（回退为不转换），而不是抛错。
+	 */
+	IMAGES?: ImagesBinding;
 
 	SITE_NAME: string;
 	SITE_URL: string;

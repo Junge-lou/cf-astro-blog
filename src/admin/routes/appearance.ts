@@ -999,6 +999,10 @@ appearance.post("/background/upload", async (c) => {
 		bucket: c.env.MEDIA_BUCKET,
 		file,
 		prefix: "appearance/background",
+		// 背景图按 1920 宽转 WebP（见 src/lib/media.ts 的 resolveUploadMaxWidth）。
+		// 站点渲染宽度约 1184px 且叠了 CSS blur，1920 足够；此前上传 4K 原图
+		// （实测单张 3.64 MB）是首页最大的单项资产。
+		images: c.env.IMAGES,
 	});
 
 	const currentSettings = await getSiteAppearance(getDb(c.env.DB)).catch(

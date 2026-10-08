@@ -138,6 +138,10 @@ async function saveUploadFile(
 		bucket: c.env.MEDIA_BUCKET,
 		file,
 		prefix,
+		// 传入 Images 绑定后，上传的 JPG/PNG 会在保存前转成 WebP 并按用途缩宽
+		// （规格见 src/lib/media.ts 的 resolveUploadMaxWidth）。未开通 Images 或
+		// 转换失败时会自动回退为存原图。
+		images: c.env.IMAGES,
 	});
 }
 

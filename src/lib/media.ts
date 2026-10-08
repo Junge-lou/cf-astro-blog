@@ -35,13 +35,22 @@ export function isAllowedImageMimeType(value: string) {
 	return ALLOWED_MEDIA_TYPES.has(value);
 }
 
-export function buildMediaObjectKey(file: File, prefix = "uploads") {
-	const extension = ALLOWED_MEDIA_TYPES.get(file.type);
+/**
+ * 按**最终存储**的内容类型生成对象 key（扩展名由内容类型决定，而不是原文件名）。
+ * 之所以按内容类型而不是 file.type 取扩展名：上传时可能已经把图转成了 WebP，
+ * 此时 key 必须跟着变成 .webp，否则响应会以 .png 的扩展名回一个 WebP 文件。
+ */
+export function buildMediaObjectKeyForType(contentType: string, prefix = "uploads") {
+	const extension = ALLOWED_MEDIA_TYPES.get(contentType);
 	if (!extension) {
 		throw new Error("仅允许上传 JPG、PNG、WEBP、AVIF 或 GIF 图片");
 	}
 
 	return `${prefix}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}.${extension}`;
+}
+
+export function buildMediaObjectKey(file: File, prefix = "uploads") {
+	return buildMediaObjectKeyForType(file.type, prefix);
 }
 
 export function buildMediaHashIndexKey(contentHash: string) {
@@ -119,25 +128,120 @@ export interface SaveMediaObjectResult {
 	contentHash: string;
 	deduplicated: boolean;
 	key: string;
+	/** 是否在保存前转换成了 WebP（用于日志与排查）。 */
+	converted?: boolean;
+}
+
+/**
+ * 上传时按用途决定目标宽度。
+ *
+ * 规格与 `MEDIA-OPTIMIZATION.md` 的离线流水线保持一致，这样"后台上传"与
+ * "离线批处理"两条路产出的图规格相同，不会互相矛盾：
+ *   - 背景图   1920 —— 站点渲染宽度约 1184px，且叠了 CSS blur
+ *   - 封面图    800 —— 卡片实际渲染宽度只有 240–272px
+ *   - 正文图   1600 —— 正文栏宽 754px，按 2x 屏取两倍
+ *   - 其它     1600 —— 媒体库图片用途不定，取较保守值
+ */
+export function resolveUploadMaxWidth(prefix: string): number {
+	if (prefix.startsWith("appearance/background")) {
+		return 1920;
+	}
+	if (/(^|\/)cover$/u.test(prefix)) {
+		return 800;
+	}
+	return 1600;
+}
+
+/**
+ * 值得转成 WebP 的输入格式。
+ *
+ * 刻意排除两类：
+ * - `image/gif`：动图一旦被转成静态图就丢了动画，风险大于收益；
+ * - `image/avif`：本身已比 WebP 更省，转换只会变大。
+ */
+const TRANSFORMABLE_MEDIA_TYPES = new Set(["image/jpeg", "image/png"]);
+
+export const DEFAULT_UPLOAD_QUALITY = 80;
+
+/**
+ * 用 Cloudflare Images 绑定把图片转成 WebP 并按需缩宽。
+ *
+ * 返回 null 表示"不转换"（格式不适用、或转换后反而更大），调用方应回退为存原图。
+ *
+ * 两个实测得来的注意点（见 docs/optimization-plan.md）：
+ * - `output()` 在运行时**返回 Promise**，而类型定义写的是同步返回；`await` 对两者都成立。
+ * - `fit: "scale-down"` 保证小图不会被放大。
+ */
+async function convertImageToWebp(
+	images: ImagesBinding,
+	bytes: Uint8Array<ArrayBuffer>,
+	contentType: string,
+	options: { maxWidth: number; quality: number },
+): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string } | null> {
+	if (!TRANSFORMABLE_MEDIA_TYPES.has(contentType)) {
+		return null;
+	}
+
+	const result = await images
+		.input(new Blob([bytes]).stream())
+		.transform({ width: options.maxWidth, fit: "scale-down" })
+		.output({ format: "image/webp", quality: options.quality });
+
+	const response = result instanceof Response ? result : result.response();
+	const converted = new Uint8Array(await response.arrayBuffer());
+
+	// 转换后反而更大（小图、或已经是高压缩比的情况）时保留原图
+	if (converted.byteLength === 0 || converted.byteLength >= bytes.byteLength) {
+		return null;
+	}
+
+	return { bytes: converted, contentType: "image/webp" };
 }
 
 export async function saveMediaObjectWithDedup(options: {
 	bucket: R2Bucket;
 	file: File;
 	prefix?: string;
+	/**
+	 * Cloudflare Images 绑定。传了才尝试转换；账号未开通 Images 时传 undefined，
+	 * 会直接存原图（不会报错）。任何转换失败也都回退为存原图。
+	 */
+	images?: ImagesBinding;
+	/** 目标最大宽度；缺省时按 prefix 用 resolveUploadMaxWidth() 推断。 */
+	maxWidth?: number;
+	quality?: number;
 }): Promise<SaveMediaObjectResult> {
-	const { bucket, file, prefix = "uploads" } = options;
+	const { bucket, file, prefix = "uploads", images } = options;
 	const contentHash = await computeFileContentHash(file);
 	const existingKey = await resolveExistingKeyFromHashIndex(bucket, contentHash);
 	if (existingKey) {
 		return { key: existingKey, deduplicated: true, contentHash };
 	}
 
-	const key = buildMediaObjectKey(file, prefix);
-	const contentType = getMediaContentTypeForKey(key) || file.type;
-	const fileBuffer = await file.arrayBuffer();
-	await bucket.put(key, fileBuffer, {
-		httpMetadata: { contentType },
+	let storedBytes: Uint8Array<ArrayBuffer> = new Uint8Array(await file.arrayBuffer());
+	let storedContentType = file.type;
+	let converted = false;
+
+	if (images) {
+		try {
+			const result = await convertImageToWebp(images, storedBytes, file.type, {
+				maxWidth: options.maxWidth ?? resolveUploadMaxWidth(prefix),
+				quality: options.quality ?? DEFAULT_UPLOAD_QUALITY,
+			});
+			if (result) {
+				storedBytes = result.bytes;
+				storedContentType = result.contentType;
+				converted = true;
+			}
+		} catch (error) {
+			// 转换是"锦上添花"：失败绝不能让上传失败，回退为存原图。
+			console.warn("[media] 图片转换失败，已回退为存原图", error);
+		}
+	}
+
+	const key = buildMediaObjectKeyForType(storedContentType, prefix);
+	await bucket.put(key, storedBytes, {
+		httpMetadata: { contentType: storedContentType },
 		customMetadata: {
 			contentHash,
 		},
@@ -153,12 +257,12 @@ export async function saveMediaObjectWithDedup(options: {
 	await writeMediaHashIndex(bucket, {
 		key,
 		contentHash,
-		contentType,
-		size: file.size,
+		contentType: storedContentType,
+		size: storedBytes.byteLength,
 		createdAt: new Date().toISOString(),
 	});
 
-	return { key, deduplicated: false, contentHash };
+	return { key, deduplicated: false, contentHash, converted };
 }
 
 export async function deleteMediaObjectAndIndex(bucket: R2Bucket, key: string) {
