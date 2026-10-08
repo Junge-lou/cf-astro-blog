@@ -45,6 +45,27 @@
 | **工具** | 端到端核查固化为可重复脚本 | 新增 `scripts/smoke-test.mjs`(`npm run smoke`),17 项检查,已接入维护手册的发布流程 |
 | — | 修 `scripts/analyze-build.mjs` 自身缺陷 | `formatSize` 传负数返回 NaN;不再把**整站**体积当 Worker 体积报警 |
 | — | 同步 lockfile | `npm install` 移除 `@fontsource/shippori-mincho`,避免 `npm ci` 失败 |
+| **P0-3** | **在途工作与本轮全部改动已提交** | 分 6 个逻辑提交,工作区干净 |
+
+### 提交记录
+
+本次接手的改动已按主题分成 6 个提交(接手前那批未提交的在途工作也一并落地,
+消除了 P0-3 的丢失风险):
+
+| 提交 | 内容 |
+| --- | --- |
+| `2f9c6b2` | `feat(media)`:接手时在途的媒体图片优化流程 |
+| `4c7e3fc` | `perf(assets)`:字体重建与静态资源缓存(构建 −82.6%,每页字体 −95%) |
+| `c646b2e` | `perf(assets)`:`<head>` 脚本去阻塞 + KaTeX 样式移出全站包 |
+| `fd32f48` | `fix(cache)+perf(runtime)`:缓存键污染、冷启动、长尾任务与 CSP |
+| `e078131` | `perf(db)`:公开查询索引 + 查询计划回归测试 |
+| `09d49dc` | `test+docs+ci`:行为测试、冒烟脚本、交接文档与 CI 门禁 |
+
+> 说明:少数文件(尤其 `tests/unit/public-content.test.ts`)同时承载了多个主题的断言,
+> 按 hunk 拆分的风险高于收益,因此并入其主体所在的提交。**中间的单个提交未逐个验证
+> 通过 check/test**——最后一个提交之后的完整验证是:0 error / 266 tests / 构建通过 /
+> 冒烟 17/17。
+
 
 ### 当前门禁
 
@@ -224,18 +245,16 @@
 
 ### 待办(建议顺序)
 
-| 优先级 | 项 | 位置 / 备注 |
+| 优先级 | 项 | 状态 / 备注 |
 | --- | --- | --- |
-| **P0** | **执行索引迁移**(本地已生成,远程需你执行) | `npm run db:migrate:remote`;随后按需 `ANALYZE` |
+| **P0** | **执行索引迁移**(文件已提交,远程需你执行) | `npm run db:migrate:remote`;随后按需 `ANALYZE` |
 | **P0** | 重指向你自己的账号值 + 配置 Worker secrets | `wrangler.jsonc:20,27,33,39`;清单见 §5.1 |
-| P1 | 迁移到官方 `cache` + `routeRules`,删掉中间件缓存与 `content-version.ts` | `src/middleware.ts`;**须先具备验证手段**,见 §4.7 |
-| P1 | Markdown **渲染一次化**(发文时渲染并落库) | `src/lib/security.ts`;见 §4 阶段 D1(延迟加载已完成,这是下一步) |
-| P1 | 换用原生 **Rate Limiting binding** 替换 KV 读改写限流 | 需先在 `wrangler.jsonc` 配 `ratelimits` 绑定;**在你配置之前不宜改代码**,否则限流会静默失效 |
-| P1 | `src/layouts/Post.astro` body 内 5 个脚本(**涉及 reveal 时序,需浏览器验证后再动**) | 见 §4 阶段 B2 说明 |
-| P2 | `admin.js` 纳入 Vite 构建(压缩 + 内容哈希) | 见 §4 阶段 D3 |
-| P2 | 文档纠偏:`MEDIA-OPTIMIZATION.md` 的 `_headers` 结论仍是错的 | 见 §1.3、§5.2 |
-| P2 | 在文档中写明 `npm audit` 的告警含工具链,**不要**按它建议去降级适配器 | 见 §5.4 |
-| P3 | `vitest` + `@cloudflare/vitest-pool-workers` 测试迁移 | 见 §4 阶段 D4 |
+| — | 官方 `cache` + `routeRules` 迁移 | **已搁置(站长决定)**,验证配方见 §4.7;§4.6 记录了可用的配置形状 |
+| — | 原生 Rate Limiting binding | 需先在 `wrangler.jsonc` 配 `ratelimits` 绑定;**在配置之前不宜改代码**,否则限流会静默失效 |
+| P1 | `src/layouts/Post.astro` body 内 5 个脚本迁到 Astro 打包 | 涉及 `article-reveal` 的显示时序,**必须先在浏览器里验证**;当前 head 的 4 个已加 `defer` |
+| P1 | Markdown **渲染一次化**(发文时渲染并落库) | 优先级下调:文章页已有 300s 边缘缓存,渲染只发生在未命中时;加反规范化列会引入一类新的"HTML 与 Markdown 不一致"缺陷 |
+| P2 | `admin.js` 纳入 Vite 构建 | 优先级下调:长缓存已由 `public/_headers` 覆盖;它由 `.ts` 字符串拼 HTML,接 Vite 产物清单需要自建机制 |
+| P3 | `vitest` + `@cloudflare/vitest-pool-workers` 测试迁移 | 见 §4 阶段 D4;会**减少**测试数量而提高真实覆盖率,应作为独立项目立项 |
 
 ---
 
