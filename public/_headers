@@ -59,6 +59,9 @@
 /header-scroll-hide.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+/hero-sidebar-fit.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /home-motion.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 

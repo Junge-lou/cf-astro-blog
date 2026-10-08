@@ -18,6 +18,15 @@ interface Props {
 	estimatedReadingMinutes?: number;
 	coverSide?: "left" | "right";
 	variant?: "card" | "list" | "compact";
+	/**
+	 * 首页 Hero 侧栏专用：候选卡序号与初始隐藏标记。
+	 *
+	 * 必须显式声明并写到根 `<article>` 上 —— Astro 不会把未声明的 `data-*` 属性
+	 * 透传到组件根节点（试过直接传 data-hero-sidebar-post，渲染出来就没了）。
+	 * 侧栏脚本靠这两个属性决定隐藏哪几张，样式也靠 data-sidebar-hidden 做首屏隐藏。
+	 */
+	sidebarPostIndex?: number;
+	sidebarHidden?: boolean;
 }
 
 const {
@@ -34,6 +43,8 @@ const {
 	estimatedReadingMinutes,
 	coverSide = "left",
 	variant = "card",
+	sidebarPostIndex,
+	sidebarHidden = false,
 } = Astro.props;
 
 const formattedDate = publishedAt ? formatDate(publishedAt) : null;
@@ -103,7 +114,11 @@ const encodedSlug = encodeRouteParam(slug);
 			</div>
 		</article>
 	) : variant === "list" ? (
-		<article class="post-list-item h-entry">
+		<article
+			class="post-list-item h-entry"
+			data-hero-sidebar-post={sidebarPostIndex ?? undefined}
+			data-sidebar-hidden={sidebarHidden ? "true" : undefined}
+		>
 			<a class="u-url" href={`/blog/${encodedSlug}`} hidden>permalink</a>
 			<div class="post-list-meta">
 				{formattedDate && (

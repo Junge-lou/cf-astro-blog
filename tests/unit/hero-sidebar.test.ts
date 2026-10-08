@@ -1,0 +1,63 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { describe, test } from "node:test";
+
+/**
+ * 首页 Hero 侧栏的行为保护。
+ *
+ * 背景：侧栏曾经把卡片张数写死（置顶 1 张 + 最新 1 张），结果 `.hero-body` 与
+ * `.hero-sidebar` 高度不匹配时侧栏里总有空白。现在的约定是：置顶固定 1 张，
+ * 最新文章由 `public/hero-sidebar-fit.js` 按 `.hero-body` 的实测高度决定显示几张，
+ * 窄屏固定两张。这几条断言就是防止有人把它改回写死。
+ */
+describe("首页 Hero 侧栏按高度决定文章个数", () => {
+	test("侧栏渲染的是「置顶 1 张 + 最新文章候选」，不是两个固定变量", async () => {
+		const [source, postCardSource] = await Promise.all([
+			readFile("src/pages/index.astro", "utf8"),
+			readFile("src/components/PostCard.astro", "utf8"),
+		]);
+
+		// 候选来自 recentPosts 的切片，张数上限有具名常量而不是散落的字面量
+		assert.match(source, /HERO_SIDEBAR_MAX_ARTICLES/u);
+		assert.match(source, /recentPosts\.slice\(0,\s*HERO_SIDEBAR_MAX_ARTICLES\)/u);
+		// 候选卡必须带序号，脚本靠它决定隐藏前几张；同时首屏先隐藏，避免闪一下
+		assert.match(source, /sidebarPostIndex=\{index\}/u);
+		assert.match(source, /sidebarHidden/u);
+		assert.match(source, /data-hero-sidebar-fit="true"/u);
+		// PostCard 必须显式接收并输出这两个属性：
+		// Astro 不会把未声明的 data-* 透传到组件根节点，这一点踩过一次
+		assert.match(postCardSource, /sidebarPostIndex\?: number/u);
+		assert.match(postCardSource, /sidebarHidden\?: boolean/u);
+		assert.match(postCardSource, /data-hero-sidebar-post=\{sidebarPostIndex/u);
+		assert.match(postCardSource, /data-sidebar-hidden=\{sidebarHidden/u);
+		// 回退护栏：不能再退回到「heroRecentPost 单张」的写死写法
+		assert.doesNotMatch(source, /heroRecentPost/u);
+	});
+
+	test("候选卡的隐藏样式与模板用的属性选择器一致", async () => {
+		const source = await readFile("src/pages/index.astro", "utf8");
+
+		assert.match(
+			source,
+			/\[data-hero-sidebar-post\]\[data-sidebar-hidden\][\s\S]{0,40}display:\s*none/u,
+		);
+	});
+
+	test("测量脚本按高度二分、窄屏固定、并接上切页生命周期", async () => {
+		const script = await readFile("public/hero-sidebar-fit.js", "utf8");
+
+		assert.match(script, /ResizeObserver/u);
+		assert.match(script, /\(min-width:\s*768px\)/u);
+		assert.match(script, /NARROW_VISIBLE_POSTS/u);
+		assert.match(script, /astro:page-load/u);
+		assert.match(script, /astro:before-swap/u);
+		// 视图切换后旧节点失效，必须断开观察器与监听
+		assert.match(script, /resizeObserver\.disconnect\(\)/u);
+	});
+
+	test("首页会加载这个脚本", async () => {
+		const source = await readFile("src/pages/index.astro", "utf8");
+
+		assert.match(source, /<script is:inline src="\/hero-sidebar-fit\.js"><\/script>/u);
+	});
+});

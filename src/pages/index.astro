@@ -127,8 +127,12 @@ const recentSectionSubheading =
 	pinnedPosts.length > 0 ? "" : "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
 const heroPinnedPost = pinnedPosts[0] ?? null;
-const heroRecentPost = recentPosts[0] ?? null;
-const hasHeroSidebar = Boolean(heroPinnedPost || heroRecentPost);
+// 侧栏卡片数量不写死：置顶固定 1 张，最新文章由脚本按 .hero-body 的实测高度决定显示几张。
+// 这里只决定「最多渲染几张候选」——多渲染几张 DOM 成本可忽略，真正显示几张交给
+// public/hero-sidebar-fit.js 在布局完成后算，窄屏则恒定显示前两张。
+const HERO_SIDEBAR_MAX_ARTICLES = 5;
+const heroSidebarPosts = recentPosts.slice(0, HERO_SIDEBAR_MAX_ARTICLES);
+const hasHeroSidebar = Boolean(heroPinnedPost || heroSidebarPosts.length > 0);
 const totalPostCount = pinnedPosts.length + recentPosts.length;
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
@@ -187,33 +191,31 @@ function isInternalHref(href: string) {
 		</div>
 		{
 			hasHeroSidebar && (
-				<aside class="hero-sidebar">
-					{
-						heroPinnedPost && (
-							<PostCard
-								title={heroPinnedPost.title}
-								slug={heroPinnedPost.slug}
-								excerpt={heroPinnedPost.excerpt}
-								publishedAt={heroPinnedPost.publishedAt}
-								categoryName={heroPinnedPost.categoryName}
-								featuredImageKey={heroPinnedPost.featuredImageKey}
-								featuredImageAlt={heroPinnedPost.featuredImageAlt}
-								variant="compact"
-							/>
-						)
-					}
-					{
-						heroRecentPost && (
-							<PostCard
-								title={heroRecentPost.title}
-								slug={heroRecentPost.slug}
-								excerpt={heroRecentPost.excerpt}
-								publishedAt={heroRecentPost.publishedAt}
-								categoryName={heroRecentPost.categoryName}
-								variant="list"
-							/>
-						)
-					}
+				<aside class="hero-sidebar" data-hero-sidebar-fit="true">
+					{heroPinnedPost && (
+						<PostCard
+							title={heroPinnedPost.title}
+							slug={heroPinnedPost.slug}
+							excerpt={heroPinnedPost.excerpt}
+							publishedAt={heroPinnedPost.publishedAt}
+							categoryName={heroPinnedPost.categoryName}
+							featuredImageKey={heroPinnedPost.featuredImageKey}
+							featuredImageAlt={heroPinnedPost.featuredImageAlt}
+							variant="compact"
+						/>
+					)}
+					{heroSidebarPosts.map((post, index) => (
+						<PostCard
+							sidebarPostIndex={index}
+							sidebarHidden
+							title={post.title}
+							slug={post.slug}
+							excerpt={post.excerpt}
+							publishedAt={post.publishedAt}
+							categoryName={post.categoryName}
+							variant="list"
+						/>
+					))}
 				</aside>
 			)
 		}
@@ -295,6 +297,7 @@ function isInternalHref(href: string) {
 		</div>
 	)}
 	<script is:inline src="/home-motion.js"></script>
+	<script is:inline src="/hero-sidebar-fit.js"></script>
 </Base>
 
 <style>
@@ -374,9 +377,29 @@ function isInternalHref(href: string) {
 		line-height: 1.45;
 	}
 
+	/*
+	 * 多渲染出来的侧栏候选卡在 JS 量完之前必须不可见，否则首屏会闪一下。
+	 * 用带 data-* 的属性选择器而不是裸 [hidden]：Astro 会给元素加 scoped 属性，
+	 * 这里的选择器必须同样带上作用域属性才能命中组件渲染出来的 article。
+	 */
+	.hero-sidebar[data-hero-sidebar-fit] > [data-hero-sidebar-post][data-sidebar-hidden] {
+		display: none;
+	}
+
 	@media (min-width: 768px) {
 		.home-hero-has-sidebar {
 			grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+		}
+
+		/* 宽屏下侧栏条目压缩一些，让同样高度能装下更多文章 */
+		.hero-sidebar {
+			gap: 0.35rem;
+			padding: 0.45rem;
+		}
+
+		.hero-sidebar :global(.post-list-item) {
+			gap: 0.15rem;
+			padding: 0.3rem 0.25rem;
 		}
 	}
 
