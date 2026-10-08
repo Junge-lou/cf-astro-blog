@@ -1,12 +1,35 @@
+/*
+ * 字体与全局样式表
+ * ────────────────
+ * 本文件会被打进每个页面共享的 `/_astro/Base.*.css`，而它是**渲染阻塞**资源，
+ * 因此这里只放全站都要用的字体。任何"只有个别页面需要"的字体必须放到那个
+ * 页面自己的组件里（例如 KaTeX 现在只在 src/layouts/Post.astro 引入）。
+ *
+ * ── CJK 一律使用系统字体，不下载任何 CJK 网络字体 ──────────────────────────
+ *
+ * 这是本文件最重要的决定，别轻易改回去。CJK 网络字体的成本在前几轮被逐项量化过
+ * （scripts/analyze-font-payload.mjs，模型为逐码点按字体栈回退）：
+ *
+ *   1. Shippori Mincho —— 排在字体栈第三位、前面就有覆盖 CJK 的字体，456 个文件
+ *      / 15.6 MB 几乎永远不会被请求。已移除。
+ *   2. LXGW WenKai 粗体 —— 97 个子集 / 4.40 MB，而全站只有 logo「Kiwi 的博客」、
+ *      「评论区」标题等几个 UI 标签用到粗体 CJK。按 unicode-range 分片后每个子集
+ *      约 46 KB 却只用到一两个字，**每页恒定多下载 122 KB**。已移除。
+ *   3. LXGW WenKai 常规 —— 97 个子集 / 4.42 MB。去掉上面两项后，它仍是每页字体
+ *      下载量的绝对主体：实测首页 653 KB、文章页 543 KB、说说页 338 KB，
+ *      **是每页最大的单项资产**（对照：共享 CSS 141 KB、首页 HTML 压缩后 7 KB）。
+ *
+ * 第 3 项没有"既保留观感又免费"的解法（要保留只能引入构建期字体子集化流水线），
+ * 因此站长选择了改用系统 CJK 字体：**每页 CJK 字体下载降为 0**，代价是正文从
+ * 楷体风格变为系统默认的宋体/黑体风格。
+ *
+ * 留在下面的三个 @fontsource 都是**拉丁字形**字体（体积小、且是站点的西文排版
+ * 身份），它们不含 CJK 字形，因此中文会继续回退到下面的系统 CJK 族。
+ */
 @import "@fontsource-variable/lora/wght.css";
 @import "@fontsource-variable/lora/wght-italic.css";
 @import "@fontsource/cormorant-garamond/500-italic.css";
-@import "@fontsource/shippori-mincho/400.css";
-@import "@fontsource/shippori-mincho/700.css";
 @import "@fontsource/space-grotesk/700.css";
-@import "lxgw-wenkai-webfont/lxgwwenkai-regular.css";
-@import "lxgw-wenkai-webfont/lxgwwenkai-bold.css";
-@import "katex/dist/katex.min.css";
 
 :root {
 	--color-bg: #edf3f8;
@@ -26,9 +49,16 @@
 	--font-sans:
 		"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
 		-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-	--font-serif-body: "Lora Variable", "LXGW WenKai", "Shippori Mincho", serif;
-	--font-serif-em: "Cormorant Garamond", "LXGW WenKai", "Shippori Mincho", serif;
-	--font-strong: "Space Grotesk", "LXGW WenKai", "Shippori Mincho", sans-serif;
+	/*
+	 * 西文字体在前、系统 CJK 族在后：西文走 Lora / Cormorant / Space Grotesk，
+	 * 中文回退到平台自带的衬线族（macOS 宋体、Windows SimSun、Linux Noto Serif CJK）。
+	 * 显式列出这几个名字是为了跨平台可预测；最后的通用族 `serif` 仍作兜底。
+	 */
+	--font-serif-body:
+		"Lora Variable", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+	--font-serif-em:
+		"Cormorant Garamond", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+	--font-strong: "Space Grotesk", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 	--font-mono: "SF Mono", "JetBrains Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
 	--font-size-sm: 0.92rem;
 	--font-size-base: 1rem;

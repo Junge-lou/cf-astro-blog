@@ -1,36 +1,79 @@
-# Cloudflare Pages 静态资源缓存头
-# 所有路径均相对于 public/ 目录
+# Cloudflare Workers 静态资源响应头
+#
+# 生效范围：**只对由 assets 层（ASSETS 绑定 / dist/client）直接返回的文件生效**。
+# Worker 自己渲染的路由（/、/blog/*、/api/*、/media/* 等）不经过这里，
+# 它们的缓存与安全头由 src/middleware.ts 与 src/lib/media.ts 负责。
+#
+# ⚠ 格式要求（踩过一次）：**每个路径行后面必须紧跟它自己的缩进头块**。
+# 不能把多个路径写在一起、下面共享一个缩进块 —— 那样只有最后一个路径有效，
+# 其余会被平台判为 "No headers specified" 并静默丢弃。
+# 自检方式：`npx wrangler dev` 启动时会打印
+#   "Parsed N valid header rules" / "Found M invalid header rules"
+# M 必须为 0。tests/unit/static-headers.test.ts 也会在本地守住这个格式。
+#
+# 已实测确认本文件在 Workers 部署下**是生效的**：/_headers 本身返回 404
+# （被平台消费掉，不会当静态文件下发），而 /_astro/* 返回的正是下面声明的
+# `public, max-age=31536000, immutable`。
+#
+# 注意：@astrojs/cloudflare 会在构建时读取本文件；如果没有规则覆盖指纹化资源
+# 目录，它会自动补一条 immutable 规则。下面的 /_astro/* 已显式声明，因此该注入
+# 会被跳过（构建日志出现 "Skipping Cache-Control injection"）。
 
-# 不可变资产（指纹化文件名）
-/assets/*
-  Cache-Control: public, max-age=31536000, immutable
-
-# 字体文件
-/fonts/*
-  Cache-Control: public, max-age=31536000, immutable
-
-# 图片
-/images/*
-  Cache-Control: public, max-age=86400, must-revalidate
-
-/media/*
-  Cache-Control: public, max-age=86400, must-revalidate
-
-# Pagefind 搜索索引
-/pagefind/*
-  Cache-Control: public, max-age=3600, must-revalidate
-
-# JS/CSS 静态产物（Astro 构建输出带上 hash）
+# ── Astro 构建产物：文件名带内容哈希，可永久缓存 ──────────────────────────
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Sitemap / RSS
-/sitemap.xml
-  Cache-Control: public, max-age=3600, must-revalidate
+# ── public/ 下的手写脚本 ────────────────────────────────────────────────
+# 文件名不带哈希，所以不能用 immutable；但也无需每次导航都回源校验。
+# 一天 + stale-while-revalidate 是合适的折中。
+#
+# 新增 public/ 脚本时必须在这里补一条（同样要带自己的缩进块），
+# tests/unit/static-headers.test.ts 会检查有没有漏。
+/admin.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-/rss.xml
-  Cache-Control: public, max-age=3600, must-revalidate
+/analytics.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-# favicon / 图标
-/favicon.*
-  Cache-Control: public, max-age=86400, must-revalidate
+/article-reveal.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/article-toc-highlight.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/article-transparency-toggle.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/code-block-enhance.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/comments.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/diagram-render.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/footer-reveal.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/header-scroll-hide.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/home-motion.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/local-time.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/momo-comment.min.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/not-found-terminal.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/theme.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# ── 站点图标 ────────────────────────────────────────────────────────────
+/favicon.svg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

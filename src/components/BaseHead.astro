@@ -21,9 +21,8 @@ const resolvedUrl = canonicalUrl || Astro.url.href;
 <meta name="theme-color" content="#0a84ff" />
 <ClientRouter />
 
-<!-- 预加载：关键字体（在首屏即需要显示） -->
-<link rel="preload" href="https://ffaff.fun/fonts/lora-variable.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
-<link rel="preload" href="https://ffaff.fun/fonts/lxgw-wenkai-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+<!-- 字体：西文由 @fontsource 的 CSS 引入（文件名带内容哈希，无法在此写死 preload 路径），
+     CJK 一律走系统字体、不下载任何网络字体 —— 详见 src/styles/global.css 的说明。 -->
 
 <!-- DNS 预解析：外部资源域名 -->
 <link rel="dns-prefetch" href="https://typora-piclists.oss-cn-shenzhen.aliyuncs.com" />

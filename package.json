@@ -4,6 +4,9 @@
 	"type": "module",
 	"private": true,
 	"description": "基于 Astro、Hono 与 Cloudflare Workers 的内置后台站点模板",
+	"engines": {
+		"node": ">=22.0.0"
+	},
 	"scripts": {
 		"dev": "astro dev",
 		"build": "astro build",
@@ -25,7 +28,11 @@
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"db:seed:local": "wrangler d1 execute DB --local --file=scripts/seed.sql",
 		"db:seed:remote": "wrangler d1 execute DB --remote --file=scripts/seed.sql",
-		"analyze": "node scripts/analyze-build.mjs"
+		"analyze": "node scripts/analyze-build.mjs",
+		"fonts:payload": "node scripts/analyze-font-payload.mjs",
+		"smoke": "node scripts/smoke-test.mjs",
+		"media:optimize": "node scripts/optimize-media.mjs --fetch --apply --mirror",
+		"media:status": "node scripts/optimize-media.mjs --status"
 	},
 	"cloudflare": {
 		"bindings": {
@@ -56,7 +63,6 @@
 		"@astrojs/cloudflare": "^14.1.7",
 		"@fontsource-variable/lora": "^5.2.8",
 		"@fontsource/cormorant-garamond": "^5.2.11",
-		"@fontsource/shippori-mincho": "^5.2.8",
 		"@fontsource/space-grotesk": "^5.2.10",
 		"@modelcontextprotocol/sdk": "^1.27.1",
 		"astro": "^7.1.6",
@@ -64,7 +70,6 @@
 		"hono": "^4.12.8",
 		"jose": "^6.1.3",
 		"katex": "^0.19.0",
-		"lxgw-wenkai-webfont": "^1.7.0",
 		"marked": "^18.1.0",
 		"node-emoji": "^2.2.0",
 		"sanitize-html": "^2.17.4"
@@ -78,6 +83,7 @@
 		"@types/sanitize-html": "^2.16.1",
 		"drizzle-kit": "^0.31.11",
 		"gray-matter": "^4.0.3",
+		"sharp": "^0.35.5",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"wrangler": "^4.50.0"
