@@ -5,6 +5,10 @@ import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
 import type { MarkdownTocItem } from "@/lib/security";
 import Base from "./Base.astro";
+// KaTeX 只服务正文里的数学公式，因此只在文章详情页（本布局的唯一使用者）
+// 引入。此前它被放在 src/styles/global.css，导致 8 个字体家族、20 条
+// `font-display: block` 的规则进入全站共享的渲染阻塞 CSS。
+import "katex/dist/katex.min.css";
 
 interface Props {
 	slug: string;

@@ -92,11 +92,24 @@ const resolvedDescription =
 			image={image}
 			canonicalUrl={canonicalUrl}
 		/>
-		<script is:inline src="/local-time.js"></script>
+		{/*
+			脚本加载策略
+			────────────
+			这些脚本统一使用 `is:inline`（不让 Astro 打包，直接引用 public/ 下的
+			原文件）。代价是必须自己声明加载时机：经典脚本默认会**阻塞 HTML 解析**，
+			浏览器要先下载并执行完，才会继续解析后面的内容。
+
+			- `theme.js` 必须保持同步：它在 public/theme.js 里于首次绘制前读取
+			  localStorage 写入 data-theme，这是"无主题闪烁"的实现基础，不能 defer。
+			- 其余全部是渐进增强，初始化本来就挂在 DOMContentLoaded 上（或只注册
+			  监听器），因此加 `defer` 不改变行为，只是把下载与解析解耦。
+			  `defer` 会保持脚本之间的相对执行顺序。
+		*/}
+		<script is:inline src="/local-time.js" defer></script>
 		<script is:inline src="/theme.js"></script>
-		<script is:inline src="/header-scroll-hide.js"></script>
-		{!isAdminPreview && <script is:inline src="/analytics.js"></script>}
-		{!isAdminPreview && <script is:inline src="/footer-reveal.js"></script>}
+		<script is:inline src="/header-scroll-hide.js" defer></script>
+		{!isAdminPreview && <script is:inline src="/analytics.js" defer></script>}
+		{!isAdminPreview && <script is:inline src="/footer-reveal.js" defer></script>}
 		<script is:inline>
 			document.addEventListener("keydown", (e) => {
 				if ((e.ctrlKey || e.metaKey) && e.key === "k") {
