@@ -34,7 +34,6 @@
 		}
 	],
 	"vars": {
-		"SITE_NAME": "My Blog",
 		"SITE_URL": "https://ffaff.fun",
 		"TURNSTILE_SITE_KEY": "0x4AAAAAADGRzftTk8S6JtHj"
 	},

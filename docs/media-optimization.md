@@ -74,7 +74,7 @@ node scripts/optimize-media.mjs --fetch --apply --mirror
 
 - `--fetch` 从线上站点下载当前引用的原图
 - `--apply` 压缩为 WebP，生成上传产物、清单与 D1 SQL
-- `--mirror` 把产物复制到仓库内 `media/`（纳入版本控制，避免只存在于临时目录）
+- `--mirror` 把产物复制到本地 `media/` 目录（该目录已加入 `.gitignore`，仅作本地备份；站点媒体始终从 R2 读取）
 
 工作目录默认为 `<系统临时目录>/blog-media-opt`，可用 `--out=<dir>` 指定。
 
@@ -86,7 +86,7 @@ node scripts/optimize-media.mjs --fetch --apply --mirror
 <out>/upload-commands.txt    wrangler 上传命令
 <out>/update-keys.sql        D1 引用更新（旧 -> 新）
 <out>/rollback-keys.sql      回滚（新 -> 旧）
-media/<key>                  仓库镜像（由 --mirror 生成）
+media/<key>                  本地镜像（由 --mirror 生成，不入库）
 ```
 
 ### 2. 上传到 R2

@@ -13,7 +13,7 @@
  *   node scripts/optimize-media.mjs --fetch     # 下载线上图片到工作目录
  *   node scripts/optimize-media.mjs --apply     # 压缩并生成上传产物 + 清单 + D1 SQL
  *   node scripts/optimize-media.mjs --fetch --apply
- *   node scripts/optimize-media.mjs --apply --mirror          # 同时镜像进仓库 media/
+ *   node scripts/optimize-media.mjs --apply --mirror          # 同时镜像到本地 media/
  *   node scripts/optimize-media.mjs --fetch --apply --only=<子串>   # 只处理匹配项
  *
  * 媒体清单由 sitemap.xml + 关键页面自动爬取得出，文章更新后新增的封面会被
@@ -23,7 +23,7 @@
  *   --origin=<url>     站点源，默认 https://ffaff.fun
  *   --out=<dir>        工作目录，默认 <系统临时目录>/blog-media-opt
  *   --only=<子串>      只处理 key 中包含该子串的条目（增量优化新图）
- *   --mirror           把优化后的 WebP 复制到仓库内 media/（纳入版本控制）
+ *   --mirror           把优化后的 WebP 复制到本地 media/ 目录（已 gitignore，仅作本地备份）
  *   --dry-run          只压缩和报告，不写出上传产物
  *
  * 产物：

@@ -14,7 +14,6 @@ interface Env {
 	 */
 	IMAGES?: ImagesBinding;
 
-	SITE_NAME: string;
 	SITE_URL: string;
 	TURNSTILE_SITE_KEY: string;
 	AUTO_DEPLOY_WEBHOOK_URL?: string;

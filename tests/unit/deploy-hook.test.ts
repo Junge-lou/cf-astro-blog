@@ -10,7 +10,6 @@ function createEnv(overrides: Partial<Env> = {}): Env {
 		MEDIA_BUCKET: {} as R2Bucket,
 		SESSION: {} as KVNamespace,
 		ASSETS: {} as Fetcher,
-		SITE_NAME: "测试站点",
 		SITE_URL: "https://blog.example.com",
 		TURNSTILE_SITE_KEY: "",
 		JWT_SECRET: "jwt-secret",

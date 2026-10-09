@@ -71,3 +71,6 @@ suibi.md
 content/reader-pdf/
 workspace/
 .mcp.json
+
+# R2 媒体本地镜像（scripts/optimize-media.mjs --mirror 生成；站点图片始终从 R2 读取，不入库）
+media/

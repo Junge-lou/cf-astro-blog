@@ -242,7 +242,6 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 
 | 变量名 | 类型 | 说明 | 示例值 | 必需 |
 |--------|------|------|--------|:----:|
-| `SITE_NAME` | string | 站点名称，显示在页面标题与 Header | `"My Blog"` | ✅ |
 | `SITE_URL` | string | 站点完整 URL，用于 RSS / Sitemap / OAuth 回调 | `"https://ffaff.fun"` | ✅ |
 | `TURNSTILE_SITE_KEY` | string | Turnstile 人机验证的 Site Key（公开） | `"0x4AAAAAAD..."` | 可选 |
 
@@ -434,7 +433,6 @@ npm run db:seed:remote
 JWT_SECRET=你的JWT密钥
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=你的密码哈希
-SITE_NAME=My Blog
 SITE_URL=http://localhost:4321
 
 # 以下均为可选，按需配置
@@ -464,7 +462,7 @@ npm run dev        # 启动 Astro 开发服务器（http://localhost:4321）
 site: "https://your-domain.com",
 ```
 
-`wrangler.jsonc` 中 `vars` 的 `SITE_NAME` 和 `SITE_URL` 也应同步更新。
+`wrangler.jsonc` 中 `vars` 的 `SITE_URL` 也应同步更新（站点名称等展示信息在 `src/lib/types.ts` 的 `siteConfig` 中配置）。
 
 ---
 
