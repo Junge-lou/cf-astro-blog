@@ -29,10 +29,10 @@ npm run db:migrate:remote
 - 表结构发生变化（例如新增字段、索引、约束）。
 
 > ⚠️ **不要用 `npm run db:generate` 生成迁移。**
-> 本仓库的 `drizzle/meta/_journal.json` 只登记了 `0000`，`0001`~`0024` 是手写的、
+> 本仓库的 `drizzle/meta/_journal.json` 只登记了 `0000`，`0001` 起的全部迁移是手写的、
 > 从未进入 drizzle-kit 的元数据。因此 `db:generate` 会把历史变更**整个重放**一遍
 > （重复 `CREATE TABLE` / `ADD COLUMN`），在已有数据的线上库上会直接失败。
-> 正确做法：**在 `drizzle/` 下手写 `00NN_描述.sql`**，与既有 24 个迁移的做法一致，
+> 正确做法：**在 `drizzle/` 下手写 `00NN_描述.sql`**，与既有迁移的做法一致，
 > 索引类语句建议写成 `CREATE INDEX IF NOT EXISTS`。
 
 ## 2. 标准发布流程（建议固定执行）
@@ -96,13 +96,13 @@ npx wrangler d1 execute blog --remote --command "ANALYZE"
 
 以下内容必须配置在 Cloudflare 项目的运行时环境（Production/Preview）：
 
-- `ADMIN_GITHUB_LOGIN`
-- `GITHUB_OAUTH_CLIENT_ID`
-- `GITHUB_OAUTH_CLIENT_SECRET`
-- `JWT_SECRET`
-- `SITE_URL`
-- `TURNSTILE_SITE_KEY`（若启用 Turnstile）
-- `TURNSTILE_SECRET_KEY`（若启用 Turnstile）
+- 密码登录（核心必需）：`ADMIN_USERNAME`、`ADMIN_PASSWORD_HASH`、`JWT_SECRET`
+- GitHub OAuth 登录（可选，配置后登录页多一个 GitHub 按钮）：`ADMIN_GITHUB_LOGIN`、
+  `GITHUB_OAUTH_CLIENT_ID`、`GITHUB_OAUTH_CLIENT_SECRET`
+- 站点：`SITE_URL`
+- Turnstile（可选）：`TURNSTILE_SITE_KEY`、`TURNSTILE_SECRET_KEY`
+
+完整变量清单（AI、MCP、评论等）见 [`README.md`](../README.md) 的 §5.3 配置清单。
 
 资源绑定名必须保持一致：
 

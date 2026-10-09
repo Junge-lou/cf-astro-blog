@@ -1,13 +1,8 @@
-
-# [My Blog where is](https://ffaff.fun/)
-
-## [cf-astro-blog v0.1.0 发布说明](https://ffaff.fun/blog/cf-astro-blog-v0-1-0-release)
+# cf-astro-blog
 
 > 基于 Astro 7 + Hono + Cloudflare Workers 的全栈博客站点，内置管理后台、Markdown 写作流、友链审核、Webmention、AI 端点与 MCP 服务。
 
-[快速部署指南](#5-快速部署) · [媒体图片优化手册](./MEDIA-OPTIMIZATION.md)
-
------
+[快速部署](#5-快速部署) · [日常使用](#6-日常使用) · [发文方式](./docs/posting-workflows.md) · [维护手册](./docs/maintenance-guide.md) · [媒体优化](./docs/media-optimization.md) · [发布记录](./docs/release-notes.md)
 
 ---
 
@@ -92,7 +87,7 @@
 
 - **发文免部署**：内容存于 D1，SSR 直读 + 内容版本号缓存失效，发文秒级生效
 - **构建分析**：`npm run build:analyze` 输出各模块体积
-- **数据库迁移**：Drizzle Kit 管理 D1 schema 版本
+- **数据库迁移**：手写 SQL 迁移（`drizzle/` 目录），`wrangler d1 migrations` 统一应用
 - **种子数据**：`npm run db:seed:remote` 初始化基础数据
 - **健康检查**：Worker 内置健康检查端点
 
@@ -121,7 +116,7 @@
 
 | 依赖 | 版本要求 |
 |------|----------|
-| **Node.js** | ≥ 22（`package.json` 的 `engines` 已声明；CI 用 24，部署工作流用 22.12） |
+| **Node.js** | ≥ 22（`package.json` 的 `engines` 已声明；CI 与部署工作流均用 24） |
 | **npm** | ≥ 9 |
 | **Cloudflare 账号** | 需开通 Workers Paid 计划（D1 / R2 / KV 均需） |
 | **Wrangler CLI** | 建议最新版（`npx wrangler --version`） |
@@ -577,19 +572,19 @@ npm run dev
 
 ### 6.4 仅更新内容（不改数据库结构）
 
+内容变更不触发部署（见 5.3.2「发文免部署」），同步完成即生效：
+
 ```bash
-# 同步文章后直接推送，Cloudflare 自动部署
 npm run sync:posts
-git add . && git commit -m "content: 新增文章" && git push
 ```
 
 ### 6.5 更新数据库结构
 
 ```bash
-# 生成迁移文件
-npm run db:generate
-
-# 部署后执行远程迁移
+# 1. 在 drizzle/ 下手写 00NN_描述.sql
+#    （不要用 npm run db:generate——journal 未登记历史迁移，生成会整体重放导致线上失败，
+#     详见 docs/maintenance-guide.md §1）
+# 2. 部署后执行远程迁移
 npm run db:migrate:remote
 ```
 
@@ -599,7 +594,7 @@ npm run db:migrate:remote
 
 ```
 cf-astro-blog/
-├── content/posts/        # Markdown 文章（写作入口）
+├── content/posts/        # 本地文章工作副本（D1 为真源，gitignore 不提交）
 ├── src/
 │   ├── pages/            # 前端页面（Astro）
 │   │   ├── index.astro   # 首页
@@ -729,4 +724,4 @@ npx wrangler deploy
 
 ---
 
-*版本 0.1.0 — 2026-06-03*
+*发布记录见 [docs/release-notes.md](./docs/release-notes.md)。*

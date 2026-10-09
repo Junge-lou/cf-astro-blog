@@ -30,11 +30,6 @@
 
 本文件**只记录发布变更**。
 
-这里原本还抄了一份完整的部署说明（约 700 行），与 `README.md` 逐字重复，
-结果是任何一处修正都要改两遍——实际上 `README.md` 里的过期内容（"Astro 6"、
-不存在的 `npm run search:index:remote`）在这份拷贝里同样存在。为避免继续分叉，
-重复段落已删除。
-
-**安装、配置、部署、常见问题请看 [`README.md`](./README.md)；上线后的发布与迁移规范见
-[`docs/maintenance-guide.md`](./docs/maintenance-guide.md)；性能与优化路线见
-[`docs/optimization-plan.md`](./docs/optimization-plan.md)。**
+**安装、配置、部署、常见问题请看 [`README.md`](../README.md)；发文流程见
+[`posting-workflows.md`](./posting-workflows.md)；上线后的发布与迁移规范见
+[`maintenance-guide.md`](./maintenance-guide.md)。**

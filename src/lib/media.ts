@@ -135,7 +135,7 @@ export interface SaveMediaObjectResult {
 /**
  * 上传时按用途决定目标宽度。
  *
- * 规格与 `MEDIA-OPTIMIZATION.md` 的离线流水线保持一致，这样"后台上传"与
+ * 规格与 `docs/media-optimization.md` 的离线流水线保持一致，这样"后台上传"与
  * "离线批处理"两条路产出的图规格相同，不会互相矛盾：
  *   - 背景图   1920 —— 站点渲染宽度约 1184px，且叠了 CSS blur
  *   - 封面图    800 —— 卡片实际渲染宽度只有 240–272px
@@ -168,7 +168,7 @@ export const DEFAULT_UPLOAD_QUALITY = 80;
  *
  * 返回 null 表示"不转换"（格式不适用、或转换后反而更大），调用方应回退为存原图。
  *
- * 两个实测得来的注意点（见 docs/optimization-plan.md）：
+ * 两个实测得来的注意点：
  * - `output()` 在运行时**返回 Promise**，而类型定义写的是同步返回；`await` 对两者都成立。
  * - `fit: "scale-down"` 保证小图不会被放大。
  */
