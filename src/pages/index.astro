@@ -110,6 +110,7 @@ try {
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
 		.where(and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, false)))
 		.orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
+		// 取最近 3 篇：hero 侧栏「最多 3 张最新文章」正好用满，其余区块再按需切片
 		.limit(3);
 	recentPosts = recentRows.map(toHomePostCardRow);
 } catch {
@@ -126,13 +127,19 @@ const latestUpdate = latestUpdateAt ? formatDate(latestUpdateAt) : "等待第一
 const recentSectionSubheading =
 	pinnedPosts.length > 0 ? "" : "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
-const heroPinnedPost = pinnedPosts[0] ?? null;
-// 侧栏卡片数量不写死：置顶固定 1 张，最新文章由脚本按 .hero-body 的实测高度决定显示几张。
-// 这里只决定「最多渲染几张候选」——多渲染几张 DOM 成本可忽略，真正显示几张交给
-// public/hero-sidebar-fit.js 在布局完成后算，窄屏则恒定显示前两张。
-const HERO_SIDEBAR_MAX_ARTICLES = 5;
-const heroSidebarPosts = recentPosts.slice(0, HERO_SIDEBAR_MAX_ARTICLES);
-const hasHeroSidebar = Boolean(heroPinnedPost || heroSidebarPosts.length > 0);
+/**
+ * 首页 Hero 侧栏的卡片预算：置顶最多 2 张、最新文章最多 3 张，合计不超过 5 张。
+ *
+ * 置顶这 2 张是确定的（不参与脚本测量）；最新文章这 3 张是「候选」——SSR 时全部渲染成
+ * 隐藏，`public/hero-sidebar-fit.js` 再按 `.hero-body` 的实测高度决定显示几张，
+ * 并且总数被夹在 HERO_SIDEBAR_MAX_POSTS 以内。窄屏由脚本固定显示 1 张最新文章。
+ */
+const HERO_SIDEBAR_PINNED_COUNT = 2;
+const HERO_SIDEBAR_RECENT_COUNT = 3;
+const HERO_SIDEBAR_MAX_POSTS = HERO_SIDEBAR_PINNED_COUNT + HERO_SIDEBAR_RECENT_COUNT;
+const heroPinnedPosts = pinnedPosts.slice(0, HERO_SIDEBAR_PINNED_COUNT);
+const heroSidebarPosts = recentPosts.slice(0, HERO_SIDEBAR_RECENT_COUNT);
+const hasHeroSidebar = Boolean(heroPinnedPosts.length > 0 || heroSidebarPosts.length > 0);
 const totalPostCount = pinnedPosts.length + recentPosts.length;
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
@@ -192,18 +199,18 @@ function isInternalHref(href: string) {
 		{
 			hasHeroSidebar && (
 				<aside class="hero-sidebar" data-hero-sidebar-fit="true">
-					{heroPinnedPost && (
+					{heroPinnedPosts.map((post) => (
 						<PostCard
-							title={heroPinnedPost.title}
-							slug={heroPinnedPost.slug}
-							excerpt={heroPinnedPost.excerpt}
-							publishedAt={heroPinnedPost.publishedAt}
-							categoryName={heroPinnedPost.categoryName}
-							featuredImageKey={heroPinnedPost.featuredImageKey}
-							featuredImageAlt={heroPinnedPost.featuredImageAlt}
+							title={post.title}
+							slug={post.slug}
+							excerpt={post.excerpt}
+							publishedAt={post.publishedAt}
+							categoryName={post.categoryName}
+							featuredImageKey={post.featuredImageKey}
+							featuredImageAlt={post.featuredImageAlt}
 							variant="compact"
 						/>
-					)}
+					))}
 					{heroSidebarPosts.map((post, index) => (
 						<PostCard
 							sidebarPostIndex={index}
@@ -340,14 +347,33 @@ function isInternalHref(href: string) {
 		min-width: 0;
 	}
 
+	/*
+	 * 侧栏容器：高度由外部决定（宽屏被 .hero-body 撑到等高，窄屏 min-height 兜底），
+	 * 内部卡片用 flex 均分剩余空间 —— 于是「卡片高度」是文章数与可用高度的函数：
+	 * 文章多则每张更矮，面板高则每张更高，最后一张总是贴着容器底部，不留死白。
+	 */
 	.hero-sidebar {
-		display: grid;
+		display: flex;
+		flex-direction: column;
+		/* 兜底高度：内容再少也不至于只有一条细线；宽屏实测高度会覆盖它 */
+		min-height: 26rem;
 		gap: 0.5rem;
-		align-content: start;
 		padding: 0.5rem;
 		border-radius: var(--radius-card);
 		background: rgba(var(--card-surface-rgb), 0.06);
 		border: 1px solid var(--color-border);
+		/* clip 而不是 hidden：裁掉溢出，同时不产生滚动容器 */
+		overflow: clip;
+	}
+
+	/* 每张卡均分高度：min-height 随父级 flex 轨道长高，max-height 限制最高的那个 */
+	.hero-sidebar > :global(article) {
+		flex: 1 1 auto;
+		/* 下限 76px、上限 208px：必须与 hero-sidebar-fit.js 的
+		   CARD_MIN_HEIGHT / CARD_MAX_HEIGHT 一致，否则脚本算出的高度会被这里改掉 */
+		min-height: var(--hero-sidebar-card-min, 4.75rem);
+		max-height: var(--hero-sidebar-card-max, 13rem);
+		overflow: hidden;
 	}
 
 	/* sidebar 内列表项：meta 置于标题上方，垂直堆叠 */
@@ -355,6 +381,13 @@ function isInternalHref(href: string) {
 		flex-direction: column !important;
 		gap: 0.2rem;
 		padding: 0.4rem 0.3rem;
+		/* 卡片被拉高时让标题+meta 垂直居中，而不是挤在顶部 */
+		justify-content: center;
+	}
+
+	.hero-sidebar :global(.post-compact-body) {
+		/* 同上：卡片变高时内容居中 */
+		align-content: center;
 	}
 
 	.hero-sidebar :global(.post-list-meta) {
@@ -371,10 +404,15 @@ function isInternalHref(href: string) {
 		line-height: 1.3;
 	}
 
+	/*
+	 * 侧栏只留标题：置顶卡（compact）与最新文章卡（list）都带一段摘要 <p>，
+	 * 视觉上不要内容。这里不删模板里的 excerpt 属性，只隐藏这两个段落 ——
+	 * 结构保持稳定，hero-sidebar-fit.js 量高度时也少一截。若整段不要，
+	 * 也可以改成在 index.astro 的 PostCard 上直接不传 excerpt。
+	 */
 	.hero-sidebar :global(.post-compact-excerpt),
 	.hero-sidebar :global(.post-list-excerpt) {
-		font-size: 0.8rem;
-		line-height: 1.45;
+		display: none;
 	}
 
 	/*
@@ -400,6 +438,13 @@ function isInternalHref(href: string) {
 		.hero-sidebar :global(.post-list-item) {
 			gap: 0.15rem;
 			padding: 0.3rem 0.25rem;
+		}
+	}
+
+	/* 窄屏单列：高度由内容决定，别用 26rem 兜底把侧栏撑出死白 */
+	@media (max-width: 767.98px) {
+		.hero-sidebar {
+			min-height: 0;
 		}
 	}
 
