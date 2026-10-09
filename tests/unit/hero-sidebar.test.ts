@@ -98,8 +98,14 @@ describe("首页 Hero 侧栏按高度决定文章个数", () => {
 		assert.match(source, /--hero-sidebar-card-min, 4\.75rem/u);
 		assert.match(source, /--hero-sidebar-card-max, 13rem/u);
 		// 置顶卡：保留封面，文字块在封面以下居中；封面高度按 aspect-ratio 算（不是拍一个 max-height）
-		assert.match(source, /\.hero-sidebar :global\(\.post-compact-body\) \{[\s\S]{0,260}justify-content: center/u);
-		assert.match(source, /\.hero-sidebar :global\(\.post-compact-cover\) \{[\s\S]{0,200}aspect-ratio/u);
+		assert.match(
+			source,
+			/\.hero-sidebar :global\(\.post-compact-body\) \{[\s\S]{0,260}justify-content: center/u,
+		);
+		assert.match(
+			source,
+			/\.hero-sidebar :global\(\.post-compact-cover\) \{[\s\S]{0,200}aspect-ratio/u,
+		);
 		assert.match(source, /--hero-sidebar-cover-ratio, 16 \/ 9/u);
 	});
 });

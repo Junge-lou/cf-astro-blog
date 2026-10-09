@@ -53,7 +53,26 @@ interface FakeDom {
 	flushFrames(): void;
 }
 
-const visibleCards = (dom: FakeDom) => dom.cards.filter((card) => !card.hidden);
+/** 计算侧栏高度只需要这几项；单独命名，避免为了传参去伪造整个 FakeDom。 */
+type SidebarMetrics = Pick<FakeDom, "cards" | "pinned" | "sidebarBaseline">;
+
+const visibleCards = (dom: SidebarMetrics) => dom.cards.filter((card) => !card.hidden);
+
+/**
+ * 取唯一那张可见卡。
+ *
+ * tsconfig 开了 noUncheckedIndexedAccess，`visible[0]` 是 `CardStub | undefined`；
+ * 直接传进 cardHeight 过不了类型检查，所以在这里显式收窄一次。
+ */
+function firstVisibleCard(dom: SidebarMetrics): CardStub {
+	const card = visibleCards(dom)[0];
+
+	if (!card) {
+		throw new Error("预期至少有一张可见的候选卡");
+	}
+
+	return card;
+}
 
 /**
  * 桩里的高度公式，必须与 CSS 行为一致：
@@ -74,7 +93,7 @@ function cardHeight(card: CardStub) {
  * - 容器变量为 0（脚本的校准状态）→ 卡片都是自然高度；
  * - 否则所有卡等高，高度就是容器变量那一个值。
  */
-function sidebarHeight(dom: FakeDom) {
+function sidebarHeight(dom: SidebarMetrics) {
 	const items = dom.pinned.length + visibleCards(dom).length;
 
 	if (items === 0) {
@@ -202,8 +221,7 @@ function createFakeDom(options: { bodyHeight: number; cardCount: number; wide: b
 		}
 
 		getBoundingClientRect() {
-			const dom = { cards, pinned, sidebarBaseline } as FakeDom;
-			return { height: sidebarHeight(dom) };
+			return { height: sidebarHeight({ cards, pinned, sidebarBaseline }) };
 		}
 	}
 
@@ -239,6 +257,10 @@ function createFakeDom(options: { bodyHeight: number; cardCount: number; wide: b
 	return {
 		cards,
 		pinned,
+		// 脚本写给容器的那份基线，读的时候取最新值（写高度后又被校准清掉过）
+		get sidebarBaseline() {
+			return sidebarBaseline;
+		},
 		documentStub,
 		windowStub,
 		documentListeners,
@@ -311,17 +333,15 @@ describe("首页 Hero 侧栏测量脚本", () => {
 
 	test("正文极矮时回到自然高度，宁可侧栏略高也不截断标题", async () => {
 		const dom = await runScript(createFakeDom({ bodyHeight: 40, cardCount: 3, wide: true }));
-		const visible = visibleCards(dom);
-		assert.equal(visible.length, 1);
-		assert.equal(cardHeight(visible[0]), CARD_NATURAL, "没写入基线时就用自然高度");
+		assert.equal(visibleCards(dom).length, 1);
+		assert.equal(cardHeight(firstVisibleCard(dom)), CARD_NATURAL, "没写入基线时就用自然高度");
 		assert.ok(sidebarHeight(dom) >= CARD_MIN_HEIGHT, "侧栏至少装得下一张有下限高度的卡");
 	});
 
 	test("窄屏固定只显示一张最新文章，且不拉伸高度", async () => {
 		const dom = await runScript(createFakeDom({ bodyHeight: 900, cardCount: 3, wide: false }));
-		const visible = visibleCards(dom);
-		assert.equal(visible.length, 1);
-		assert.equal(cardHeight(visible[0]), CARD_NATURAL);
+		assert.equal(visibleCards(dom).length, 1);
+		assert.equal(cardHeight(firstVisibleCard(dom)), CARD_NATURAL);
 	});
 
 	test("可见总数夹在 5 张以内：候选再多也不超过置顶 2 + 最新 3", async () => {

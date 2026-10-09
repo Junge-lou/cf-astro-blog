@@ -1,0 +1,26 @@
+# 仓库内的文本文件统一以 LF 存储与检出。
+#
+# 背景：git 里存的一直是 LF，但本机全局 core.autocrlf=true 会在检出时把工作区
+# 换成 CRLF，于是 biome（默认 lineEnding=lf）把每个文件都判为「格式不符」，
+# `npm run check` 必然失败。这里把 eol 固定为 lf，不再受 autocrlf 影响。
+* text=auto eol=lf
+
+# Windows 批处理必须是 CRLF，否则 cmd 解析会出问题。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件不要做换行转换。
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.gz binary

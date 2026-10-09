@@ -255,8 +255,7 @@ body {
 		transparent 62%
 	);
 	--nav-shell-open-surface:
-		var(--glass-tint-soft),
-		rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100));
+		var(--glass-tint-soft), rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100));
 	--nav-shell-condensed-surface:
 		var(--glass-tint-soft),
 		rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100 * 0.9));
@@ -694,7 +693,8 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	--glass-tint-strong: linear-gradient(
 		150deg,
 		rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--glass-panel-opacity, 0.14) * 0.55), 0.3)),
-		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-panel-opacity, 0.14) * 0.15), 0.12)) 58%,
+		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-panel-opacity, 0.14) * 0.15), 0.12))
+			58%,
 		transparent
 	);
 	background:

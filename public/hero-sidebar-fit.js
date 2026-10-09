@@ -122,7 +122,10 @@
 		}
 
 		const pinnedHeight = pinned.reduce((sum, card) => sum + card.getBoundingClientRect().height, 0);
-		const candidateTotal = cards.reduce((sum, card) => sum + card.getBoundingClientRect().height, 0);
+		const candidateTotal = cards.reduce(
+			(sum, card) => sum + card.getBoundingClientRect().height,
+			0,
+		);
 		const candidateAverage =
 			cards.length > 0 && candidateTotal > 0 ? candidateTotal / cards.length : 0;
 		const cardNaturalHeight = candidateAverage > 0 ? candidateAverage : CARD_MIN_HEIGHT;
@@ -182,8 +185,7 @@
 
 		return {
 			count: fallback ? 1 : 0,
-			rowHeight:
-				squeezed >= CARD_MIN_HEIGHT ? Math.min(squeezed, CARD_MAX_HEIGHT) : null,
+			rowHeight: squeezed >= CARD_MIN_HEIGHT ? Math.min(squeezed, CARD_MAX_HEIGHT) : null,
 		};
 	};
 
