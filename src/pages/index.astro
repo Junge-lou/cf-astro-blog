@@ -426,11 +426,22 @@ function isInternalHref(href: string) {
 		text-align: left;
 	}
 
+	/*
+	 * 封面尺寸按比例重新计算：
+	 * 侧栏宽度是列宽决定的（宽屏 18–22rem），之前用 max-height 拍一个固定值，
+	 * 结果在 22rem 的侧栏里只显示成一条 72px 的色带，比例被压扁。
+	 * 改成用 aspect-ratio 决定高度 = 卡片宽度 × 9/16 ≈ 150–165px，
+	 * 图片仍然 object-fit: cover，裁剪交给图片本身而不是容器比例。
+	 */
 	.hero-sidebar :global(.post-compact-cover) {
 		flex: 0 0 auto;
-		/* 侧栏里的封面只作提示：一张 22rem 宽的侧栏里，按 240/134 原比例会有 186px，
-		   两张置顶卡就吃光整个侧栏，最新文章一张都放不下 */
-		max-height: var(--hero-sidebar-cover-max, 4.5rem);
+		aspect-ratio: var(--hero-sidebar-cover-ratio, 16 / 9);
+	}
+
+	.hero-sidebar :global(.post-compact-cover img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.hero-sidebar :global(.post-list-meta) {
