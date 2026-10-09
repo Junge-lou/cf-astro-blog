@@ -238,13 +238,13 @@ const pageDescription = activeCategoryName
 		background:
 			radial-gradient(
 				circle at 84% 18%,
-				rgba(10, 132, 255, 0.18),
+				rgb(var(--color-accent-rgb) / 0.18),
 				transparent 42%
 			),
 			linear-gradient(
 				135deg,
-				rgba(255, 255, 255, 0.12),
-				rgba(255, 255, 255, 0.02) 54%,
+				rgba(var(--card-sheen-rgb), 0.12),
+				rgba(var(--card-sheen-rgb), 0.02) 54%,
 				transparent
 			);
 		opacity: 0.68;
@@ -313,8 +313,8 @@ const pageDescription = activeCategoryName
 		gap: 0.35rem;
 		padding: 1.15rem 1.2rem;
 		border-radius: var(--radius-inner);
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(var(--card-sheen-rgb), 0.05);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.08);
 		backdrop-filter: blur(10px) saturate(120%);
 		-webkit-backdrop-filter: blur(10px) saturate(120%);
 	}

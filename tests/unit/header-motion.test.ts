@@ -21,9 +21,19 @@ describe("导航收缩动画保护", () => {
 		assert.match(globalStylesSource, /--nav-shell-max-width:/u);
 		assert.match(globalStylesSource, /--nav-shell-condensed-scale:/u);
 		assert.match(globalStylesSource, /--nav-shell-blur:\s*var\(--hero-card-blur,\s*18px\)/u);
+		/*
+		 * 导航外壳表面由「钴蓝染色渐变 + 半透明底」两层组成。
+		 * 染色层（--glass-tint-soft）后来才加，所以这里分两段断言：
+		 * 既锁住原有的 rgba 底色计算，也锁住染色层没有被漏掉。
+		 */
 		assert.match(
 			globalStylesSource,
-			/--nav-shell-open-surface:\s*rgba\(\s*var\(--card-surface-rgb\),\s*calc\(var\(--hero-card-opacity,\s*14\)\s*\/\s*100\)\s*\)/u,
+			/--nav-shell-open-surface:\s*var\(--glass-tint-soft\),\s*rgba\(/u,
+		);
+		assert.ok(
+			globalStylesSource.includes(
+				"rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100))",
+			),
 		);
 	});
 });

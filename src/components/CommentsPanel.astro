@@ -65,8 +65,8 @@ const momoSlugId = `blog/${slug}`;
 		gap: 0;
 		overflow: hidden;
 		border-radius: var(--radius-inner);
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
+		background: rgba(var(--card-sheen-rgb), 0.04);
 	}
 
 	.comments-toggle {
@@ -89,7 +89,7 @@ const momoSlugId = `blog/${slug}`;
 
 	.comments-toggle:hover,
 	.comments-toggle:focus-visible {
-		background: rgba(255, 255, 255, 0.05);
+		background: rgba(var(--card-sheen-rgb), 0.05);
 		outline: none;
 	}
 
@@ -116,8 +116,8 @@ const momoSlugId = `blog/${slug}`;
 		width: 2rem;
 		height: 2rem;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.12);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(var(--card-sheen-rgb), 0.12);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
 		font-size: 1.2rem;
 		color: var(--color-accent-hover);
 		transition:
@@ -131,7 +131,7 @@ const momoSlugId = `blog/${slug}`;
 	}
 
 	.comments-panel.is-open .comments-toggle {
-		border-bottom-color: rgba(255, 255, 255, 0.1);
+		border-bottom-color: rgba(var(--card-sheen-rgb), 0.1);
 	}
 
 	.comments-body {
@@ -144,8 +144,8 @@ const momoSlugId = `blog/${slug}`;
 		gap: 0.9rem;
 		padding: 1rem;
 		border-radius: var(--radius-inner);
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(var(--card-sheen-rgb), 0.06);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
 	}
 
 	.comments-note,
@@ -161,18 +161,18 @@ const momoSlugId = `blog/${slug}`;
 
 	.comments-panel.is-open .comments-toggle:hover .comments-toggle-icon {
 		background: var(--color-accent-soft);
-		border-color: rgba(10, 132, 255, 0.16);
+		border-color: rgb(var(--color-accent-rgb) / 0.16);
 	}
 
 	:global(html.article-opaque-mode) .comments-panel {
 		background: rgba(var(--card-surface-rgb), 0.92);
-		border-color: rgba(255, 255, 255, 0.14);
+		border-color: rgba(var(--card-sheen-rgb), 0.14);
 	}
 
 	:global(html.article-opaque-mode) .comments-surface,
 	:global(html.article-opaque-mode) .comments-empty-state {
 		background: rgba(var(--card-surface-rgb), 0.96);
-		border-color: rgba(255, 255, 255, 0.16);
+		border-color: rgba(var(--card-sheen-rgb), 0.16);
 	}
 
 	:global(html.article-opaque-mode) .comments-toggle {
@@ -180,7 +180,7 @@ const momoSlugId = `blog/${slug}`;
 	}
 
 	:global(html.article-opaque-mode) .comments-toggle-icon {
-		background: rgba(255, 255, 255, 0.1);
+		background: rgba(var(--card-sheen-rgb), 0.1);
 	}
 
 	@media (max-width: 640px) {

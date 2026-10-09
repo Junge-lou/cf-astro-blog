@@ -324,8 +324,8 @@ function isInternalHref(href: string) {
 		pointer-events: none;
 		z-index: 1;
 		background:
-			radial-gradient(ellipse at 50% 0%, rgba(10, 132, 255, 0.04), transparent 60%),
-			radial-gradient(ellipse at 80% 100%, rgba(255, 255, 255, 0.03), transparent 50%);
+			radial-gradient(ellipse at 50% 0%, rgb(var(--color-accent-rgb) / 0.04), transparent 60%),
+			radial-gradient(ellipse at 80% 100%, rgba(var(--card-sheen-rgb), 0.03), transparent 50%);
 	}
 
 	.home-hero-copy.glass-panel > * {
@@ -471,7 +471,7 @@ function isInternalHref(href: string) {
 			),
 			radial-gradient(
 				circle at 18% 20%,
-				rgba(10, 132, 255, calc(0.14 * var(--hero-opacity-scale))),
+				rgb(var(--color-accent-rgb) / calc(0.14 * var(--hero-opacity-scale))),
 				transparent 32%
 			);
 	}
@@ -496,7 +496,7 @@ function isInternalHref(href: string) {
 		right: -2rem;
 		width: 18rem;
 		height: 18rem;
-		background: radial-gradient(circle, rgba(10, 132, 255, 0.28), transparent 68%);
+		background: radial-gradient(circle, rgb(var(--color-accent-rgb) / 0.28), transparent 68%);
 		transform: translate3d(
 			calc(var(--hero-pointer-x) * -18px),
 			calc(var(--hero-pointer-y) * -14px),
@@ -509,7 +509,7 @@ function isInternalHref(href: string) {
 		bottom: -6rem;
 		width: 16rem;
 		height: 16rem;
-		background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 70%);
+		background: radial-gradient(circle, rgba(var(--card-sheen-rgb), 0.22), transparent 70%);
 		transform: translate3d(
 			calc(var(--hero-pointer-x) * 14px),
 			calc(var(--hero-pointer-y) * 10px),
@@ -520,8 +520,8 @@ function isInternalHref(href: string) {
 	.hero-grid {
 		inset: 0;
 		background-image:
-			linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+			linear-gradient(rgba(var(--card-sheen-rgb), 0.04) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(var(--card-sheen-rgb), 0.04) 1px, transparent 1px);
 		background-size: 3.25rem 3.25rem;
 		mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 88%);
 		opacity: 0.3;
@@ -540,7 +540,7 @@ function isInternalHref(href: string) {
 		background: linear-gradient(
 			180deg,
 			rgba(255, 255, 255, 0),
-			rgba(255, 255, 255, 0.14),
+			rgba(var(--card-sheen-rgb), 0.14),
 			rgba(255, 255, 255, 0)
 		);
 		opacity: 0.3;
@@ -580,13 +580,13 @@ function isInternalHref(href: string) {
 	.hero-main-media {
 		position: relative;
 		border-radius: calc(var(--radius-card) + 4px);
-		border: 1px solid rgba(255, 255, 255, 0.14);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.14);
 		background:
-			linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
-			radial-gradient(circle at 16% 24%, rgba(10, 132, 255, 0.24), transparent 52%);
+			linear-gradient(145deg, rgba(var(--card-sheen-rgb), 0.22), rgba(var(--card-sheen-rgb), 0.08)),
+			radial-gradient(circle at 16% 24%, rgb(var(--color-accent-rgb) / 0.24), transparent 52%);
 		overflow: hidden;
 		min-height: clamp(8.8rem, 22vh, 14rem);
-		box-shadow: 0 22px 44px -34px rgba(8, 18, 34, 0.34);
+		box-shadow: 0 22px 44px -34px rgba(var(--color-shadow-strong), 0.38);
 		transform:
 			perspective(1200px)
 			rotateX(var(--tilt-rotate-x, 0deg))
@@ -609,14 +609,14 @@ function isInternalHref(href: string) {
 		background:
 			linear-gradient(
 				128deg,
-				rgba(255, 255, 255, 0.18) 0%,
-				rgba(255, 255, 255, 0.04) 42%,
+				rgba(var(--card-sheen-rgb), 0.18) 0%,
+				rgba(var(--card-sheen-rgb), 0.04) 42%,
 				rgba(255, 255, 255, 0) 100%
 			),
 			repeating-linear-gradient(
 				115deg,
-				rgba(255, 255, 255, 0.1) 0 11px,
-				rgba(255, 255, 255, 0.03) 11px 22px
+				rgba(var(--card-sheen-rgb), 0.1) 0 11px,
+				rgba(var(--card-sheen-rgb), 0.03) 11px 22px
 			);
 		transform: translate3d(
 			calc(var(--tilt-shift-x, 0) * -5px),
@@ -629,8 +629,8 @@ function isInternalHref(href: string) {
 	.hero-main-media-has-image::before {
 		background: linear-gradient(
 			180deg,
-			rgba(15, 23, 42, 0.12),
-			rgba(15, 23, 42, 0.24)
+			rgba(var(--color-shadow), 0.12),
+			rgba(var(--color-shadow-strong), 0.24)
 		);
 	}
 
@@ -655,9 +655,9 @@ function isInternalHref(href: string) {
 		bottom: 0.75rem;
 		padding: 0.36rem 0.62rem;
 		border-radius: 999px;
-		border: 1px solid rgba(255, 255, 255, 0.18);
-		background: rgba(15, 23, 42, 0.3);
-		color: rgba(255, 255, 255, 0.78);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.18);
+		background: rgba(var(--color-shadow-strong), 0.3);
+		color: rgba(var(--card-sheen-rgb), 0.78);
 		font-size: 0.72rem;
 		letter-spacing: 0.08em;
 		transform: translate3d(
@@ -704,8 +704,8 @@ function isInternalHref(href: string) {
 		margin-left: 0.4rem;
 		padding: 0.1em 0.4em;
 		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.24);
-		background: rgba(255, 255, 255, 0.1);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.24);
+		background: rgba(var(--card-sheen-rgb), 0.1);
 		font-size: 0.68rem;
 		font-weight: 500;
 		letter-spacing: 0.04em;
@@ -715,27 +715,27 @@ function isInternalHref(href: string) {
 
 	.hero-actions .button-secondary {
 		border: none;
-		background: rgba(255, 255, 255, 0.13);
+		background: rgba(var(--card-sheen-rgb), 0.13);
 	}
 
 	.hero-actions .button-secondary:hover {
-		background: rgba(255, 255, 255, 0.19);
+		background: rgba(var(--card-sheen-rgb), 0.19);
 	}
 
 	.hero-actions .button-secondary {
 		border: none;
-		background: rgba(255, 255, 255, 0.13);
+		background: rgba(var(--card-sheen-rgb), 0.13);
 	}
 
 	.hero-actions .button-secondary:hover {
-		background: rgba(255, 255, 255, 0.19);
+		background: rgba(var(--card-sheen-rgb), 0.19);
 	}
 
 	.home-hero-side {
 		padding: 0.35rem;
 		border-radius: var(--radius-card);
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(var(--card-sheen-rgb), 0.05);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.08);
 	}
 
 	.hero-body > * {
@@ -773,7 +773,7 @@ function isInternalHref(href: string) {
 		background: linear-gradient(
 			90deg,
 			var(--color-accent),
-			rgba(10, 132, 255, 0.2)
+			rgb(var(--color-accent-rgb) / 0.2)
 		);
 		margin-top: 0.2rem;
 	}
@@ -802,21 +802,21 @@ function isInternalHref(href: string) {
 	}
 
 		.hero-signal-card {
-			--hero-signal-pane-bg: rgba(255, 255, 255, 0.24);
-			--hero-signal-pane-border: rgba(255, 255, 255, 0.36);
-			--hero-signal-label-bg: rgba(255, 255, 255, 0.3);
-			--hero-signal-label-border: rgba(255, 255, 255, 0.34);
-			--hero-signal-chip-bg: rgba(255, 255, 255, 0.3);
-			--hero-signal-chip-border: rgba(255, 255, 255, 0.3);
+			--hero-signal-pane-bg: rgba(var(--card-sheen-rgb), 0.24);
+			--hero-signal-pane-border: rgba(var(--card-sheen-rgb), 0.36);
+			--hero-signal-label-bg: rgba(var(--card-sheen-rgb), 0.3);
+			--hero-signal-label-border: rgba(var(--card-sheen-rgb), 0.34);
+			--hero-signal-chip-bg: rgba(var(--card-sheen-rgb), 0.3);
+			--hero-signal-chip-border: rgba(var(--card-sheen-rgb), 0.3);
 			position: relative;
 			display: block;
 			height: 100%;
 			border-radius: calc(var(--radius-card) + 4px);
 			background:
-				linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)),
-				radial-gradient(circle at 18% 18%, rgba(10, 132, 255, 0.12), transparent 42%);
-			border: 1px solid rgba(255, 255, 255, 0.16);
-			box-shadow: 0 24px 50px -34px rgba(8, 18, 34, 0.3);
+				linear-gradient(145deg, rgba(var(--card-sheen-rgb), 0.18), rgba(var(--card-sheen-rgb), 0.06)),
+				radial-gradient(circle at 18% 18%, rgb(var(--color-accent-rgb) / 0.12), transparent 42%);
+			border: 1px solid rgba(var(--card-sheen-rgb), 0.16);
+			box-shadow: 0 24px 50px -34px rgba(var(--color-shadow-strong), 0.34);
 			overflow: hidden;
 			transform:
 				perspective(1200px)
@@ -835,26 +835,26 @@ function isInternalHref(href: string) {
 
 		:global([data-theme="dark"]) .hero-signal-card {
 			--hero-signal-pane-bg: rgba(9, 18, 32, 0.3);
-			--hero-signal-pane-border: rgba(255, 255, 255, 0.24);
-			--hero-signal-label-bg: rgba(255, 255, 255, 0.14);
-			--hero-signal-label-border: rgba(255, 255, 255, 0.14);
-			--hero-signal-chip-bg: rgba(255, 255, 255, 0.16);
-			--hero-signal-chip-border: rgba(255, 255, 255, 0.16);
+			--hero-signal-pane-border: rgba(var(--card-sheen-rgb), 0.24);
+			--hero-signal-label-bg: rgba(var(--card-sheen-rgb), 0.14);
+			--hero-signal-label-border: rgba(var(--card-sheen-rgb), 0.14);
+			--hero-signal-chip-bg: rgba(var(--card-sheen-rgb), 0.16);
+			--hero-signal-chip-border: rgba(var(--card-sheen-rgb), 0.16);
 		}
 
 		@media (prefers-color-scheme: dark) {
 			:global(:root:not([data-theme="light"])) .hero-signal-card {
 				--hero-signal-pane-bg: rgba(9, 18, 32, 0.3);
-				--hero-signal-pane-border: rgba(255, 255, 255, 0.24);
-				--hero-signal-label-bg: rgba(255, 255, 255, 0.14);
-				--hero-signal-label-border: rgba(255, 255, 255, 0.14);
-				--hero-signal-chip-bg: rgba(255, 255, 255, 0.16);
-				--hero-signal-chip-border: rgba(255, 255, 255, 0.16);
+				--hero-signal-pane-border: rgba(var(--card-sheen-rgb), 0.24);
+				--hero-signal-label-bg: rgba(var(--card-sheen-rgb), 0.14);
+				--hero-signal-label-border: rgba(var(--card-sheen-rgb), 0.14);
+				--hero-signal-chip-bg: rgba(var(--card-sheen-rgb), 0.16);
+				--hero-signal-chip-border: rgba(var(--card-sheen-rgb), 0.16);
 			}
 		}
 
 		.hero-signal-card-has-image {
-			background: rgba(255, 255, 255, 0.1);
+			background: rgba(var(--card-sheen-rgb), 0.1);
 			display: flex;
 			flex-direction: column;
 			justify-content: flex-end;
@@ -914,7 +914,7 @@ function isInternalHref(href: string) {
 		width: 11rem;
 		height: 11rem;
 		border-radius: 50%;
-		background: radial-gradient(circle, rgba(10, 132, 255, 0.16), transparent 70%);
+		background: radial-gradient(circle, rgb(var(--color-accent-rgb) / 0.16), transparent 70%);
 		filter: blur(14px);
 			opacity: 0.55;
 			transform: translate3d(
@@ -991,8 +991,8 @@ function isInternalHref(href: string) {
 		gap: 0.35rem;
 		padding: 1.15rem 1.2rem;
 		border-radius: var(--radius-inner);
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(var(--card-sheen-rgb), 0.05);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.08);
 		backdrop-filter: blur(10px) saturate(120%);
 		-webkit-backdrop-filter: blur(10px) saturate(120%);
 		transform: translate3d(0, 0, 0);
@@ -1011,9 +1011,9 @@ function isInternalHref(href: string) {
 
 	.hero-metric:hover {
 		transform: translate3d(0, -4px, 0);
-		background: rgba(255, 255, 255, 0.1);
-		border-color: rgba(255, 255, 255, 0.14);
-		box-shadow: 0 18px 34px -28px rgba(8, 18, 34, 0.22);
+		background: rgba(var(--card-sheen-rgb), 0.1);
+		border-color: rgba(var(--card-sheen-rgb), 0.14);
+		box-shadow: 0 18px 34px -28px rgba(var(--color-shadow-strong), 0.26);
 	}
 
 	.hero-metric span {
@@ -1069,7 +1069,7 @@ function isInternalHref(href: string) {
 
 	.tags-nav-pill:hover {
 		background: rgba(var(--card-surface-rgb), 0.16);
-		border-color: rgba(10, 132, 255, 0.24);
+		border-color: rgb(var(--color-accent-rgb) / 0.24);
 		color: var(--color-text);
 		transform: translateY(-1px);
 	}

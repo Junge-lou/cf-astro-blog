@@ -149,8 +149,8 @@ try {
 	.friend-link-item {
 		padding: 0.9rem;
 		border-radius: var(--radius-inner);
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(var(--card-sheen-rgb), 0.06);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.1);
 	}
 
 	.friend-link-meta {
@@ -166,8 +166,8 @@ try {
 		overflow: hidden;
 		display: grid;
 		place-items: center;
-		background: rgba(10, 132, 255, 0.14);
-		border: 1px solid rgba(10, 132, 255, 0.26);
+		background: rgb(var(--color-accent-rgb) / 0.14);
+		border: 1px solid rgb(var(--color-accent-rgb) / 0.26);
 		font-weight: 700;
 		color: var(--color-text);
 		flex-shrink: 0;
@@ -232,8 +232,8 @@ try {
 		width: 2rem;
 		height: 2rem;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.12);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(var(--card-sheen-rgb), 0.12);
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
 		font-size: 1.2rem;
 		color: var(--color-accent-hover);
 		transition:
@@ -245,7 +245,7 @@ try {
 	.friend-apply-link:hover .friend-apply-icon {
 		transform: rotate(90deg);
 		background: var(--color-accent-soft);
-		border-color: rgba(10, 132, 255, 0.16);
+		border-color: rgb(var(--color-accent-rgb) / 0.16);
 	}
 
 	@media (max-width: 768px) {

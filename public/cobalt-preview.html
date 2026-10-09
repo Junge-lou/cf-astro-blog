@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>钴蓝玻璃特效预览</title>
+<style>
+  /*
+   * 独立预览页：不参与站点构建，可随时删除。
+   * 目的是在没有构建/截图环境时，用真实浏览器确认钴蓝玻璃的观感与对比度。
+   * 色值与铺法与 src/styles/global.css、src/styles/post-card.css 保持一致。
+   */
+  :root {
+    --color-bg: #e4eefd;
+    --color-text: #101828;
+    --color-text-secondary: #3a4357;
+    --color-text-muted: #5c6578;
+    --color-border: rgb(0 71 171 / 0.14);
+    --color-accent: #0047ab;
+    --color-accent-rgb: 0 71 171;
+    --color-accent-hover: #003a8c;
+    --color-accent-soft: rgb(var(--color-accent-rgb) / 0.14);
+    --card-surface-rgb: 228, 238, 253;
+    --card-sheen-rgb: 236, 244, 255;
+    --glass-surface-rgb: 228, 238, 253;
+    --glass-panel-opacity: 0.14;
+    --glass-tint-rgb: 0 71 171;
+    /*
+     * 这两个渐变刻意定义在 body / .glass-panel::after 自己的作用域，而不是 :root：
+     * 自定义属性里的 var() 在定义它的元素上就完成替换，:root 读不到面板自己的
+     * 不透明度变量，会让所有面板退化成 fallback 值。
+     */
+    --glass-edge: rgb(var(--color-accent-rgb) / 0.2);
+    --radius-panel: 34px;
+    --shadow-card: 0 18px 40px -30px rgb(0 31 82 / 0.2), 0 6px 18px -12px rgb(0 31 82 / 0.12);
+  }
+
+  [data-theme="dark"] {
+    --color-bg: #061424;
+    --color-text: #eef4ff;
+    --color-text-secondary: #d4ddec;
+    --color-text-muted: #a2aec6;
+    --color-border: rgb(107 155 255 / 0.2);
+    --color-accent: #6b9bff;
+    --color-accent-rgb: 107 155 255;
+    --color-accent-hover: #9dbdff;
+    --color-accent-soft: rgb(var(--color-accent-rgb) / 0.16);
+    --card-surface-rgb: 20, 34, 60;
+    --card-sheen-rgb: 126, 170, 255;
+    --glass-surface-rgb: 20, 34, 60;
+    --glass-tint-rgb: 107 155 255;
+    --glass-edge: rgb(var(--color-accent-rgb) / 0.22);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    --glass-tint-opacity: clamp(0.14, calc(0.14 * 0.55), 0.3);
+    --glass-tint-soft: linear-gradient(
+      160deg,
+      rgb(var(--glass-tint-rgb) / calc(var(--glass-tint-opacity) * 0.5)),
+      transparent 62%
+    );
+    margin: 0;
+    padding: 2.5rem 1.5rem 4rem;
+    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, "Segoe UI", sans-serif;
+    color: var(--color-text);
+    line-height: 1.7;
+    background: var(--color-bg);
+  }
+
+  /* 模拟站点的背景图层，用来观察玻璃对底图的采样与染色 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 14% 10%, rgb(0 71 171 / 0.14), transparent 24%),
+      radial-gradient(circle at 84% 12%, rgba(var(--card-sheen-rgb), 0.28), transparent 20%),
+      radial-gradient(circle at 48% 100%, rgb(0 71 171 / 0.08), transparent 26%),
+      linear-gradient(180deg, rgba(var(--card-sheen-rgb), 0.32), transparent 30%);
+  }
+
+  [data-theme="dark"] body::before {
+    background:
+      radial-gradient(circle at 14% 10%, rgb(107 155 255 / 0.16), transparent 26%),
+      radial-gradient(circle at 84% 12%, rgba(var(--card-sheen-rgb), 0.14), transparent 22%),
+      radial-gradient(circle at 48% 100%, rgb(107 155 255 / 0.1), transparent 28%);
+  }
+
+  .shell { max-width: 900px; margin-inline: auto; }
+
+  header.page-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  h1 { font-size: 1.5rem; margin: 0; letter-spacing: -0.02em; }
+  h2 { font-size: 1.05rem; margin: 2.2rem 0 0.9rem; color: var(--color-text-secondary); }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--glass-tint-soft), rgba(var(--card-surface-rgb), 0.3);
+    color: var(--color-text);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* ── 导航栏胶囊：复刻 .site-nav::before ── */
+  .nav-shell {
+    position: relative;
+    border-radius: 999px;
+    margin-bottom: 2.5rem;
+    overflow: hidden;
+  }
+
+  .nav-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1px solid var(--color-border);
+    background: var(--glass-tint-soft), rgba(var(--card-surface-rgb), 0.14);
+    backdrop-filter: blur(18px) saturate(125%);
+    -webkit-backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .nav-shell-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.88rem 1.18rem;
+  }
+
+  .nav-link {
+    font-size: 0.92rem;
+    color: var(--color-text-secondary);
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+
+  .nav-link.active {
+    color: var(--color-accent);
+    background: rgb(var(--color-accent-rgb) / 0.08);
+    border-color: rgb(var(--color-accent-rgb) / 0.12);
+  }
+
+  .brand-mark {
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 4px;
+    margin-right: auto;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    background: rgb(var(--color-accent-rgb) / 0.1);
+    border: 1px solid rgb(var(--color-accent-rgb) / 0.18);
+    box-shadow: 0 12px 28px -24px rgb(var(--color-accent-rgb) / 0.45);
+    color: var(--color-accent);
+  }
+
+  /* ── 通用玻璃面板：复刻 .glass-panel + ::after / ::before ── */
+  .glass-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: var(--shadow-card);
+    padding: 1.4rem 1.5rem;
+  }
+
+  .glass-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    --glass-tint-strong: linear-gradient(
+      150deg,
+      rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--glass-panel-opacity) * 0.55), 0.3)),
+      rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-panel-opacity) * 0.15), 0.12)) 58%,
+      transparent
+    );
+    background:
+      var(--glass-tint-strong),
+      rgba(var(--card-surface-rgb), calc(var(--glass-panel-opacity) * 0.82));
+    backdrop-filter: blur(24px) saturate(145%);
+    -webkit-backdrop-filter: blur(24px) saturate(145%);
+    box-shadow:
+      inset 0 0 0 1px var(--glass-edge),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      180deg,
+      rgba(var(--card-sheen-rgb), 0.12),
+      rgba(var(--card-sheen-rgb), 0.03) 22%,
+      transparent 100%
+    );
+    box-shadow: inset 0 1px 0 rgb(var(--glass-tint-rgb) / 0.22);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .glass-panel > * { position: relative; z-index: 2; margin: 0; }
+  .glass-panel p + p { margin-top: 0.5rem; }
+
+  /* ── 文章卡片：复刻 .post-card.glass-panel::after ── */
+  .post-card {
+    --post-card-opacity: 14;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    border: 1px solid var(--color-border);
+    backdrop-filter: blur(24px) saturate(100%);
+    -webkit-backdrop-filter: blur(24px) saturate(100%);
+    min-height: 11rem;
+  }
+
+  .post-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    --glass-tint-strong: linear-gradient(
+      150deg,
+      rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--post-card-opacity) / 100 * 0.55), 0.3)),
+      rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--post-card-opacity) / 100 * 0.15), 0.12)) 58%,
+      transparent
+    );
+    background:
+      var(--glass-tint-strong),
+      rgba(var(--card-surface-rgb), calc(var(--post-card-opacity) / 100 * 0.82));
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .post-card-body { position: relative; z-index: 2; padding: 1.2rem 1.3rem; }
+  .post-card-title { font-size: 1.2rem; font-weight: 700; margin: 0 0 0.4rem; }
+  .post-card-meta { color: var(--color-text-muted); font-size: 0.86rem; margin: 0; }
+  .post-card-more { color: var(--color-accent); font-weight: 600; font-size: 0.9rem; }
+
+  /* ── 对照区：同样参数但不加钴蓝染色，便于 A/B ── */
+  .neutral-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: var(--shadow-card);
+    padding: 1.4rem 1.5rem;
+    margin-top: 0.6rem;
+  }
+
+  .neutral-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(var(--card-surface-rgb), calc(var(--glass-panel-opacity) * 0.82));
+    backdrop-filter: blur(24px) saturate(145%);
+    -webkit-backdrop-filter: blur(24px) saturate(145%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .neutral-panel > * { position: relative; z-index: 2; margin: 0; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+  .swatch {
+    flex: 1 1 8rem;
+    border-radius: 14px;
+    padding: 0.7rem 0.8rem;
+    font-size: 0.8rem;
+    color: #fff;
+    min-height: 4.2rem;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 0.7rem 1.2rem;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: #f8fbff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 14px 32px -24px rgb(var(--color-accent-rgb) / 0.45);
+  }
+
+  .scale {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.8rem;
+  }
+
+  .scale div {
+    height: 1.6rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    padding-left: 0.5rem;
+    line-height: 1.6rem;
+    color: var(--color-text);
+    background: rgb(var(--color-accent-rgb) / var(--a));
+  }
+
+  .note {
+    font-size: 0.84rem;
+    color: var(--color-text-muted);
+    margin-top: 0.7rem;
+  }
+
+  code {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 0.86em;
+    background: rgb(var(--color-accent-rgb) / 0.1);
+    border-radius: 6px;
+    padding: 0.1rem 0.36rem;
+  }
+
+  /* ── 背景图与面板不透明度演示 ──
+   * 用 URL 参数模拟外观设置里的几个滑块（省略则用站点新默认值）：
+   *   ?bg=0.5      背景图不透明度（对应「背景透明度」，越低越透明）
+   *   ?blur=0      背景高斯模糊 px
+   *   ?panel=17    面板不透明度 %
+   * 例：cobalt-preview.html?bg=0.98&blur=0&panel=17   （背景图细节最大化，但文字不可读）
+   */
+  .site-background-image {
+    position: fixed;
+    inset: -8%;
+    width: 116%;
+    height: 116%;
+    z-index: -2;
+    object-fit: cover;
+    object-position: center center;
+    opacity: var(--bg-opacity, 0.72);
+    filter: blur(var(--bg-blur, 24px)) saturate(1.2);
+    transform: scale(var(--bg-scale, 1.12));
+    pointer-events: none;
+  }
+
+  .demo-note {
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 0.8rem 0.9rem;
+    margin: 1rem 0 0;
+    font-size: 0.86rem;
+    background: var(--glass-tint-soft), rgb(var(--card-surface-rgb) / 0.3);
+  }
+
+  .demo-note b { font-variant-numeric: tabular-nums; }
+
+  .demo-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+
+  .demo-links a {
+    font-size: 0.82rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    color: var(--color-accent);
+    background: rgb(var(--color-accent-rgb) / 0.08);
+  }
+
+  .demo-links a.on {
+    background: rgb(var(--color-accent-rgb) / 0.18);
+    border-color: rgb(var(--color-accent-rgb) / 0.4);
+  }
+</style>
+</head>
+
+<body>
+<img class="site-background-image" alt="" aria-hidden="true"
+     src="https://ffaff.fun/media/posts/draft/cover/2026-10-08/0cf2609b-0ade-4cba-a48b-eab539a77da0.webp" />
+<div class="shell">
+  <header class="page-head">
+    <h1>钴蓝玻璃特效预览</h1>
+    <button type="button" id="theme-toggle">切换亮/暗色</button>
+  </header>
+
+  <div class="nav-shell">
+    <div class="nav-shell-inner">
+      <span class="brand-mark">IW</span>
+      <a class="nav-link active">首页</a>
+      <a class="nav-link">归档</a>
+      <a class="nav-link">搜索</a>
+      <a class="nav-link">友链</a>
+    </div>
+  </div>
+
+  <h2>背景图完全透明演示</h2>
+  <p class="note">
+    下面这条 <code>--bg-opacity</code> 就是外观设置里「背景透明度」滑块控制的量。
+    注意：站点的背景图本身<strong>没有任何覆盖层</strong>（有背景图时 <code>.site-background::before/::after</code> 被设为 <code>background: none</code>），
+    所以它天然就是「完全透明呈现」的；遮住它的其实是模糊和上层卡片的半透明底色。
+  </p>
+  <div class="demo-note">
+    <p>当前：背景图 <b id="demo-bg-val">—</b> · 模糊 <b id="demo-blur-val">—</b> · 面板 <b id="demo-panel-val">—</b></p>
+    <div class="demo-links" id="demo-presets">
+      <a href="?bg=0.5&blur=0&panel=17">新默认：背景50% / 模糊0 / 面板17%</a>
+      <a href="?bg=0.98&blur=0&panel=17">线上当前：背景98% / 模糊0（文字读不清）</a>
+      <a href="?bg=1&blur=0&panel=17">背景满不透明</a>
+      <a href="?bg=0.72&blur=24&panel=14">更早的旧默认（背景72% / 模糊24）</a>
+    </div>
+  </div>
+
+  <h2>导航栏胶囊（钴蓝染色玻璃）</h2>
+  <p class="note">对应 <code>.site-nav::before</code> 的 <code>--nav-shell-open-surface</code>，使用较淡的 <code>--glass-tint-soft</code>。</p>
+
+  <h2>玻璃面板 A/B 对照</h2>
+  <div class="glass-panel">
+    <p><strong>加钴蓝染色（已生效的样式）</strong></p>
+    <p>玻璃层叠了一层钴蓝渐变，内缘有一道冷色描边，顶缘高光也混入了钴蓝。</p>
+  </div>
+  <div class="neutral-panel">
+    <p><strong>未染色（改前的样子）</strong></p>
+    <p>同样的模糊与不透明度，但只用中性白表面，便于对比冷调差异。</p>
+  </div>
+
+  <h2>文章卡片</h2>
+  <div class="post-card">
+    <div class="post-card-body">
+      <p class="post-card-title">把工程判断写清楚，把技术细节写漂亮</p>
+      <p class="post-card-meta">2026 年 5 月 9 日 · 工程随笔</p>
+      <p class="post-card-more">继续阅读 →</p>
+    </div>
+  </div>
+
+  <h2>色板与按钮</h2>
+  <div class="swatches">
+    <div class="swatch" style="background: #0047ab">#0047ab<br />浅色主题 accent</div>
+    <div class="swatch" style="background: #003a8c">#003a8c<br />hover</div>
+    <div class="swatch" style="background: #6b9bff; color: #101828">#6b9bff<br />暗色主题 accent</div>
+    <div class="swatch" style="background: #9dbdff; color: #101828">#9dbdff<br />暗色 hover</div>
+  </div>
+  <p class="note" style="margin-top: 1rem"><span class="btn-primary">主按钮</span></p>
+
+  <h2>半透明叠加层级</h2>
+  <div class="scale">
+    <div style="--a: 0.02">alpha 0.02 — 分隔线与极淡底</div>
+    <div style="--a: 0.08">alpha 0.08 — 悬停底色、导航项激活</div>
+    <div style="--a: 0.14">alpha 0.14 — accent-soft、头像/图标底</div>
+    <div style="--a: 0.28">alpha 0.28 — 封面叠加、强调</div>
+    <div style="--a: 0.46">alpha 0.46 — 焦点环</div>
+  </div>
+
+  <p class="note">
+    本页是独立文件，不参与构建；确认观感后可以直接删除。
+    若要调整冷调强度，改 <code>--glass-tint-opacity</code>；改色相或深浅，改 <code>--glass-tint-rgb</code>。
+  </p>
+</div>
+
+<script>
+  var root = document.documentElement;
+  var saved = null;
+  try { saved = localStorage.getItem("preview-theme"); } catch (e) {}
+  if (saved === "dark" || saved === "light") root.setAttribute("data-theme", saved);
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("preview-theme", next); } catch (e) {}
+  });
+
+  /* 用 URL 参数模拟外观设置滑块：?bg=<0..1>&blur=<px>&panel=<0..100> */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    var bg = p.has("bg") ? parseFloat(p.get("bg")) : null;
+    var blur = p.has("blur") ? parseFloat(p.get("blur")) : null;
+    var panel = p.has("panel") ? parseFloat(p.get("panel")) : null;
+    if (!isFinite(bg)) bg = null;
+    if (!isFinite(blur)) blur = null;
+    if (!isFinite(panel)) panel = null;
+
+    var img = document.querySelector(".site-background-image");
+    if (bg !== null) img.style.setProperty("--bg-opacity", bg);
+    if (blur !== null) img.style.setProperty("--bg-blur", blur + "px");
+
+    if (panel !== null) {
+      var a = panel / 100;
+      /* 镜像 global.css 里 :root 的计算：玻璃染色强度由面板不透明度推导 */
+      var tint = Math.min(0.3, Math.max(0.14, a * 0.55));
+      var tint2 = Math.min(0.12, Math.max(0.04, a * 0.15));
+      var tintRgb = "0 71 171";
+      var st = document.createElement("style");
+      st.textContent =
+        ":root{--glass-panel-opacity:" + a + ";--post-card-opacity:" + panel + ";" +
+        "--glass-tint-opacity:" + tint + ";" +
+        "--glass-tint-strong:linear-gradient(150deg, rgb(" + tintRgb + " / " + tint + "), rgb(" + tintRgb + " / " + tint2 + ") 58%, transparent);}" +
+        ".post-card::after{--glass-tint-strong:linear-gradient(150deg, rgb(" + tintRgb + " / " + tint + "), rgb(" + tintRgb + " / " + tint2 + ") 58%, transparent);}";
+      document.head.appendChild(st);
+    }
+
+    function txt(v, fb) { return v === null ? fb : v; }
+    document.getElementById("demo-bg-val").textContent = (txt(bg, 0.5) * 100).toFixed(0) + "%";
+    document.getElementById("demo-blur-val").textContent = txt(blur, 0) + "px";
+    document.getElementById("demo-panel-val").textContent = txt(panel, 17) + "%";
+  })();
+</script>
+</body>
+</html>

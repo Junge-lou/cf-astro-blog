@@ -138,8 +138,8 @@ function buildFrontmatter(row) {
 	if (
 		row.background_mode !== "global" ||
 		row.background_image_key ||
-		row.background_opacity !== 72 ||
-		row.background_blur !== 24 ||
+		row.background_opacity !== 50 ||
+		row.background_blur !== 0 ||
 		row.background_scale !== 112 ||
 		row.background_position_x !== 50 ||
 		row.background_position_y !== 50
@@ -148,8 +148,8 @@ function buildFrontmatter(row) {
 		lines.push(`backgroundMode: ${row.background_mode || "global"}`);
 		if (row.background_image_key)
 			lines.push(`backgroundImageKey: ${yamlValue(row.background_image_key)}`);
-		if (row.background_opacity !== 72) lines.push(`backgroundOpacity: ${row.background_opacity}`);
-		if (row.background_blur !== 24) lines.push(`backgroundBlur: ${row.background_blur}`);
+		if (row.background_opacity !== 50) lines.push(`backgroundOpacity: ${row.background_opacity}`);
+		if (row.background_blur !== 0) lines.push(`backgroundBlur: ${row.background_blur}`);
 		if (row.background_scale !== 112) lines.push(`backgroundScale: ${row.background_scale}`);
 		if (row.background_position_x !== 50)
 			lines.push(`backgroundPositionX: ${row.background_position_x}`);

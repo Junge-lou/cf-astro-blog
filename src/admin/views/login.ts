@@ -41,58 +41,70 @@ export function loginPage(options: LoginPageOptions = {}): string {
 	<script src="/theme.js"></script>
 	<style>
 		:root {
-			--color-bg: #edf3f8;
+			--color-bg: #e4eefd;
 			--color-text: #101828;
 			--color-text-secondary: #3a4357;
-			--color-text-muted: #6d7688;
-			--color-border: rgba(15, 23, 42, 0.08);
-			--color-accent: #0a84ff;
-			--color-accent-hover: #0066cc;
-			--card-surface-rgb: 255, 255, 255;
-			--card-sheen-rgb: 255, 255, 255;
+			--color-text-muted: #5c6578;
+			--color-border: rgb(0 71 171 / 0.14);
+			--color-accent: #0047ab;
+			--color-accent-hover: #003a8c;
+			--color-accent-rgb: 0 71 171;
+			--card-surface-rgb: 228, 238, 253;
+			--card-sheen-rgb: 236, 244, 255;
+			--glass-surface-rgb: 228, 238, 253;
+			--glass-tint-rgb: 0 71 171;
+			--glass-edge: rgb(var(--color-accent-rgb) / 0.18);
 			--shadow-card:
-				0 18px 40px -30px rgba(8, 18, 34, 0.18),
-				0 6px 18px -12px rgba(8, 18, 34, 0.12);
+				0 18px 40px -30px rgb(0 31 82 / 0.2),
+				0 6px 18px -12px rgb(0 31 82 / 0.12);
 			--radius-panel: 34px;
 			--radius-pill: 999px;
 			--font-sans:
 				"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB",
 				"Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-			--glow-a: rgba(126, 171, 255, 0.32);
-			--glow-b: rgba(100, 200, 255, 0.22);
+			--glow-a: rgb(0 86 179 / 0.34);
+			--glow-b: rgb(0 71 171 / 0.24);
 			--glass-opacity: 0.13;
 		}
 
 		/* JS 设置 data-theme 的精确覆盖 */
 		[data-theme="dark"] {
-			--color-bg: #040d17;
+			--color-bg: #061424;
 			--color-text: #eef4ff;
 			--color-text-secondary: #cad4e6;
 			--color-text-muted: #93a1bc;
-			--color-border: rgba(147, 161, 188, 0.14);
-			--color-accent: #57a6ff;
-			--color-accent-hover: #88c0ff;
-			--card-surface-rgb: 24, 36, 54;
-			--card-sheen-rgb: 142, 178, 224;
-			--glow-a: rgba(48, 100, 220, 0.42);
-			--glow-b: rgba(20, 60, 140, 0.34);
+			--color-border: rgb(107 155 255 / 0.2);
+			--color-accent: #6b9bff;
+			--color-accent-hover: #9dbdff;
+			--color-accent-rgb: 107 155 255;
+			--card-surface-rgb: 20, 34, 60;
+			--card-sheen-rgb: 126, 170, 255;
+			--glass-surface-rgb: 20, 34, 60;
+			--glass-tint-rgb: 107 155 255;
+			--glass-edge: rgb(var(--color-accent-rgb) / 0.22);
+			--glow-a: rgb(107 155 255 / 0.34);
+			--glow-b: rgb(60 105 205 / 0.38);
 			--glass-opacity: 0.16;
 		}
 
 		/* 系统深色模式兜底（未访问博客/无 localStorage 时）*/
 		@media (prefers-color-scheme: dark) {
 			:root:not([data-theme="light"]) {
-				--color-bg: #040d17;
+				--color-bg: #061424;
 				--color-text: #eef4ff;
 				--color-text-secondary: #cad4e6;
 				--color-text-muted: #93a1bc;
-				--color-border: rgba(147, 161, 188, 0.14);
-				--color-accent: #57a6ff;
-				--color-accent-hover: #88c0ff;
-				--card-surface-rgb: 24, 36, 54;
-				--card-sheen-rgb: 142, 178, 224;
-				--glow-a: rgba(48, 100, 220, 0.42);
-				--glow-b: rgba(20, 60, 140, 0.34);
+				--color-border: rgb(107 155 255 / 0.2);
+				--color-accent: #6b9bff;
+				--color-accent-hover: #9dbdff;
+				--color-accent-rgb: 107 155 255;
+				--card-surface-rgb: 20, 34, 60;
+				--card-sheen-rgb: 126, 170, 255;
+				--glass-surface-rgb: 20, 34, 60;
+				--glass-tint-rgb: 107 155 255;
+				--glass-edge: rgb(var(--color-accent-rgb) / 0.22);
+				--glow-a: rgb(107 155 255 / 0.34);
+				--glow-b: rgb(60 105 205 / 0.38);
 				--glass-opacity: 0.16;
 			}
 		}
@@ -122,10 +134,10 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			font-family: var(--font-sans);
 			color: var(--color-text);
 			background:
-				radial-gradient(circle at 14% 10%, rgba(126, 192, 255, 0.14), transparent 24%),
-				radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.24), transparent 20%),
-				radial-gradient(circle at 48% 100%, rgba(88, 192, 255, 0.08), transparent 26%),
-				linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 30%),
+				radial-gradient(circle at 14% 10%, rgb(0 71 171 / 0.14), transparent 24%),
+				radial-gradient(circle at 84% 12%, rgba(var(--card-sheen-rgb), 0.28), transparent 20%),
+				radial-gradient(circle at 48% 100%, rgb(0 71 171 / 0.08), transparent 26%),
+				linear-gradient(180deg, rgba(var(--card-sheen-rgb), 0.32), transparent 30%),
 				var(--color-bg);
 			position: relative;
 			min-height: 100dvh;
@@ -140,9 +152,9 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		/* 深色背景渐变（JS 设置 data-theme 时生效）*/
 		[data-theme="dark"] body {
 			background:
-				radial-gradient(circle at 14% 10%, rgba(30, 80, 200, 0.22), transparent 28%),
-				radial-gradient(circle at 84% 12%, rgba(10, 40, 100, 0.18), transparent 24%),
-				radial-gradient(circle at 48% 100%, rgba(20, 60, 160, 0.16), transparent 30%),
+				radial-gradient(circle at 14% 10%, rgb(107 155 255 / 0.16), transparent 28%),
+				radial-gradient(circle at 84% 12%, rgba(var(--card-sheen-rgb), 0.16), transparent 24%),
+				radial-gradient(circle at 48% 100%, rgb(107 155 255 / 0.1), transparent 30%),
 				var(--color-bg);
 		}
 
@@ -150,7 +162,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		@media (prefers-color-scheme: dark) {
 			:root:not([data-theme="light"]) body {
 				background:
-					radial-gradient(circle at 14% 10%, rgba(30, 80, 200, 0.22), transparent 28%),
+					radial-gradient(circle at 14% 10%, rgb(107 155 255 / 0.16), transparent 28%),
 					radial-gradient(circle at 84% 12%, rgba(10, 40, 100, 0.18), transparent 24%),
 					radial-gradient(circle at 48% 100%, rgba(20, 60, 160, 0.16), transparent 30%),
 					var(--color-bg);
@@ -256,17 +268,33 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		}
 
 		[data-theme="dark"] .entry-panel {
-			border-color: rgba(147, 161, 188, 0.12);
+			border-color: rgb(107 155 255 / 0.2);
 		}
 
+		/*
+		 * 玻璃主卡片：与前台 .glass-panel 用同一套钴蓝染色变量与铺法。
+		 * 渐变必须定义在 ::after 自身——var() 在定义它的元素上就完成替换，
+		 * 写在 :root 会读不到这里的 --glass-opacity。
+		 */
 		.entry-panel::after {
 			content: "";
 			position: absolute;
 			inset: 0;
 			border-radius: inherit;
-			background: rgba(var(--card-surface-rgb), var(--glass-opacity, 0.13));
+			--glass-tint-strong: linear-gradient(
+				150deg,
+				rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--glass-opacity, 0.13) * 0.55), 0.3)),
+				rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-opacity, 0.13) * 0.15), 0.12)) 58%,
+				transparent
+			);
+			background:
+				var(--glass-tint-strong),
+				rgba(var(--card-surface-rgb), var(--glass-opacity, 0.13));
 			backdrop-filter: blur(22px) saturate(148%);
 			-webkit-backdrop-filter: blur(22px) saturate(148%);
+			box-shadow:
+				inset 0 0 0 1px var(--glass-edge),
+				inset 0 1px 0 rgba(255, 255, 255, 0.16);
 			pointer-events: none;
 			z-index: 0;
 		}
@@ -282,6 +310,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 				rgba(var(--card-sheen-rgb), 0.04) 36%,
 				transparent 100%
 			);
+			box-shadow: inset 0 1px 0 rgb(var(--glass-tint-rgb) / 0.22);
 			pointer-events: none;
 			z-index: 1;
 		}
@@ -405,7 +434,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 
 		.entry-field-input:focus {
 			border-color: var(--color-accent);
-			box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+			box-shadow: 0 0 0 3px rgb(var(--color-accent-rgb) / 0.12);
 		}
 
 		.entry-field-input::placeholder {
@@ -463,17 +492,17 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		}
 
 		.entry-btn-primary {
-			border: 1px solid rgba(10, 132, 255, 0.15);
+			border: 1px solid rgb(var(--color-accent-rgb) / 0.15);
 			background: var(--color-accent);
 			color: #f0f7ff;
-			box-shadow: 0 12px 28px -20px rgba(10, 132, 255, 0.5);
+			box-shadow: 0 12px 28px -20px rgb(var(--color-accent-rgb) / 0.5);
 			flex: 1;
 		}
 
 		.entry-btn-primary:hover {
 			color: #ffffff;
 			background: var(--color-accent-hover);
-			box-shadow: 0 16px 32px -20px rgba(10, 132, 255, 0.45);
+			box-shadow: 0 16px 32px -20px rgb(var(--color-accent-rgb) / 0.45);
 		}
 
 		.entry-btn-primary[aria-disabled="true"] {

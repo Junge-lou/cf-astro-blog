@@ -32,20 +32,56 @@
 @import "@fontsource/space-grotesk/700.css";
 
 :root {
-	--color-bg: #edf3f8;
-	--color-bg-secondary: rgba(255, 255, 255, 0.34);
-	--color-bg-tertiary: rgba(255, 255, 255, 0.22);
-	--color-surface-elevated: rgba(255, 255, 255, 0.6);
+	/*
+	 * ── 全局钴蓝体系 ──────────────────────────────────────────────────────
+	 * 这是一块「钴玻璃」：连中性表面也带钴蓝，而不是灰底上刷一层蓝。
+	 * 下面每个值都落在同一色相 H≈215°，只在明度与饱和度上变化：
+	 *   #E4EEFD 浅钴白 → #DCE7F8 → #D3E2F8 → #0047AB → #003A8C
+	 * 现实依据：钴玻璃（C.I. 颜料蓝 28）打碎后本身就是蓝色的，透过它看
+	 * 一切都偏钴蓝，不存在"中性白玻璃"这一档。所以 --card-surface-rgb
+	 * （玻璃基色）和 --color-bg（兜底底色）都取带蓝的白，而不是纯白。
+	 *
+	 * 例外：文字与语义色（success/warning/danger）保持中立。文字偏蓝会伤
+	 * 长文可读性，语义色偏蓝会丢失"成功/警告/错误"的通用辨识度。
+	 */
+	--color-bg: #e4eefd;
+	--color-bg-secondary: rgb(var(--glass-surface-rgb) / 0.34);
+	--color-bg-tertiary: rgb(var(--glass-surface-rgb) / 0.22);
+	--color-surface-elevated: rgb(var(--glass-surface-rgb) / 0.6);
 	--color-text: #101828;
 	--color-text-secondary: #3a4357;
-	--color-text-muted: #6d7688;
+	--color-text-muted: #5c6578;
 	--color-text-placeholder: #4b556a;
-	--color-border: rgba(15, 23, 42, 0.08);
-	--color-accent: #0a84ff;
-	--color-accent-hover: #0066cc;
-	--color-accent-soft: rgba(10, 132, 255, 0.14);
-	--color-shadow: rgba(15, 23, 42, 0.12);
-	--color-shadow-strong: rgba(15, 23, 42, 0.2);
+	--color-border: rgb(0 71 171 / 0.14);
+	/*
+	 * 钴蓝（Cobalt Blue，C.I. 颜料蓝 28）：全站唯一色源。
+	 * --color-accent-rgb 以「空格分隔的 sRGB 通道」保存，供玻璃层与各处半透明
+	 * 叠加使用 `rgb(var(--color-accent-rgb) / <alpha>)`；改色只需改这一组。
+	 * 注意：不能用逗号分隔，否则 `rgb(var(--x) / .1)` 展开后语法非法。
+	 */
+	--color-accent: #0047ab;
+	--color-accent-rgb: 0 71 171;
+	--color-accent-hover: #003a8c;
+	--color-accent-soft: rgb(var(--color-accent-rgb) / 0.14);
+	/*
+	 * 玻璃层的钴蓝染色。玻璃面板本身是中性白（--card-surface-rgb）叠背景模糊，
+	 * 这里额外铺一层很淡的钴蓝渐变，让磨玻璃带出颜料蓝 28 的冷调；
+	 * --glass-tint-opacity 与面板不透明度联动并设上下限，避免用户把卡片调成
+	 * 全透明或全不透明时染色失控（全透明时靠 ::before 高光维持玻璃感）。
+	 */
+	--glass-tint-rgb: 0 71 171;
+	/*
+	 * 注意：--glass-tint-soft / --glass-tint-strong 这两个渐变不能定义在 :root。
+	 * 自定义属性里的 var() 会在**定义它的元素**上完成替换，而 :root 看不到
+	 * 面板自己的 --glass-panel-opacity，结果所有面板都会用 fallback（0.14），
+	 * 用户在外观设置里调的不透明度就对染色失效了。因此这两个渐变分别定义在
+	 * body（导航栏）与 .glass-panel::after（面板）自己的作用域里。
+	 */
+	--glass-edge: rgb(var(--color-accent-rgb) / 0.2);
+	--glass-surface-rgb: 228, 238, 253;
+	/* 阴影也并入钴蓝：纯黑阴影叠在钴玻璃上会发灰、显脏。 */
+	--color-shadow: rgb(0 31 82 / 0.14);
+	--color-shadow-strong: rgb(0 31 82 / 0.22);
 	--font-sans:
 		"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
 		-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -87,7 +123,7 @@
 	--radius-card: 28px;
 	--radius-inner: 24px;
 	--shadow-soft: 0 18px 48px -28px var(--color-shadow), 0 10px 18px -14px var(--color-shadow);
-	--shadow-card: 0 18px 40px -30px rgba(8, 18, 34, 0.18), 0 6px 18px -12px rgba(8, 18, 34, 0.12);
+	--shadow-card: 0 18px 40px -30px rgb(0 31 82 / 0.2), 0 6px 18px -12px rgb(0 31 82 / 0.14);
 	--transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 	--nav-motion-main: 520ms cubic-bezier(0.22, 1, 0.36, 1);
 	--nav-motion-surface: 420ms cubic-bezier(0.33, 1, 0.68, 1);
@@ -97,80 +133,87 @@
 	--nav-shell-condensed-inset-mobile: 0.5rem;
 	--nav-shell-condensed-radius: 999px;
 	--nav-shell-condensed-scale: 0.992;
-	--nav-shell-open-shadow: 0 10px 24px -26px rgba(8, 18, 34, 0.18);
-	--nav-shell-condensed-shadow: 0 18px 38px -28px rgba(8, 18, 34, 0.24);
-	--card-surface-rgb: 255, 255, 255;
-	--card-sheen-rgb: 255, 255, 255;
+	--nav-shell-open-shadow: 0 10px 24px -26px rgb(0 31 82 / 0.2);
+	--nav-shell-condensed-shadow: 0 18px 38px -28px rgb(0 31 82 / 0.26);
+	--card-surface-rgb: 228, 238, 253;
+	--card-sheen-rgb: 236, 244, 255;
 	--code-window-bg: rgba(10, 16, 28, 0.94);
 	--code-window-bg-soft: rgba(27, 39, 58, 0.58);
 	--code-window-header: rgba(255, 255, 255, 0.08);
 	--code-window-border: rgba(170, 192, 222, 0.26);
 	--code-window-text: #e8f0ff;
-	--code-window-chip-bg: rgba(255, 255, 255, 0.14);
-	--code-window-chip-border: rgba(255, 255, 255, 0.24);
+	--code-window-chip-bg: rgb(126 170 255 / 0.2);
+	--code-window-chip-border: rgb(126 170 255 / 0.3);
 	--code-window-copy-bg: rgba(255, 255, 255, 0.08);
-	--code-window-copy-bg-hover: rgba(87, 166, 255, 0.24);
+	--code-window-copy-bg-hover: rgb(107 155 255 / 0.24);
 	--code-window-copy-text: #dce8ff;
 	--footer-reveal-height: 0px;
 	--footer-reveal-space: 0px;
 }
 
 [data-theme="dark"] {
-	--color-bg: #040d17;
-	--color-bg-secondary: rgba(12, 22, 35, 0.38);
-	--color-bg-tertiary: rgba(16, 28, 44, 0.24);
-	--color-surface-elevated: rgba(15, 27, 43, 0.52);
+	--color-bg: #061424;
+	--color-bg-secondary: rgb(var(--glass-surface-rgb) / 0.38);
+	--color-bg-tertiary: rgb(var(--glass-surface-rgb) / 0.24);
+	--color-surface-elevated: rgb(var(--glass-surface-rgb) / 0.55);
 	--color-text: #eef4ff;
 	--color-text-secondary: #d4ddec;
 	--color-text-muted: #a2aec6;
 	--color-text-placeholder: #b6c4dc;
-	--color-border: rgba(147, 161, 188, 0.14);
-	--color-accent: #57a6ff;
-	--color-accent-hover: #88c0ff;
-	--color-accent-soft: rgba(87, 166, 255, 0.16);
-	--color-shadow: rgba(0, 0, 0, 0.38);
+	--color-border: rgb(107 155 255 / 0.2);
+	--color-accent: #6b9bff;
+	--color-accent-rgb: 107 155 255;
+	--color-accent-hover: #9dbdff;
+	--color-accent-soft: rgb(var(--color-accent-rgb) / 0.16);
+	--glass-tint-rgb: 107 155 255;
+	--glass-edge: rgb(var(--color-accent-rgb) / 0.22);
+	--glass-surface-rgb: 20, 34, 60;
+	--color-shadow: rgb(0 8 24 / 0.42);
 	--color-shadow-strong: rgba(0, 0, 0, 0.55);
-	--card-surface-rgb: 24, 36, 54;
-	--card-sheen-rgb: 142, 178, 224;
-	--code-window-bg: rgba(6, 12, 22, 0.96);
-	--code-window-bg-soft: rgba(16, 28, 46, 0.72);
+	--card-surface-rgb: 20, 34, 60;
+	--card-sheen-rgb: 126, 170, 255;
+	--code-window-bg: rgb(6 14 32 / 0.96);
+	--code-window-bg-soft: rgb(16 32 64 / 0.72);
 	--code-window-header: rgba(255, 255, 255, 0.06);
-	--code-window-border: rgba(142, 178, 224, 0.3);
+	--code-window-border: rgb(126 170 255 / 0.3);
 	--code-window-text: #eef4ff;
-	--code-window-chip-bg: rgba(142, 178, 224, 0.2);
-	--code-window-chip-border: rgba(142, 178, 224, 0.3);
+	--code-window-chip-bg: rgb(126 170 255 / 0.2);
+	--code-window-chip-border: rgb(126 170 255 / 0.3);
 	--code-window-copy-bg: rgba(255, 255, 255, 0.06);
-	--code-window-copy-bg-hover: rgba(87, 166, 255, 0.24);
+	--code-window-copy-bg-hover: rgb(107 155 255 / 0.24);
 	--code-window-copy-text: #dce8ff;
 }
 
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme="light"]) {
-		--color-bg: #07111f;
-		--color-bg-secondary: rgba(13, 24, 40, 0.7);
-		--color-bg-tertiary: rgba(15, 27, 44, 0.82);
-		--color-surface-elevated: rgba(17, 29, 48, 0.92);
+		--color-bg: #061424;
+		--color-bg-secondary: rgb(var(--glass-surface-rgb) / 0.7);
+		--color-bg-tertiary: rgb(var(--glass-surface-rgb) / 0.82);
+		--color-surface-elevated: rgb(var(--glass-surface-rgb) / 0.92);
 		--color-text: #eef4ff;
 		--color-text-secondary: #d4ddec;
 		--color-text-muted: #a2aec6;
 		--color-text-placeholder: #b6c4dc;
-		--color-border: rgba(147, 161, 188, 0.14);
-		--color-accent: #57a6ff;
-		--color-accent-hover: #88c0ff;
-		--color-accent-soft: rgba(87, 166, 255, 0.16);
-		--color-shadow: rgba(0, 0, 0, 0.38);
+		--color-border: rgb(107 155 255 / 0.2);
+		--color-accent: #6b9bff;
+		--color-accent-rgb: 107 155 255;
+		--color-accent-hover: #9dbdff;
+		--color-accent-soft: rgb(var(--color-accent-rgb) / 0.16);
+		--glass-tint-rgb: 107 155 255;
+		--glass-edge: rgb(var(--color-accent-rgb) / 0.22);
+		--glass-surface-rgb: 20, 34, 60;
 		--color-shadow-strong: rgba(0, 0, 0, 0.55);
-		--card-surface-rgb: 24, 36, 54;
-		--card-sheen-rgb: 142, 178, 224;
-		--code-window-bg: rgba(6, 12, 22, 0.96);
-		--code-window-bg-soft: rgba(16, 28, 46, 0.72);
+		--card-surface-rgb: 20, 34, 60;
+		--card-sheen-rgb: 126, 170, 255;
+		--code-window-bg: rgb(6 14 32 / 0.96);
+		--code-window-bg-soft: rgb(16 32 64 / 0.72);
 		--code-window-header: rgba(255, 255, 255, 0.06);
-		--code-window-border: rgba(142, 178, 224, 0.3);
+		--code-window-border: rgb(126 170 255 / 0.3);
 		--code-window-text: #eef4ff;
-		--code-window-chip-bg: rgba(142, 178, 224, 0.2);
-		--code-window-chip-border: rgba(142, 178, 224, 0.3);
+		--code-window-chip-bg: rgb(126 170 255 / 0.2);
+		--code-window-chip-border: rgb(126 170 255 / 0.3);
 		--code-window-copy-bg: rgba(255, 255, 255, 0.06);
-		--code-window-copy-bg-hover: rgba(87, 166, 255, 0.24);
+		--code-window-copy-bg-hover: rgb(107 155 255 / 0.24);
 		--code-window-copy-text: #dce8ff;
 	}
 }
@@ -203,11 +246,20 @@ body {
 	 */
 	--nav-shell-blur: var(--hero-card-blur, 18px);
 	--nav-shell-blur-effective: min(calc(var(--nav-shell-blur, 18px) * 1.05), 56px);
-	--nav-shell-open-surface: rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100));
-	--nav-shell-condensed-surface: rgba(
-		var(--card-surface-rgb),
-		calc(var(--hero-card-opacity, 14) / 100 * 0.9)
+	/* 导航栏染色渐变定义在 body：这里才能读到上面从 base-surface 继承的
+	 * --hero-card-opacity（与 --nav-shell-* 同一层，见上方注释）。 */
+	--glass-tint-opacity: clamp(0.14, calc(var(--hero-card-opacity, 14) / 100 * 0.55), 0.3);
+	--glass-tint-soft: linear-gradient(
+		160deg,
+		rgb(var(--glass-tint-rgb) / calc(var(--glass-tint-opacity) * 0.5)),
+		transparent 62%
 	);
+	--nav-shell-open-surface:
+		var(--glass-tint-soft),
+		rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100));
+	--nav-shell-condensed-surface:
+		var(--glass-tint-soft),
+		rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100 * 0.9));
 	min-height: 100dvh;
 	display: flex;
 	flex-direction: column;
@@ -217,10 +269,10 @@ body {
 	font-weight: 400;
 	line-height: 1.75;
 	background:
-		radial-gradient(circle at 14% 10%, rgba(126, 192, 255, 0.14), transparent 24%),
-		radial-gradient(circle at 84% 12%, rgba(255, 255, 255, 0.24), transparent 20%),
-		radial-gradient(circle at 48% 100%, rgba(88, 192, 255, 0.08), transparent 26%),
-		linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 30%), var(--color-bg);
+		radial-gradient(circle at 14% 10%, rgb(0 71 171 / 0.14), transparent 24%),
+		radial-gradient(circle at 84% 12%, rgba(var(--card-sheen-rgb), 0.28), transparent 20%),
+		radial-gradient(circle at 48% 100%, rgb(0 71 171 / 0.08), transparent 26%),
+		linear-gradient(180deg, rgba(var(--card-sheen-rgb), 0.32), transparent 30%), var(--color-bg);
 }
 
 body.site-shell-has-background-image {
@@ -264,7 +316,7 @@ body::before {
 body::after {
 	right: -8rem;
 	bottom: 8rem;
-	background: rgba(255, 255, 255, 0.24);
+	background: rgba(var(--card-sheen-rgb), 0.24);
 	animation-delay: -6s;
 }
 
@@ -448,6 +500,13 @@ h6 {
 	inset: 0;
 }
 
+/*
+ * 无背景图时的兜底氛围层。
+ * 注意：有背景图时这两层会被下面的 background: none 完全关闭
+ * （见 body.site-shell-has-background-image 规则），所以它们只影响
+ * "没设背景图"的状态。这两层刻意保留中性近黑而不是钴蓝：
+ * 它们的作用是给亮色系玻璃面板压出对比，改成钴蓝会让兜底状态偏色。
+ */
 .site-background::before {
 	background:
 		linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(4, 13, 23, 0.12)),
@@ -457,8 +516,8 @@ h6 {
 
 .site-background::after {
 	background:
-		radial-gradient(circle at 12% 14%, rgba(10, 132, 255, 0.08), transparent 26%),
-		radial-gradient(circle at 78% 14%, rgba(255, 255, 255, 0.12), transparent 20%),
+		radial-gradient(circle at 12% 14%, rgb(var(--color-accent-rgb) / 0.08), transparent 26%),
+		radial-gradient(circle at 78% 14%, rgba(var(--card-sheen-rgb), 0.16), transparent 20%),
 		linear-gradient(180deg, rgba(7, 17, 31, 0.08), rgba(7, 17, 31, 0.46));
 	z-index: 2;
 }
@@ -627,9 +686,26 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	inset: 0;
 	border-radius: inherit;
 	--glass-panel-blur-effective: min(calc(var(--glass-panel-blur, 18px) * 1.35), 72px);
-	background: rgba(var(--card-surface-rgb), calc(var(--glass-panel-opacity, 0.14) * 0.82));
+	/*
+	 * 染色渐变定义在 ::after 自身：这样 var(--glass-panel-opacity) 能读到
+	 * 面板自己的不透明度（文章页由 .article-shell .glass-panel::after 覆盖），
+	 * 染色强度才会跟着外观设置里的滑块联动。
+	 */
+	--glass-tint-strong: linear-gradient(
+		150deg,
+		rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--glass-panel-opacity, 0.14) * 0.55), 0.3)),
+		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-panel-opacity, 0.14) * 0.15), 0.12)) 58%,
+		transparent
+	);
+	background:
+		var(--glass-tint-strong),
+		rgba(var(--card-surface-rgb), calc(var(--glass-panel-opacity, 0.14) * 0.82));
 	backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
 	-webkit-backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
+	/* 玻璃内缘：钴蓝描边压在 inset 高光之上，给透明面板一道冷色边 */
+	box-shadow:
+		inset 0 0 0 1px var(--glass-edge),
+		inset 0 1px 0 rgba(255, 255, 255, 0.16);
 	pointer-events: none;
 	z-index: 0;
 }
@@ -648,6 +724,8 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	pointer-events: none;
 	opacity: 0.7;
 	z-index: 1;
+	/* 顶缘高光里混入一点钴蓝，让玻璃的反光不是纯白而带冷调 */
+	box-shadow: inset 0 1px 0 rgb(var(--glass-tint-rgb) / 0.22);
 }
 
 /* 文章页 glass-panel 独立参数，覆盖默认卡片变量 */
@@ -667,8 +745,8 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	gap: var(--space-xs);
 	padding: 0.5rem 0.9rem;
 	border-radius: var(--radius-pill);
-	background: rgba(10, 132, 255, 0.08);
-	border: 1px solid rgba(10, 132, 255, 0.12);
+	background: rgb(var(--color-accent-rgb) / 0.08);
+	border: 1px solid rgb(var(--color-accent-rgb) / 0.12);
 	color: var(--color-accent-hover);
 	font-size: 0.82rem;
 	letter-spacing: 0.08em;
@@ -709,10 +787,10 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	border: none;
 	border-radius: var(--radius-pill);
 	appearance: none;
-	background: #0a84ff;
+	background: var(--color-accent);
 	color: #f8fbff;
 	cursor: pointer;
-	box-shadow: 0 14px 32px -24px rgba(10, 132, 255, 0.45);
+	box-shadow: 0 14px 32px -24px rgb(var(--color-accent-rgb) / 0.45);
 	transition:
 		transform var(--transition),
 		box-shadow var(--transition),
@@ -720,14 +798,14 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 }
 
 .button:focus-visible {
-	outline: 2px solid rgba(10, 132, 255, 0.46);
+	outline: 2px solid rgb(var(--color-accent-rgb) / 0.46);
 	outline-offset: 2px;
 }
 
 .button:hover {
 	color: #ffffff;
 	transform: translateY(-1px);
-	box-shadow: 0 18px 36px -24px rgba(10, 132, 255, 0.4);
+	box-shadow: 0 18px 36px -24px rgb(var(--color-accent-rgb) / 0.4);
 }
 
 .button-secondary {
@@ -989,7 +1067,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 }
 
 .prose details summary:hover {
-	background: rgba(10, 132, 255, 0.08);
+	background: rgb(var(--color-accent-rgb) / 0.08);
 }
 
 .prose details > :not(summary) {
@@ -1004,7 +1082,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	display: inline;
 	padding: 0.08em 0.32em;
 	border-radius: 0.38em;
-	background: rgba(15, 23, 42, 0.22);
+	background: rgba(var(--color-shadow-strong), 0.22);
 	filter: blur(0.38em);
 	transition:
 		filter var(--transition),
@@ -1016,7 +1094,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 .prose .prose-spoiler:focus,
 .prose .prose-spoiler:focus-visible {
 	filter: blur(0);
-	background: rgba(10, 132, 255, 0.12);
+	background: rgb(var(--color-accent-rgb) / 0.12);
 }
 
 /* ── Typora 扩展语法 ──────────────────────────────────────────────────── */
@@ -1076,7 +1154,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 }
 
 .prose .prose-footnotes li:target {
-	background: rgba(10, 132, 255, 0.08);
+	background: rgb(var(--color-accent-rgb) / 0.08);
 	border-radius: var(--radius-inner);
 	padding: 0.3rem 0.6rem;
 }
@@ -1615,7 +1693,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	padding: 0.45rem 0.8rem;
 	font-weight: 700;
 	font-size: 0.92rem;
-	background: rgba(10, 132, 255, 0.08);
+	background: rgb(var(--color-accent-rgb) / 0.08);
 	color: var(--color-text);
 	border-bottom: 1px solid var(--color-border);
 }
@@ -1642,7 +1720,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	font-size: 0.78rem;
 	padding: 0.1rem 0.4rem;
 	border-radius: 4px;
-	background: rgba(10, 132, 255, 0.12);
+	background: rgb(var(--color-accent-rgb) / 0.12);
 	color: var(--color-accent);
 	white-space: nowrap;
 }
@@ -1695,7 +1773,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 		var(--code-window-bg);
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.08),
-		0 18px 38px -34px rgba(8, 18, 34, 0.82);
+		0 18px 38px -34px rgb(0 31 82 / 0.9);
 }
 
 .prose .prose-code-head {
@@ -1831,7 +1909,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 .prose a {
 	color: var(--color-accent);
 	text-decoration: underline;
-	text-decoration-color: rgba(10, 132, 255, 0.35);
+	text-decoration-color: rgb(var(--color-accent-rgb) / 0.35);
 	text-decoration-thickness: 1px;
 	text-underline-offset: 0.22em;
 }

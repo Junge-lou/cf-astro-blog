@@ -28,18 +28,21 @@ export const adminSharedStyles = `
 
 		:root {
 			color-scheme: light;
-			--bg: #edf3f8;
-			--bg-secondary: rgba(255, 255, 255, 0.56);
-			--bg-tertiary: rgba(255, 255, 255, 0.34);
-			--surface-elevated: rgba(255, 255, 255, 0.7);
+			--bg: #e4eefd;
+			--bg-secondary: rgb(var(--glass-surface-rgb) / 0.56);
+			--bg-tertiary: rgb(var(--glass-surface-rgb) / 0.34);
+			--surface-elevated: rgb(var(--glass-surface-rgb) / 0.7);
 			--text: #101828;
 			--text-secondary: #3a4357;
-			--text-muted: #6d7688;
-			--border: rgba(15, 23, 42, 0.09);
-			--border-strong: rgba(255, 255, 255, 0.44);
-			--accent: #0a84ff;
-			--accent-hover: #0066cc;
-			--accent-soft: rgba(10, 132, 255, 0.14);
+			--text-muted: #5c6578;
+			--border: rgb(0 71 171 / 0.15);
+			--border-strong: rgb(var(--glass-surface-rgb) / 0.5);
+			--accent: #0047ab;
+			--accent-rgb: 0 71 171;
+			--accent-hover: #003a8c;
+			--accent-soft: rgb(var(--accent-rgb) / 0.14);
+			--accent-tint-rgb: 0 71 171;
+			--glass-tint-opacity: 0.16;
 			--success: #16a34a;
 			--warning: #d97706;
 			--danger: #dc2626;
@@ -53,34 +56,38 @@ export const adminSharedStyles = `
 			--font-mono:
 				"SF Mono", "JetBrains Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
 			--shadow-soft:
-				0 24px 56px -34px rgba(15, 23, 42, 0.18),
-				0 12px 20px -16px rgba(15, 23, 42, 0.1);
+				0 24px 56px -34px rgb(0 31 82 / 0.2),
+				0 12px 20px -16px rgb(0 31 82 / 0.12);
 			--shadow-strong:
-				0 26px 52px -28px rgba(8, 18, 34, 0.22),
-				0 14px 24px -18px rgba(8, 18, 34, 0.16);
+				0 26px 52px -28px rgb(0 22 62 / 0.24),
+				0 14px 24px -18px rgb(0 22 62 / 0.18);
 			--transition-fast: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 			--transition-slow: 420ms cubic-bezier(0.22, 1, 0.36, 1);
 			--shell-width: min(1440px, calc(100vw - 2rem));
 			--sidebar-width: minmax(120px, 150px);
-			--card-surface-rgb: 255, 255, 255;
-			--card-sheen-rgb: 255, 255, 255;
+			--card-surface-rgb: 228, 238, 253;
+			--card-sheen-rgb: 236, 244, 255;
+			--glass-surface-rgb: 228, 238, 253;
 		}
 
 		@media (prefers-color-scheme: dark) {
 			:root:not([data-theme="light"]) {
 				color-scheme: dark;
-				--bg: #07111f;
-				--bg-secondary: rgba(13, 24, 40, 0.76);
-				--bg-tertiary: rgba(15, 27, 44, 0.6);
-				--surface-elevated: rgba(17, 29, 48, 0.9);
+				--bg: #061424;
+				--bg-secondary: rgb(var(--glass-surface-rgb) / 0.76);
+				--bg-tertiary: rgb(var(--glass-surface-rgb) / 0.6);
+				--surface-elevated: rgb(var(--glass-surface-rgb) / 0.9);
 				--text: #eef4ff;
 				--text-secondary: #cad4e6;
 				--text-muted: #93a1bc;
-				--border: rgba(147, 161, 188, 0.16);
-				--border-strong: rgba(147, 161, 188, 0.24);
-				--accent: #57a6ff;
-				--accent-hover: #88c0ff;
-				--accent-soft: rgba(87, 166, 255, 0.16);
+				--border: rgb(107 155 255 / 0.2);
+				--border-strong: rgb(107 155 255 / 0.28);
+				--accent: #6b9bff;
+				--accent-rgb: 107 155 255;
+				--accent-hover: #9dbdff;
+				--accent-soft: rgb(var(--accent-rgb) / 0.16);
+				--accent-tint-rgb: 107 155 255;
+				--glass-tint-opacity: 0.2;
 				--success: #4ade80;
 				--warning: #fbbf24;
 				--danger: #f87171;
@@ -90,35 +97,39 @@ export const adminSharedStyles = `
 				--shadow-strong:
 					0 28px 68px -34px rgba(0, 0, 0, 0.5),
 					0 16px 28px -20px rgba(0, 0, 0, 0.36);
-				--card-surface-rgb: 24, 36, 54;
-				--card-sheen-rgb: 142, 178, 224;
+				--card-surface-rgb: 20, 34, 60;
+				--card-sheen-rgb: 126, 170, 255;
+				--glass-surface-rgb: 20, 34, 60;
 			}
 			:root:not([data-theme="light"]) body {
 				background:
-					radial-gradient(circle at 12% 10%, rgba(30, 80, 200, 0.22), transparent 28%),
-					radial-gradient(circle at 88% 16%, rgba(10, 40, 100, 0.18), transparent 24%),
-					radial-gradient(circle at 48% 104%, rgba(20, 60, 160, 0.16), transparent 30%),
+					radial-gradient(circle at 12% 10%, rgb(107 155 255 / 0.2), transparent 28%),
+					radial-gradient(circle at 88% 16%, rgba(var(--card-sheen-rgb), 0.16), transparent 24%),
+					radial-gradient(circle at 48% 104%, rgb(107 155 255 / 0.12), transparent 30%),
 					var(--bg);
 			}
 			:root:not([data-theme="light"]) body::after {
-				background: rgba(48, 100, 220, 0.22);
+				background: rgb(43 84 168 / 0.22);
 			}
 		}
 
 		[data-theme="dark"] {
 			color-scheme: dark;
-			--bg: #07111f;
+			--bg: #061424;
 			--bg-secondary: rgba(13, 24, 40, 0.76);
 			--bg-tertiary: rgba(15, 27, 44, 0.6);
 			--surface-elevated: rgba(17, 29, 48, 0.9);
 			--text: #eef4ff;
 			--text-secondary: #cad4e6;
 			--text-muted: #93a1bc;
-			--border: rgba(147, 161, 188, 0.16);
-			--border-strong: rgba(147, 161, 188, 0.24);
-			--accent: #57a6ff;
-			--accent-hover: #88c0ff;
-			--accent-soft: rgba(87, 166, 255, 0.16);
+			--border: rgb(107 155 255 / 0.2);
+			--border-strong: rgb(107 155 255 / 0.28);
+			--accent: #6b9bff;
+			--accent-rgb: 107 155 255;
+			--accent-hover: #9dbdff;
+			--accent-soft: rgb(var(--accent-rgb) / 0.16);
+			--accent-tint-rgb: 107 155 255;
+			--glass-tint-opacity: 0.2;
 			--success: #4ade80;
 			--warning: #fbbf24;
 			--danger: #f87171;
@@ -128,20 +139,21 @@ export const adminSharedStyles = `
 			--shadow-strong:
 				0 28px 68px -34px rgba(0, 0, 0, 0.5),
 				0 16px 28px -20px rgba(0, 0, 0, 0.36);
-			--card-surface-rgb: 24, 36, 54;
-			--card-sheen-rgb: 142, 178, 224;
+			--card-surface-rgb: 20, 34, 60;
+			--card-sheen-rgb: 126, 170, 255;
+			--glass-surface-rgb: 20, 34, 60;
 		}
 
 		[data-theme="dark"] body {
 			background:
-				radial-gradient(circle at 12% 10%, rgba(30, 80, 200, 0.22), transparent 28%),
-				radial-gradient(circle at 88% 16%, rgba(10, 40, 100, 0.18), transparent 24%),
-				radial-gradient(circle at 48% 104%, rgba(20, 60, 160, 0.16), transparent 30%),
+				radial-gradient(circle at 12% 10%, rgb(107 155 255 / 0.2), transparent 28%),
+				radial-gradient(circle at 88% 16%, rgba(var(--card-sheen-rgb), 0.16), transparent 24%),
+				radial-gradient(circle at 48% 104%, rgb(107 155 255 / 0.12), transparent 30%),
 				var(--bg);
 		}
 
 		[data-theme="dark"] body::after {
-			background: rgba(48, 100, 220, 0.22);
+			background: rgb(43 84 168 / 0.22);
 		}
 
 		html {
@@ -159,10 +171,10 @@ export const adminSharedStyles = `
 			position: relative;
 			overflow-x: hidden;
 			background:
-				radial-gradient(circle at 12% 10%, rgba(126, 192, 255, 0.18), transparent 22%),
-				radial-gradient(circle at 88% 16%, rgba(255, 255, 255, 0.28), transparent 18%),
-				radial-gradient(circle at 48% 104%, rgba(88, 192, 255, 0.11), transparent 24%),
-				linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 32%),
+				radial-gradient(circle at 12% 10%, rgb(0 71 171 / 0.18), transparent 22%),
+				radial-gradient(circle at 88% 16%, rgba(var(--card-sheen-rgb), 0.32), transparent 18%),
+				radial-gradient(circle at 48% 104%, rgb(0 71 171 / 0.11), transparent 24%),
+				linear-gradient(180deg, rgba(var(--card-sheen-rgb), 0.32), transparent 32%),
 				var(--bg);
 		}
 
@@ -189,7 +201,7 @@ export const adminSharedStyles = `
 		body::after {
 			right: -8rem;
 			bottom: 8rem;
-			background: rgba(255, 255, 255, 0.28);
+			background: rgba(var(--card-sheen-rgb), 0.28);
 			animation-delay: -7s;
 		}
 
@@ -239,7 +251,14 @@ export const adminSharedStyles = `
 		.appearance-panel,
 		.appearance-stage {
 			position: relative;
-			background: rgba(var(--card-surface-rgb), 0.11);
+			background:
+				linear-gradient(
+					150deg,
+					rgb(var(--accent-tint-rgb) / var(--glass-tint-opacity)),
+					rgb(var(--accent-tint-rgb) / calc(var(--glass-tint-opacity) * 0.3)) 58%,
+					transparent
+				),
+				rgba(var(--card-surface-rgb), 0.11);
 			border: 1px solid var(--border);
 			border-radius: var(--radius-lg);
 			backdrop-filter: blur(24px) saturate(140%);
@@ -261,7 +280,7 @@ export const adminSharedStyles = `
 			inset: 0;
 			background:
 				linear-gradient(160deg, rgba(var(--card-sheen-rgb), 0.1), transparent 40%),
-				radial-gradient(circle at top left, rgba(10, 132, 255, 0.08), transparent 30%);
+				radial-gradient(circle at top left, rgb(var(--accent-rgb) / 0.08), transparent 30%);
 			pointer-events: none;
 			z-index: 0;
 		}
@@ -297,7 +316,7 @@ export const adminSharedStyles = `
 			font-weight: 700;
 			color: #fff;
 			box-shadow:
-				0 4px 14px -6px rgba(10, 132, 255, 0.55),
+				0 4px 14px -6px rgb(var(--accent-rgb) / 0.55),
 				inset 0 1px 0 rgba(255, 255, 255, 0.24);
 			flex-shrink: 0;
 			letter-spacing: -0.02em;
@@ -370,7 +389,7 @@ export const adminSharedStyles = `
 
 		.sidebar-nav a.active {
 			background:
-				linear-gradient(135deg, rgba(10, 132, 255, 0.14), transparent 82%),
+				linear-gradient(135deg, rgb(var(--accent-rgb) / 0.14), transparent 82%),
 				var(--surface-elevated);
 		}
 
@@ -593,7 +612,7 @@ export const adminSharedStyles = `
 			color: #fff;
 			border-color: transparent;
 			box-shadow:
-				0 18px 38px -24px rgba(10, 132, 255, 0.5),
+				0 18px 38px -24px rgb(var(--accent-rgb) / 0.5),
 				inset 0 1px 0 rgba(255, 255, 255, 0.18);
 		}
 
@@ -631,7 +650,7 @@ export const adminSharedStyles = `
 		}
 
 		.badge-published { background: rgba(22, 163, 74, 0.14); color: var(--success); }
-		.badge-draft { background: rgba(109, 118, 136, 0.14); color: var(--text-muted); }
+		.badge-draft { background: rgba(92, 101, 120, 0.14); color: var(--text-muted); }
 		.badge-scheduled { background: rgba(217, 119, 6, 0.14); color: var(--warning); }
 
 		.form-group {
@@ -674,9 +693,9 @@ export const adminSharedStyles = `
 
 		.form-input:focus, .form-textarea:focus, .form-select:focus {
 			outline: none;
-			border-color: rgba(10, 132, 255, 0.42);
+			border-color: rgb(var(--accent-rgb) / 0.42);
 			box-shadow:
-				0 0 0 4px rgba(10, 132, 255, 0.14),
+				0 0 0 4px rgb(var(--accent-rgb) / 0.14),
 				inset 0 1px 0 rgba(var(--card-sheen-rgb), 0.2);
 			background: var(--bg-secondary);
 		}
@@ -689,10 +708,10 @@ export const adminSharedStyles = `
 		}
 
 		.form-textarea.is-dragover {
-			border-color: rgba(10, 132, 255, 0.55);
-			background: rgba(10, 132, 255, 0.08);
+			border-color: rgb(var(--accent-rgb) / 0.55);
+			background: rgb(var(--accent-rgb) / 0.08);
 			box-shadow:
-				0 0 0 4px rgba(10, 132, 255, 0.16),
+				0 0 0 4px rgb(var(--accent-rgb) / 0.16),
 				inset 0 1px 0 rgba(var(--card-sheen-rgb), 0.22);
 		}
 
@@ -795,13 +814,13 @@ export const adminSharedStyles = `
 		}
 
 		.friend-review-item[open] .friend-review-summary {
-			background: rgba(10, 132, 255, 0.06);
+			background: rgb(var(--accent-rgb) / 0.06);
 			border-bottom: 1px solid var(--border);
 		}
 
 		.friend-review-item[open] .friend-review-summary-caret {
 			color: var(--accent);
-			border-color: rgba(10, 132, 255, 0.4);
+			border-color: rgb(var(--accent-rgb) / 0.4);
 			transform: rotate(180deg);
 		}
 
@@ -975,9 +994,9 @@ export const adminSharedStyles = `
 		.markdown-preview-body blockquote {
 			margin: 0.2rem 0 0.9rem;
 			padding: 0.12rem 0.82rem;
-			border-left: 3px solid rgba(10, 132, 255, 0.42);
+			border-left: 3px solid rgb(var(--accent-rgb) / 0.42);
 			color: var(--text-secondary);
-			background: rgba(10, 132, 255, 0.08);
+			background: rgb(var(--accent-rgb) / 0.08);
 			border-radius: 0 12px 12px 0;
 		}
 
@@ -993,7 +1012,7 @@ export const adminSharedStyles = `
 			margin: 0.2rem 0 0.9rem;
 			border-radius: 12px;
 			border: 1px solid var(--border);
-			background: rgba(10, 132, 255, 0.06);
+			background: rgb(var(--accent-rgb) / 0.06);
 			overflow: hidden;
 		}
 
@@ -1011,7 +1030,7 @@ export const adminSharedStyles = `
 			display: inline;
 			padding: 0.08em 0.32em;
 			border-radius: 0.38em;
-			background: rgba(15, 23, 42, 0.22);
+			background: rgb(6 16 34 / 0.3);
 			filter: blur(0.38em);
 			transition:
 				filter var(--transition-fast),
@@ -1023,14 +1042,14 @@ export const adminSharedStyles = `
 		.markdown-preview-body .markdown-preview-spoiler:focus,
 		.markdown-preview-body .markdown-preview-spoiler:focus-visible {
 			filter: blur(0);
-			background: rgba(10, 132, 255, 0.12);
+			background: rgb(var(--accent-rgb) / 0.12);
 		}
 
 		.markdown-preview-body pre {
 			margin: 0.2rem 0 0.9rem;
 			padding: 0.7rem 0.82rem;
 			border-radius: 12px;
-			background: rgba(15, 23, 42, 0.9);
+			background: rgb(6 16 34 / 0.94);
 			color: #dbe7ff;
 			overflow: auto;
 			font-size: 0.86rem;
@@ -1040,7 +1059,7 @@ export const adminSharedStyles = `
 		.markdown-preview-body code {
 			padding: 0.08rem 0.34rem;
 			border-radius: 8px;
-			background: rgba(10, 132, 255, 0.1);
+			background: rgb(var(--accent-rgb) / 0.1);
 			font-family: var(--font-mono);
 			font-size: 0.84em;
 		}
@@ -1085,7 +1104,7 @@ export const adminSharedStyles = `
 			border-radius: var(--radius);
 			border: 1px dashed var(--border);
 			background:
-				radial-gradient(circle at top left, rgba(10, 132, 255, 0.08), transparent 28%),
+				radial-gradient(circle at top left, rgb(var(--accent-rgb) / 0.08), transparent 28%),
 				var(--bg-tertiary);
 			display: flex;
 			align-items: center;
@@ -1100,8 +1119,8 @@ export const adminSharedStyles = `
 
 		.cover-dropzone:hover,
 		.cover-dropzone.is-dragover {
-			border-color: rgba(10, 132, 255, 0.42);
-			background-color: rgba(10, 132, 255, 0.08);
+			border-color: rgb(var(--accent-rgb) / 0.42);
+			background-color: rgb(var(--accent-rgb) / 0.08);
 			transform: translate3d(0, -1px, 0);
 		}
 
@@ -1183,7 +1202,14 @@ export const adminSharedStyles = `
 
 		.editor-panel {
 			padding: 1.25rem;
-			background: rgba(var(--card-surface-rgb), 0.11);
+			background:
+				linear-gradient(
+					150deg,
+					rgb(var(--accent-tint-rgb) / var(--glass-tint-opacity)),
+					rgb(var(--accent-tint-rgb) / calc(var(--glass-tint-opacity) * 0.3)) 58%,
+					transparent
+				),
+				rgba(var(--card-surface-rgb), 0.11);
 			border: 1px solid var(--border);
 			border-radius: var(--radius-lg);
 			backdrop-filter: blur(24px) saturate(140%);
@@ -1263,10 +1289,10 @@ export const adminSharedStyles = `
 			position: relative;
 			width: 100%;
 			aspect-ratio: 5 / 2;
-			border: 1px dashed rgba(10, 132, 255, 0.34);
+			border: 1px dashed rgb(var(--accent-rgb) / 0.34);
 			border-radius: var(--radius);
 			background:
-				linear-gradient(140deg, rgba(10, 132, 255, 0.08), rgba(10, 132, 255, 0.02)),
+				linear-gradient(140deg, rgb(var(--accent-rgb) / 0.08), rgb(var(--accent-rgb) / 0.02)),
 				rgba(255, 255, 255, 0.02);
 			display: grid;
 			place-items: center;
@@ -1281,15 +1307,15 @@ export const adminSharedStyles = `
 
 		.media-upload-dropzone:hover,
 		.media-upload-dropzone.is-dragover {
-			border-color: rgba(10, 132, 255, 0.65);
+			border-color: rgb(var(--accent-rgb) / 0.65);
 			background:
-				linear-gradient(140deg, rgba(10, 132, 255, 0.16), rgba(10, 132, 255, 0.06)),
+				linear-gradient(140deg, rgb(var(--accent-rgb) / 0.16), rgb(var(--accent-rgb) / 0.06)),
 				rgba(255, 255, 255, 0.03);
 			transform: translateY(-1px);
 		}
 
 		.media-upload-dropzone:focus-visible {
-			outline: 2px solid rgba(10, 132, 255, 0.6);
+			outline: 2px solid rgb(var(--accent-rgb) / 0.6);
 			outline-offset: 2px;
 		}
 
@@ -1341,7 +1367,7 @@ export const adminSharedStyles = `
 			align-items: center;
 			justify-content: center;
 			background:
-				radial-gradient(circle at top left, rgba(10, 132, 255, 0.12), transparent 22%),
+				radial-gradient(circle at top left, rgb(var(--accent-rgb) / 0.12), transparent 22%),
 				var(--bg-tertiary);
 			border-bottom: 1px solid var(--border);
 		}
@@ -1358,7 +1384,7 @@ export const adminSharedStyles = `
 			color: var(--text-muted);
 			padding: 0.55rem 0.8rem;
 			border-radius: var(--radius-pill);
-			background: rgba(255, 255, 255, 0.26);
+			background: rgba(var(--card-sheen-rgb), 0.26);
 			border: 1px solid var(--border);
 		}
 

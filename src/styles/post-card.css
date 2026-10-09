@@ -72,10 +72,10 @@
 	border-radius: calc(var(--radius-panel) - 8px);
 	background:
 		linear-gradient(145deg, rgba(var(--card-sheen-rgb), 0.22), rgba(var(--card-sheen-rgb), 0.08)),
-		radial-gradient(circle at 24% 22%, rgba(10, 132, 255, 0.28), transparent 58%);
+		radial-gradient(circle at 24% 22%, rgb(var(--color-accent-rgb) / 0.28), transparent 58%);
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.35),
-		0 16px 30px -30px rgba(8, 18, 34, 0.5);
+		0 16px 30px -30px rgb(0 31 82 / 0.56);
 	z-index: 1;
 }
 
@@ -86,9 +86,9 @@
 	pointer-events: none;
 	background: linear-gradient(
 		180deg,
-		rgba(8, 18, 34, 0.1) 0%,
-		rgba(8, 18, 34, 0.04) 46%,
-		rgba(8, 18, 34, 0.14) 100%
+		rgb(0 31 82 / 0.1) 0%,
+		rgb(0 31 82 / 0.04) 46%,
+		rgb(0 31 82 / 0.14) 100%
 	);
 	z-index: 1;
 }
@@ -211,10 +211,10 @@
 
 .post-card:hover {
 	transform: translate3d(0, -5px, 0);
-	border-color: rgba(10, 132, 255, 0.14);
+	border-color: rgb(var(--color-accent-rgb) / 0.14);
 	box-shadow:
-		0 22px 38px -34px rgba(8, 18, 34, 0.22),
-		0 8px 18px -16px rgba(8, 18, 34, 0.16);
+		0 22px 38px -34px rgb(0 31 82 / 0.22),
+		0 8px 18px -16px rgb(0 31 82 / 0.16);
 }
 
 .post-card:hover::after {
@@ -225,10 +225,10 @@
 @media (hover: hover) and (pointer: fine) {
 	.post-card:hover {
 		transform: translate3d(0, -8px, 0);
-		border-color: rgba(10, 132, 255, 0.18);
+		border-color: rgb(var(--color-accent-rgb) / 0.18);
 		box-shadow:
-			0 30px 48px -34px rgba(8, 18, 34, 0.26),
-			0 10px 24px -18px rgba(8, 18, 34, 0.18);
+			0 30px 48px -34px rgb(0 31 82 / 0.26),
+			0 10px 24px -18px rgb(0 31 82 / 0.18);
 	}
 }
 
@@ -328,10 +328,10 @@
 
 .post-compact:hover {
 	transform: translate3d(0, -2px, 0);
-	border-color: rgba(10, 132, 255, 0.2);
+	border-color: rgb(var(--color-accent-rgb) / 0.2);
 	box-shadow:
-		0 8px 20px -20px rgba(8, 18, 34, 0.16),
-		0 3px 8px -10px rgba(8, 18, 34, 0.08);
+		0 8px 20px -20px rgb(0 31 82 / 0.16),
+		0 3px 8px -10px rgb(0 31 82 / 0.08);
 }
 
 .post-compact-cover {
@@ -447,6 +447,23 @@
 .post-card.glass-panel::after {
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
+	/*
+	 * 钴蓝染色写在这里才有效：global.css .glass-panel::after 的
+	 * background（0-1-1）会盖掉 .post-card.glass-panel（0-2-0）上的染色，
+	 * 必须用更高特异性的双类 + ::after（0-2-1）覆盖它。
+	 * 卡片自身已直接应用 backdrop-filter，这里不需要再模糊一次。
+	 * 染色渐变同样定义在 ::after 自身：卡片用的是 --post-card-opacity，
+	 * 不是 --glass-panel-opacity，必须在这里算，否则会套用通用面板的 fallback。
+	 */
+	--glass-tint-strong: linear-gradient(
+		150deg,
+		rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--post-card-opacity, 14) / 100 * 0.55), 0.3)),
+		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--post-card-opacity, 14) / 100 * 0.15), 0.12)) 58%,
+		transparent
+	);
+	background:
+		var(--glass-tint-strong),
+		rgba(var(--card-surface-rgb), calc(var(--post-card-opacity, 14) / 100 * 0.82));
 }
 
 /* ── 列表模式（BBC 紧凑新闻流）────────────────────────────────────────── */
