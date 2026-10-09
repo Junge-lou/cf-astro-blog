@@ -128,13 +128,20 @@ const recentSectionSubheading =
 	pinnedPosts.length > 0 ? "" : "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
 /**
- * 首页 Hero 侧栏的卡片预算：置顶最多 2 张、最新文章最多 3 张，合计不超过 5 张。
+ * 首页 Hero 侧栏的卡片预算：置顶最多 1 张、最新文章最多 3 张（合计最多 4 张）。
  *
- * 置顶这 2 张是确定的（不参与脚本测量）；最新文章这 3 张是「候选」——SSR 时全部渲染成
- * 隐藏，`public/hero-sidebar-fit.js` 再按 `.hero-body` 的实测高度决定显示几张，
- * 并且总数被夹在 HERO_SIDEBAR_MAX_POSTS 以内。窄屏由脚本固定显示 1 张最新文章。
+ * 置顶卡固定（在侧栏里带封面、保持自然高，不参与脚本测量）；最新文章这 3 张是
+ * 「候选」——SSR 时全部渲染成隐藏，`public/hero-sidebar-fit.js` 再按 `.hero-body`
+ * 的实测高度、扣掉置顶卡占位之后决定实际显示几张，总数夹在
+ * HERO_SIDEBAR_MAX_POSTS 以内。窄屏由脚本固定显示 1 张最新文章。
+ *
+ * 取值理由：单张置顶卡（封面 + 文字）实测约 140–160px，之前放 2 张会把侧栏高度吃光，
+ * 最新文章一张都显示不出来（实测 416px 的侧栏里只能显示 2 张卡）。置顶减到 1 张后，
+ * 同一高度能稳定显示置顶 1 + 最新 2～3 张。
+ * 候选数保持 3 是因为 `recentPosts` 只查了最近 3 篇非置顶文章（见上面的 limit(3)），
+ * 想显示更多最新文章需要连查询上限一起放宽。
  */
-const HERO_SIDEBAR_PINNED_COUNT = 2;
+const HERO_SIDEBAR_PINNED_COUNT = 1;
 const HERO_SIDEBAR_RECENT_COUNT = 3;
 const HERO_SIDEBAR_MAX_POSTS = HERO_SIDEBAR_PINNED_COUNT + HERO_SIDEBAR_RECENT_COUNT;
 const heroPinnedPosts = pinnedPosts.slice(0, HERO_SIDEBAR_PINNED_COUNT);
@@ -349,8 +356,9 @@ function isInternalHref(href: string) {
 
 	/*
 	 * 侧栏容器：高度由外部决定（宽屏被 .hero-body 撑到等高，窄屏 min-height 兜底），
-	 * 内部卡片用 flex 均分剩余空间 —— 于是「卡片高度」是文章数与可用高度的函数：
-	 * 文章多则每张更矮，面板高则每张更高，最后一张总是贴着容器底部，不留死白。
+	 * 卡片高度由 hero-sidebar-fit.js 算出后写给每张卡（--hero-sidebar-card-row）。
+	 * 于是「卡片高度」是文章数与可用高度的函数：文章多则每张更矮，面板高则每张更高，
+	 * 整列正好填满正文高度，不留死白。
 	 */
 	.hero-sidebar {
 		display: flex;
@@ -366,28 +374,63 @@ function isInternalHref(href: string) {
 		overflow: clip;
 	}
 
-	/* 每张卡均分高度：min-height 随父级 flex 轨道长高，max-height 限制最高的那个 */
+	/*
+	 * 两类卡片分工不同，高度策略也不同：
+	 * - 置顶卡（compact，带封面）：保持自然高度，不参与拉伸 —— 封面是固定比例的
+	 *   固定高内容，拉伸它只会把图裁掉；文字块在封面以下那块区域里居中；
+	 * - 最新文章卡（list）：由 hero-sidebar-fit.js 按剩余高度写入基线，撑满剩余空间。
+	 * 于是「最新文章卡的卡片高度」是文章数与可用高度的函数，而置顶卡始终完整可读。
+	 */
 	.hero-sidebar > :global(article) {
-		flex: 1 1 auto;
-		/* 下限 76px、上限 208px：必须与 hero-sidebar-fit.js 的
+		flex: 0 0 auto;
+		/* 下限 76px、上限 208px：与 hero-sidebar-fit.js 的
 		   CARD_MIN_HEIGHT / CARD_MAX_HEIGHT 一致，否则脚本算出的高度会被这里改掉 */
 		min-height: var(--hero-sidebar-card-min, 4.75rem);
-		max-height: var(--hero-sidebar-card-max, 13rem);
 		overflow: hidden;
 	}
 
-	/* sidebar 内列表项：meta 置于标题上方，垂直堆叠 */
-	.hero-sidebar :global(.post-list-item) {
-		flex-direction: column !important;
-		gap: 0.2rem;
-		padding: 0.4rem 0.3rem;
-		/* 卡片被拉高时让标题+meta 垂直居中，而不是挤在顶部 */
-		justify-content: center;
+	.hero-sidebar > :global(article[data-hero-sidebar-post]) {
+		flex: 1 1 auto;
+		max-height: var(--hero-sidebar-card-max, 13rem);
 	}
 
+	/* sidebar 内列表项：meta 置于标题上方，垂直堆叠并整体居中 */
+	.hero-sidebar :global(.post-list-item) {
+		flex-direction: column !important;
+		/* 用 center 而不是 baseline：baseline 会让「日期 + 标题」整块贴在卡片顶部 */
+		align-items: stretch;
+		justify-content: center;
+		gap: 0.2rem;
+		padding: 0.4rem 0.3rem;
+		text-align: left;
+	}
+
+	/*
+	 * 置顶卡（compact 变体）：保留封面，标题在「封面之下那块区域」里左对齐 + 上下居中。
+	 *
+	 * 目标不是「标题在整张卡里居中」—— 封面是固定比例内容，占掉卡片大部分高度，
+	 * 整卡居中在数学上要求封面缩到很小。这里只把 body 拉伸去填满封面以外的
+	 * 剩余空间（flex: 1 1 auto + min-height: 0），再让那一列在块内居中。
+	 *
+	 * 封面另给一个高度上限：不然小屏/短文案时它会按宽度同比放大，把侧栏顶爆
+	 * （实测 22rem 宽的侧栏里单张封面就有 186px）。
+	 */
 	.hero-sidebar :global(.post-compact-body) {
-		/* 同上：卡片变高时内容居中 */
-		align-content: center;
+		flex: 1 1 auto;
+		min-height: 0;
+		/* 用 flex 而不是 grid：grid 的隐式行会按 max-content 撑开，
+		   justify/align-content 在「行高刚好等于内容高」时不产生位移 */
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		text-align: left;
+	}
+
+	.hero-sidebar :global(.post-compact-cover) {
+		flex: 0 0 auto;
+		/* 侧栏里的封面只作提示：一张 22rem 宽的侧栏里，按 240/134 原比例会有 186px，
+		   两张置顶卡就吃光整个侧栏，最新文章一张都放不下 */
+		max-height: var(--hero-sidebar-cover-max, 4.5rem);
 	}
 
 	.hero-sidebar :global(.post-list-meta) {
@@ -445,6 +488,11 @@ function isInternalHref(href: string) {
 	@media (max-width: 767.98px) {
 		.hero-sidebar {
 			min-height: 0;
+		}
+
+		/* 高度不再被脚本拉伸，body 回到内容高，避免标题上下多出空白 */
+		.hero-sidebar :global(.post-compact-body) {
+			flex: 0 0 auto;
 		}
 	}
 

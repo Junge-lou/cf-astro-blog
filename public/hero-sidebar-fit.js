@@ -73,34 +73,40 @@
 		card.removeAttribute(HIDDEN_ATTR);
 	};
 
-	const setBaseline = (sidebar, cards, baseline) => {
+	/**
+	 * 只往容器上写基线：卡片通过继承拿到它。
+	 * 候选卡各自那份（可能张张不同）由 layout 单独写，这里管的是「整体兜底」。
+	 */
+	const setBaseline = (sidebar, baseline) => {
 		if (baseline === null) {
 			sidebar.style.removeProperty(ROW_VAR);
-		} else {
-			sidebar.style.setProperty(ROW_VAR, `${baseline.toFixed(2)}px`);
+			return;
 		}
 
-		for (const card of cards) {
-			if (baseline === null || card.hasAttribute(HIDDEN_ATTR)) {
-				card.style.removeProperty(ROW_VAR);
-				continue;
-			}
+		sidebar.style.setProperty(ROW_VAR, `${baseline.toFixed(2)}px`);
+	};
 
-			card.style.setProperty(ROW_VAR, `${baseline.toFixed(2)}px`);
+	/** 给单张卡写 / 清除高度基线。 */
+	const setRowHeight = (card, rowHeight) => {
+		if (rowHeight === null || !(rowHeight > 0)) {
+			card.style.removeProperty(ROW_VAR);
+			return;
 		}
+
+		card.style.setProperty(ROW_VAR, `${rowHeight.toFixed(2)}px`);
 	};
 
 	/**
-	 * 校准：量出两个实测量，后续所有高度都由它们推算。
+	 * 校准：量出「置顶卡占掉多少高度」与「一张候选卡的自然高度」。
 	 *
-	 *   候选卡自然高度（每张）  = 实测自然高
-	 *   置顶部分高度（固定）    = 置顶卡高 + gap + 内边距
+	 * 布局约定（与 index.astro 的 CSS 对应）：
+	 *   置顶卡保持自然高度（里面是「固定比例封面 + 文字」），不被拉伸；
+	 *   候选卡（list）由脚本写入基线高度，flex 吃掉剩余空间。
+	 * 所以 n 张候选时：
 	 *
-	 * 侧栏在某张数下的自然高度 = 置顶固定高 + (自然卡高 + gap) × 张数 ——
-	 * 其中「自然卡高 + gap」正是每多显示一张卡要多占的高度。
+	 *   侧栏总高 = 置顶卡自然高 + gap + n × 卡高 + (n − 1) × gap + padding × 2
 	 *
-	 * 校准必须在「全部候选都可见」的状态下做：否则最后一张卡少一格 gap，
-	 * 量出来的每张卡高度就不准了。
+	 * 校准必须在「全部候选都可见」的状态下做，否则量到的行数不对。
 	 */
 	const calibrate = (sidebar, cards) => {
 		const pinned = pinnedOf(sidebar, cards);
@@ -109,73 +115,77 @@
 			card.removeAttribute(HIDDEN_ATTR);
 		}
 
-		sidebar.style.setProperty(ROW_VAR, "0px");
+		// 基线清掉：卡片退回自然高度，量到的才是「不被拉伸」时的高度
+		sidebar.style.removeProperty(ROW_VAR);
+		for (const card of [...pinned, ...cards]) {
+			card.style.removeProperty(ROW_VAR);
+		}
+
 		const pinnedHeight = pinned.reduce((sum, card) => sum + card.getBoundingClientRect().height, 0);
 		const candidateTotal = cards.reduce((sum, card) => sum + card.getBoundingClientRect().height, 0);
-		const candidateHeight =
+		const candidateAverage =
 			cards.length > 0 && candidateTotal > 0 ? candidateTotal / cards.length : 0;
-		const naturalCardHeight = candidateHeight > 0 ? candidateHeight : CARD_MIN_HEIGHT;
-		// 「置顶部分」= 置顶卡高 + 置顶卡各占一格 gap + 上下 padding；
-		// n 张候选时侧栏总高 = 置顶部分 + (自然卡高 + gap) × n − 半格收尾……
-		// 这里只需记住两件事：每多一张候选卡多占 perCard 高，其余是与 n 无关的 top。
-		const top =
-			pinnedHeight + GAP * pinned.length + PADDING * 2;
-		const perCard = naturalCardHeight + GAP;
+		const cardNaturalHeight = candidateAverage > 0 ? candidateAverage : CARD_MIN_HEIGHT;
 
-		return { naturalCardHeight, perCard, top };
+		return { pinned, pinnedHeight, cardNaturalHeight };
 	};
+
+	/** 与张数无关的固定部分：置顶卡 + 它下面那格 gap + 上下 padding。 */
+	const fixedOf = (pinnedHeight, pinnedCount) =>
+		pinnedHeight + (pinnedCount > 0 ? GAP : 0) + PADDING * 2;
 
 	/**
 	 * 把「显示前 count 张」+「每张多高」一次落到 DOM 上。
 	 * 两个量必须同时写：卡片高度由可见张数决定，反过来又决定高度是否够用。
+	 *
+	 * 高度只写给候选卡：置顶卡是「封面 + 文字」的固定内容，拉伸它只会裁掉封面。
 	 */
 	const layout = (sidebar, cards, count, rowHeight) => {
 		for (let index = 0; index < cards.length; index += 1) {
-			setCardHidden(cards[index], index >= count);
+			const card = cards[index];
+
+			setCardHidden(card, index >= count);
+			setRowHeight(card, index < count ? rowHeight : null);
 		}
 
-		setBaseline(sidebar, cards.slice(0, count), rowHeight);
+		// 容器上的值作为兜底：候选卡自己那份没写成功时也不会退回自然高度
+		setBaseline(sidebar, rowHeight);
 	};
 
 	/**
-	 * 求「最多能显示几张 ／ 每张多高」。
+	 * 求「最多能显示几张候选 ／ 每张多高」。
 	 *
-	 * n 张候选时把可用高度平均分给 n 张 —— 这就是「卡片高度是张数与可用高度的函数」：
+	 * 侧栏可用高度先被置顶卡与内边距吃掉，剩下的由 n 张候选卡平分：
 	 *
-	 *   每张卡的高度 = (正文高度 - top) / n - gap
+	 *   卡高 = (正文高度 - 固定部分 - gap × (n - 1)) / n
 	 *
-	 * （top = 置顶部分高度；n 张候选之间共 n-1 格 gap，所以是 + gap 的收支。）
-	 * 分到的高度不低于下限就用这一档；自然高度已经顶出正文高度的档位直接跳过，
-	 * 张数越少越装得下，所以第一个通过的档位就是最大张数。
-	 *
-	 * 上限是「夹」而不是「减张数」：分到的高度超过上限说明正文特别高，这时张数
-	 * 取满、高度夹到上限，多出来的空间留在底部；若为了填满而减张数，侧栏会变成
-	 * 几张大空壳，比留白更难看。
+	 * 候选越多每张越矮，所以从满配张数往下试，第一个不低于下限的档位就是最大张数；
+	 * 上限是「夹」而不是「减张数」：分到的高度超过上限说明正文特别高，
+	 * 这时张数取满、高度夹到上限，多出来的空间留在底部。
 	 */
-	const chooseCount = (bodyHeight, cards, countLimit, perCard, top) => {
-		// 自然高度已顶出正文的档位不必再试
-		const maxCount = Math.min(countLimit, Math.max(0, Math.floor((bodyHeight - top) / perCard)));
+	const chooseCount = (bodyHeight, countLimit, fixed) => {
+		const share = (count) => (bodyHeight - fixed - GAP * Math.max(0, count - 1)) / count;
 
-		for (let count = maxCount; count > 0; count -= 1) {
-			const share = (bodyHeight - top + GAP) / count - GAP;
+		for (let count = countLimit; count > 0; count -= 1) {
+			const rowHeight = share(count);
 
-			if (share >= CARD_MIN_HEIGHT) {
-				return { count, rowHeight: Math.min(share, CARD_MAX_HEIGHT) };
+			if (rowHeight >= CARD_MIN_HEIGHT) {
+				return { count, rowHeight: Math.min(rowHeight, CARD_MAX_HEIGHT) };
 			}
 		}
 
-		// 一档都放不进下限：能挤出下限高度就显示一张并压到下限，否则按自然高度
-		const squeezed = bodyHeight - top;
-		const fallback = countLimit > 0 && squeezed >= CARD_MIN_HEIGHT;
+		// 一张都放不进下限：能挤到下限就压到下限显示一张；连下限都挤不出，
+		// 说明是置顶卡把高度吃光了，此时退回一张的自然高度（宁可侧栏被裁一点，
+		// 也不要把最新文章整块藏掉）
+		const squeezed = bodyHeight - fixed;
+		const fallback = countLimit > 0;
 
 		return {
-			count: countLimit > 0 ? 1 : 0,
-			rowHeight: fallback ? Math.min(squeezed, CARD_MAX_HEIGHT) : null,
+			count: fallback ? 1 : 0,
+			rowHeight:
+				squeezed >= CARD_MIN_HEIGHT ? Math.min(squeezed, CARD_MAX_HEIGHT) : null,
 		};
 	};
-
-	/** 由「置顶部分高度 / 每张卡高」反推置顶张数：总张数上限要扣掉它们。 */
-	const pinnedCountOf = (perCard, top) => Math.round(Math.max(0, top) / perCard);
 
 	const report = () => {
 		const sidebar = sidebarElement();
@@ -192,12 +202,13 @@
 			return;
 		}
 
-		const { perCard, top } = calibrate(sidebar, cards);
-		const countLimit = Math.min(
-			cards.length,
-			Math.max(0, MAX_VISIBLE_POSTS - pinnedCountOf(perCard, top)),
+		const { pinned, pinnedHeight } = calibrate(sidebar, cards);
+		const countLimit = Math.min(cards.length, Math.max(0, MAX_VISIBLE_POSTS - pinned.length));
+		const { count, rowHeight } = chooseCount(
+			bodyHeight,
+			countLimit,
+			fixedOf(pinnedHeight, pinned.length),
 		);
-		const { count, rowHeight } = chooseCount(bodyHeight, cards, countLimit, perCard, top);
 		layout(sidebar, cards, count, rowHeight);
 	};
 
@@ -222,7 +233,12 @@
 
 		const cards = cardsOf(sidebar);
 		showAll(cards);
-		setBaseline(sidebar, cards, null);
+
+		for (const card of [...pinnedOf(sidebar, cards), ...cards]) {
+			card.style.removeProperty(ROW_VAR);
+		}
+
+		setBaseline(sidebar, null);
 	};
 
 	const showAll = (cards) => {
@@ -281,7 +297,9 @@
 		const sidebar = sidebarElement();
 
 		if (sidebar) {
-			layout(sidebar, cardsOf(sidebar), NARROW_VISIBLE_POSTS, null);
+			const cards = cardsOf(sidebar);
+			// 窄屏不拉伸：高度由内容决定，只决定显示几张
+			layout(sidebar, cards, NARROW_VISIBLE_POSTS, null);
 		}
 	};
 

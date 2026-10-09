@@ -44,6 +44,8 @@ interface CardStub {
 interface FakeDom {
 	cards: CardStub[];
 	pinned: { height: number }[];
+	/** 容器上的基线（脚本给所有卡写的那份）；null 表示没有拉伸 */
+	sidebarBaseline: number | null;
 	documentStub: Record<string, unknown>;
 	windowStub: Record<string, unknown>;
 	HTMLElementStub: new () => unknown;
@@ -53,17 +55,38 @@ interface FakeDom {
 
 const visibleCards = (dom: FakeDom) => dom.cards.filter((card) => !card.hidden);
 
-/** 桩里的高度公式，必须与 CSS/flex 行为一致。 */
+/**
+ * 桩里的高度公式，必须与 CSS 行为一致：
+ * 脚本写下的基线会被 CSS 的 min-height / max-height 夹一次，
+ * 且只有候选卡会被拉伸（置顶卡也写基线，但它们的自然高就是内容高）。
+ */
 function cardHeight(card: CardStub) {
-	return Math.max(card.natural, card.baseline ?? 0);
+	// 基线为 null（没写）或 0（脚本的校准状态）都表示「不被拉伸」
+	if (card.baseline === null || card.baseline === 0) {
+		return card.natural;
+	}
+
+	return Math.min(Math.max(card.baseline, CARD_MIN_HEIGHT), CARD_MAX_HEIGHT);
 }
 
+/**
+ * 侧栏高度，与 CSS/flex 行为对齐：
+ * - 容器变量为 0（脚本的校准状态）→ 卡片都是自然高度；
+ * - 否则所有卡等高，高度就是容器变量那一个值。
+ */
 function sidebarHeight(dom: FakeDom) {
 	const items = dom.pinned.length + visibleCards(dom).length;
-	const content =
-		dom.pinned.reduce((sum, pinned) => sum + pinned.height, 0) +
-		visibleCards(dom).reduce((sum, card) => sum + cardHeight(card), 0);
-	return content + GAP * (items > 0 ? items - 1 : 0) + PADDING * 2;
+
+	if (items === 0) {
+		return PADDING * 2;
+	}
+
+	const stretching = dom.sidebarBaseline !== null && dom.sidebarBaseline > 0;
+	const cardHeightValue = stretching
+		? Math.min(Math.max(dom.sidebarBaseline ?? 0, CARD_MIN_HEIGHT), CARD_MAX_HEIGHT)
+		: (dom.pinned[0]?.height ?? CARD_NATURAL);
+
+	return cardHeightValue * items + GAP * (items - 1) + PADDING * 2;
 }
 
 function createFakeDom(options: { bodyHeight: number; cardCount: number; wide: boolean }): FakeDom {
@@ -121,13 +144,31 @@ function createFakeDom(options: { bodyHeight: number; cardCount: number; wide: b
 		cards.push(makeCard(CARD_NATURAL, true));
 	}
 
-	// 置顶卡：不带候选属性，永远显示，脚本靠它区分「参与计数的候选」与「固定占位」
-	const pinned = Array.from({ length: PINNED_COUNT }, () => ({
-		height: PINNED_HEIGHT,
-		getBoundingClientRect() {
-			return { height: PINNED_HEIGHT };
-		},
-	}));
+	// 置顶卡：不带候选属性，永远显示，脚本靠它区分「参与计数的候选」与「固定占位」；
+	// 它也带 style（脚本会给每张卡写高度基线）
+	const pinned = Array.from({ length: PINNED_COUNT }, () => {
+		const entry = {
+			height: PINNED_HEIGHT,
+			baseline: null as number | null,
+			style: {
+				setProperty(name: string, value: string) {
+					if (name === "--hero-sidebar-card-row") {
+						entry.baseline = Number.parseFloat(value);
+					}
+				},
+				removeProperty(name: string) {
+					if (name === "--hero-sidebar-card-row") {
+						entry.baseline = null;
+					}
+				},
+			},
+			getBoundingClientRect() {
+				return { height: PINNED_HEIGHT };
+			},
+		};
+
+		return entry;
+	});
 
 	class FakeBody extends FakeHTMLElement {
 		getBoundingClientRect() {
@@ -135,22 +176,25 @@ function createFakeDom(options: { bodyHeight: number; cardCount: number; wide: b
 		}
 	}
 
+	let sidebarBaseline: number | null = null;
+
 	class FakeSidebar extends FakeHTMLElement {
 		style = {
-			setProperty() {},
-			removeProperty() {},
+			setProperty(name: string, value: string) {
+				if (name === "--hero-sidebar-card-row") {
+					sidebarBaseline = Number.parseFloat(value);
+				}
+			},
+			removeProperty(name: string) {
+				if (name === "--hero-sidebar-card-row") {
+					sidebarBaseline = null;
+				}
+			},
 		};
 
 		get children() {
-			// 置顶卡也要能被量高度：脚本按它们算出「随张数不变」的那部分高度
-			return [
-				...pinned.map(() => ({
-					getBoundingClientRect() {
-						return { height: PINNED_HEIGHT };
-					},
-				})),
-				...cards,
-			];
+			// 置顶卡也要能被量高度、被写高度基线：直接返回同一批对象
+			return [...pinned, ...cards];
 		}
 
 		querySelectorAll(selector: string) {
@@ -158,7 +202,7 @@ function createFakeDom(options: { bodyHeight: number; cardCount: number; wide: b
 		}
 
 		getBoundingClientRect() {
-			const dom = { cards, pinned } as FakeDom;
+			const dom = { cards, pinned, sidebarBaseline } as FakeDom;
 			return { height: sidebarHeight(dom) };
 		}
 	}
@@ -233,18 +277,19 @@ async function runScript(dom: FakeDom): Promise<FakeDom> {
 
 describe("首页 Hero 侧栏测量脚本", () => {
 	test("正文很高时放满候选卡，并给每张卡算出拉伸后的高度", async () => {
-		// 置顶 214.4 + 每张候选 125.6：正文到 640 时三张卡刚好各分到 134.4px
+		// 全部卡片等高：置顶 2 张 + 候选 3 张，正文 640 时每张分到 (640-25.2)/5 - 5.6
 		const dom = await runScript(createFakeDom({ bodyHeight: 640, cardCount: 3, wide: true }));
 		const visible = visibleCards(dom);
 		assert.equal(visible.length, 3);
 
-		// 卡片高度是「正文高度 / 张数」的函数：三张卡等高，等于按可用高度均分的结果
-		const top = PINNED_COUNT * PINNED_HEIGHT + PINNED_COUNT * GAP + PADDING * 2;
-		const expected = (640 - top + GAP) / visible.length - GAP;
+		// 置顶卡保持自然高（里面是固定比例的封面），只有候选卡吃剩余空间：
+		// 卡高 = (正文高度 - 置顶卡高 - gap - padding×2 - gap×(n-1)) / n
+		const fixed = PINNED_HEIGHT * PINNED_COUNT + GAP + PADDING * 2;
+		const expected = (640 - fixed - GAP * (visible.length - 1)) / visible.length;
 		const heights = visible.map((card) => cardHeight(card));
 		assert.ok(
 			heights.every((height) => Math.abs(height - expected) < 0.01),
-			`每张卡都等于均分结果 ${expected.toFixed(1)}：${heights}`,
+			`每张候选卡都等于均分结果 ${expected.toFixed(1)}：${heights}`,
 		);
 		assert.ok(
 			expected >= CARD_MIN_HEIGHT && expected <= CARD_MAX_HEIGHT,
@@ -253,8 +298,9 @@ describe("首页 Hero 侧栏测量脚本", () => {
 	});
 
 	test("正文较矮时减少张数，而不是硬塞进去", async () => {
-		// 3 张要 591.2 才放得下，500 只够 2 张
-		const dom = await runScript(createFakeDom({ bodyHeight: 500, cardCount: 3, wide: true }));
+		// 置顶 2 张占 200 + gap + padding = 220：380 只够 2 张候选（每张 77.2px），
+		// 3 张时每张只剩 49.6px，跌破 76px 下限
+		const dom = await runScript(createFakeDom({ bodyHeight: 380, cardCount: 3, wide: true }));
 		assert.equal(visibleCards(dom).length, 2);
 	});
 

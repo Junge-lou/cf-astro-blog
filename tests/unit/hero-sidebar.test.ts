@@ -11,14 +11,14 @@ import { describe, test } from "node:test";
  * 窄屏固定两张。这几条断言就是防止有人把它改回写死。
  */
 describe("首页 Hero 侧栏按高度决定文章个数", () => {
-	test("侧栏渲染的是「置顶 2 张 + 最新 3 张候选」，不是两个固定变量", async () => {
+	test("侧栏渲染的是「置顶 1 张 + 最新 3 张候选」，不是两个固定变量", async () => {
 		const [source, postCardSource] = await Promise.all([
 			readFile("src/pages/index.astro", "utf8"),
 			readFile("src/components/PostCard.astro", "utf8"),
 		]);
 
-		// 侧栏预算有具名常量：置顶 2 张 + 最新 3 张候选，而不是散落的字面量
-		assert.match(source, /HERO_SIDEBAR_PINNED_COUNT = 2/u);
+		// 侧栏预算有具名常量：置顶 1 张 + 最新 3 张候选，而不是散落的字面量
+		assert.match(source, /HERO_SIDEBAR_PINNED_COUNT = 1/u);
 		assert.match(source, /HERO_SIDEBAR_RECENT_COUNT = 3/u);
 		assert.match(source, /HERO_SIDEBAR_MAX_POSTS/u);
 		assert.match(source, /pinnedPosts\.slice\(0,\s*HERO_SIDEBAR_PINNED_COUNT\)/u);
@@ -65,7 +65,7 @@ describe("首页 Hero 侧栏按高度决定文章个数", () => {
 		assert.match(source, /<script is:inline src="\/hero-sidebar-fit\.js"><\/script>/u);
 	});
 
-	test("渲染预算与脚本里的总数上限是同一个数（2 + 3 = 5）", async () => {
+	test("渲染预算与脚本里的总数上限是同一个数（1 + 3 = 4）", async () => {
 		const [source, script] = await Promise.all([
 			readFile("src/pages/index.astro", "utf8"),
 			readFile("public/hero-sidebar-fit.js", "utf8"),
@@ -78,7 +78,7 @@ describe("首页 Hero 侧栏按高度决定文章个数", () => {
 		);
 		// 脚本侧：可见总数被夹住，不能因为正文很高就把候选全放出来
 		assert.match(script, /MAX_VISIBLE_POSTS = 5/u);
-		assert.match(script, /MAX_VISIBLE_POSTS - pinnedCountOf/u);
+		assert.match(script, /MAX_VISIBLE_POSTS - pinned\.length/u);
 	});
 
 	test("卡片高度由张数与可用高度算出，并写回 CSS 变量", async () => {
@@ -87,13 +87,18 @@ describe("首页 Hero 侧栏按高度决定文章个数", () => {
 			readFile("public/hero-sidebar-fit.js", "utf8"),
 		]);
 
-		// 脚本：每张卡的高度 = (可用高度 - 置顶部分) / 张数，且必须夹在上限内
+		// 脚本：候选卡高 = 剩余高度按张数均分，并夹在上限内
 		assert.match(script, /ROW_VAR = "--hero-sidebar-card-row"/u);
-		assert.match(script, /\(bodyHeight - top \+ GAP\) \/ count - GAP/u);
-		assert.match(script, /Math\.min\(share, CARD_MAX_HEIGHT\)/u);
-		// CSS：卡片 flex 均分，下限与上限必须与脚本常量一致（76px / 208px = 4.75rem / 13rem）
+		assert.match(script, /\(bodyHeight - fixed - GAP \* Math\.max\(0, count - 1\)\) \/ count/u);
+		assert.match(script, /Math\.min\(rowHeight, CARD_MAX_HEIGHT\)/u);
+		// 高度只写给候选卡：置顶卡里是固定比例的封面，拉伸只会把图裁掉
+		assert.match(script, /setRowHeight\(card, index < count \? rowHeight : null\)/u);
+		// CSS：候选卡 flex 均分，下限与上限必须与脚本常量一致（76px / 208px = 4.75rem / 13rem）
 		assert.match(source, /flex: 1 1 auto/u);
 		assert.match(source, /--hero-sidebar-card-min, 4\.75rem/u);
 		assert.match(source, /--hero-sidebar-card-max, 13rem/u);
+		// 置顶卡：保留封面，文字块在封面以下居中，封面有高度上限
+		assert.match(source, /\.hero-sidebar :global\(\.post-compact-body\) \{[\s\S]{0,200}justify-content: center/u);
+		assert.match(source, /\.hero-sidebar :global\(\.post-compact-cover\) \{[\s\S]{0,200}max-height/u);
 	});
 });
