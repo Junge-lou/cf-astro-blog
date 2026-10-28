@@ -44,15 +44,15 @@
 	 * 例外：文字与语义色（success/warning/danger）保持中立。文字偏蓝会伤
 	 * 长文可读性，语义色偏蓝会丢失"成功/警告/错误"的通用辨识度。
 	 */
-	--color-bg: #dbe6f7;
+	--color-bg: #f2efe3;
 	--color-bg-secondary: rgb(var(--glass-surface-rgb) / 0.55);
 	--color-bg-tertiary: rgb(var(--glass-surface-rgb) / 0.4);
 	--color-surface-elevated: rgb(var(--glass-surface-rgb) / 0.8);
-	--color-text: #101828;
-	--color-text-secondary: #3a4357;
-	--color-text-muted: #4b5563;
-	--color-text-placeholder: #4b556a;
-	--color-border: rgb(0 71 171 / 0.12);
+	--color-text: #12243a;
+	--color-text-secondary: #2c3d55;
+	--color-text-muted: #5a6a80;
+	--color-text-placeholder: #7a8798;
+	--color-border: rgb(0 48 110 / 0.22);
 	/*
 	 * 钴蓝（Cobalt Blue，C.I. 颜料蓝 28）：全站唯一色源。
 	 * --color-accent-rgb 以「空格分隔的 sRGB 通道」保存，供玻璃层与各处半透明
@@ -83,10 +83,10 @@
 	 * 改之前卡片与页面同色，只能靠 1px 边框区分，整页看上去是一片蓝。
 	 * 现在：页面底色 = 饱和的钴白，卡片 = 白色玻璃，层级自然分层。
 	 */
-	--glass-surface-rgb: 255, 255, 255;
-	/* 阴影也并入钴蓝：纯黑阴影叠在钴玻璃上会发灰、显脏。 */
-	--color-shadow: rgb(0 31 82 / 0.14);
-	--color-shadow-strong: rgb(0 31 82 / 0.22);
+	--glass-surface-rgb: 244, 241, 230;
+	/* 阴影也并入墨蓝：纯黑阴影叠在纸上会显脏。 */
+	--color-shadow: rgb(58 46 20 / 0.14);
+	--color-shadow-strong: rgb(58 46 20 / 0.22);
 	--font-sans:
 		"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
 		-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -101,13 +101,44 @@
 		"Cormorant Garamond", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
 	--font-strong: "Space Grotesk", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 	--font-mono: "SF Mono", "JetBrains Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
-	--font-size-sm: 0.92rem;
-	--font-size-base: 1rem;
-	--font-size-lg: 1.12rem;
-	--font-size-xl: 1.34rem;
-	--font-size-2xl: clamp(1.6rem, 1.25rem + 1vw, 2.2rem);
-	--font-size-3xl: clamp(2.2rem, 1.7rem + 2vw, 3.5rem);
-	--font-size-4xl: clamp(3rem, 2.2rem + 3vw, 5rem);
+	/*
+	 * ── 字号刻度：黄金比例（φ = 1.6180339887）─────────────────────────────
+	 *
+	 * 全站字号只有这 7 档，任何 font-size 都必须走这里的变量，不要再写死 rem。
+	 * tests/unit/type-scale.test.ts 会拦住新增的裸数值。
+	 *
+	 * 级差取 √φ ≈ 1.272，于是：
+	 *   · 每 1 步 × 1.272
+	 *   · 每 2 步 × φ          （sm→xl = 1.618，md→2xl = 2.058 = φ√φ）
+	 *   · 每 4 步 × φ²         （sm→2xl 与 md→3xl 都正好是 2.618）
+	 *
+	 * 为什么不用 φ 本身当级差：φ 一步就从 16px 跳到 25.9px，7 档只能覆盖
+	 * 25.9→186px，UI 里 12–16px 的密集区完全无级可用。√φ 是"半阶"，既保持
+	 * 斐波那契/黄金比例的自相似（相邻两档的比值恒定），又能把 12.6–53.3px
+	 * 这段真实用到的区间铺满 7 档。
+	 *
+	 * 具体数值（1rem = 16px，尊重用户在浏览器里改的字号）：
+	 *   --text-sm   1/√φ      = 0.7862rem → 12.58px  辅助文字：日期、标签、kbd
+	 *   --text-md   1         = 1rem       → 16.00px  **正文基准**
+	 *   --text-lg   √φ        = 1.2720rem → 20.35px  引导段、卡片副标题
+	 *   --text-xl   φ         = 1.6180rem → 25.89px  卡片标题、正文 h3
+	 *   --text-2xl  φ√φ       = 2.0582rem → 32.93px  区块标题、正文 h2
+	 *   --text-3xl  φ²        = 2.6180rem → 41.89px  页面标题 h1
+	 *   --text-4xl  φ²√φ      = 3.3302rem → 53.28px  Hero / 文章标题
+	 *
+	 * 后三档写成 clamp：**上下界都落在相邻两档上**，所以小屏不会掉出刻度，
+	 * 只是"提前停在下界"。这样移动端不需要另造一套字号表。
+	 *   --text-2xl 停在 --text-xl (25.89)
+	 *   --text-3xl 停在 --text-2xl (32.93)
+	 *   --text-4xl 停在 --text-2xl (32.93)，桌面封顶 53.28
+	 */
+	--text-sm: 0.7862rem;
+	--text-md: 1rem;
+	--text-lg: 1.272rem;
+	--text-xl: 1.618rem;
+	--text-2xl: clamp(1.618rem, 1.15rem + 1.6vw, 2.0582rem);
+	--text-3xl: clamp(2.0582rem, 1.3rem + 2.1vw, 2.618rem);
+	--text-4xl: clamp(2.0582rem, 1.55rem + 3.4vw, 3.3302rem);
 	--space-2xs: 0.25rem;
 	--space-xs: 0.5rem;
 	--space-sm: 0.75rem;
@@ -119,14 +150,18 @@
 	--space-4xl: 6rem;
 	--max-width: 74rem;
 	--max-width-prose: 754px;
-	--radius-sm: 10px;
-	--radius: 14px;
-	--radius-lg: 18px;
-	--radius-xl: 24px;
+	/*
+	 * 钞票没有圆角。四档全部收到 1–4px，只保留极轻微的切角感；
+	 * --radius-pill 保留，因为票面上的序号牌/胶囊本身就是椭圆。
+	 */
+	--radius-sm: 1px;
+	--radius: 2px;
+	--radius-lg: 3px;
+	--radius-xl: 4px;
 	--radius-pill: 999px;
-	--radius-panel: 24px;
-	--radius-card: 18px;
-	--radius-inner: 14px;
+	--radius-panel: 4px;
+	--radius-card: 3px;
+	--radius-inner: 2px;
 	--shadow-soft: 0 18px 48px -28px var(--color-shadow), 0 10px 18px -14px var(--color-shadow);
 	--shadow-card: 0 18px 40px -30px rgb(0 31 82 / 0.2), 0 6px 18px -12px rgb(0 31 82 / 0.14);
 	--transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -140,8 +175,8 @@
 	--nav-shell-condensed-scale: 0.992;
 	--nav-shell-open-shadow: 0 10px 24px -26px rgb(0 31 82 / 0.2);
 	--nav-shell-condensed-shadow: 0 18px 38px -28px rgb(0 31 82 / 0.26);
-	--card-surface-rgb: 255, 255, 255;
-	--card-sheen-rgb: 245, 250, 255;
+	--card-surface-rgb: 250, 248, 240;
+	--card-sheen-rgb: 255, 253, 246;
 	--code-window-bg: rgba(10, 16, 28, 0.94);
 	--code-window-bg-soft: rgba(27, 39, 58, 0.58);
 	--code-window-header: rgba(255, 255, 255, 0.08);
@@ -234,7 +269,13 @@
 html {
 	scroll-behavior: smooth;
 	font-family: var(--font-sans);
-	font-size: var(--font-size-base);
+	/*
+	 * 根字号必须是字面量 1rem，**不能**写 var(--text-md)：
+	 * 刻度里的 rem 全部相对这个值计算，写成变量会形成循环依赖。
+	 * 同时这也是全站唯一该出现的魔法数字——用户改浏览器默认字号时
+	 * 整套刻度跟着等比缩放。
+	 */
+	font-size: 1rem;
 	line-height: 1.6;
 	color: var(--color-text);
 	background-color: var(--color-bg);
@@ -245,41 +286,37 @@ html {
 
 body {
 	/*
-	 * nav shell 玻璃层参数放在 body 层计算，使之能读到 body inline style 上的
-	 * --hero-card-opacity / --hero-card-blur（由 Base.astro surfaceStyle 注入）。
-	 * 若定义在 :root，:root 层看不到 body 的 inline 变量，会一直使用 fallback 值。
+	 * 导航栏现在是"票面"而不是玻璃：纸色底 + 细墨线。
+	 * 变量名（--nav-shell-*、--glass-tint-*）仍然保留，因为它们被
+	 * Header.astro 直接消费；Phase 3 改名后一并删除。
 	 */
-	--nav-shell-blur: var(--hero-card-blur, 18px);
-	--nav-shell-blur-effective: min(calc(var(--nav-shell-blur, 18px) * 1.05), 56px);
-	/* 导航栏染色渐变定义在 body：这里才能读到上面从 base-surface 继承的
-	 * --hero-card-opacity（与 --nav-shell-* 同一层，见上方注释）。 */
-	--glass-tint-opacity: clamp(0.14, calc(var(--hero-card-opacity, 14) / 100 * 0.55), 0.3);
+	--nav-shell-blur: 0px;
+	--nav-shell-blur-effective: 0px;
+	--glass-tint-opacity: clamp(0.03, calc(var(--hero-card-opacity, 14) / 100 * 0.16), 0.1);
 	--glass-tint-soft: linear-gradient(
 		160deg,
-		rgb(var(--glass-tint-rgb) / calc(var(--glass-tint-opacity) * 0.5)),
+		rgb(var(--glass-tint-rgb) / calc(var(--glass-tint-opacity) * 0.6)),
 		transparent 62%
 	);
-	--nav-shell-open-surface:
-		var(--glass-tint-soft), rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100));
-	--nav-shell-condensed-surface:
-		var(--glass-tint-soft),
-		rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100 * 0.9));
+	--nav-shell-open-surface: rgb(var(--card-surface-rgb) / 0.97);
+	--nav-shell-condensed-surface: rgb(var(--card-surface-rgb) / 0.94);
 	min-height: 100dvh;
 	display: flex;
 	flex-direction: column;
 	position: relative;
 	overflow-x: hidden;
 	/* UI 默认无衬线：导航、按钮、胶囊、日期都是"界面"而不是"正文"。
-	   正文仍由 .prose / .page-title / 卡片标题显式使用 --font-serif-*。
-	   （此前 body 直接继承衬线体，导致 12–13px 的导航与日期也用衬线，小字号发虚） */
+	   正文仍由 .prose / .page-title / 卡片标题显式使用 --font-serif-*。 */
 	font-family: var(--font-sans);
 	font-weight: 400;
 	line-height: 1.6;
-	background:
-		radial-gradient(circle at 14% 10%, rgb(0 71 171 / 0.14), transparent 24%),
-		radial-gradient(circle at 84% 12%, rgba(var(--card-sheen-rgb), 0.28), transparent 20%),
-		radial-gradient(circle at 48% 100%, rgb(0 71 171 / 0.08), transparent 26%),
-		linear-gradient(180deg, rgba(var(--card-sheen-rgb), 0.32), transparent 30%), var(--color-bg);
+	/*
+	 * 纸基：米白底 + 极淡的纤维噪点。
+	 * 噪点用 SVG feTurbulence 以 data-URI 内联（不发请求），
+	 * 不透明度 0.05 时肉眼只在近距离能看出"纸不是纯色"。
+	 */
+	background-color: var(--color-bg);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
 body.site-shell-has-background-image {
@@ -303,6 +340,8 @@ body::after {
 	height: 24rem;
 	border-radius: 50%;
 	filter: blur(70px);
+	/* Phase 1：预光团属于玻璃体系，先关掉；Phase 3 连规则一起删。 */
+	display: none;
 	opacity: 0.14;
 	pointer-events: none;
 	z-index: -1;
@@ -481,14 +520,13 @@ h6 {
 }
 
 .footer-title {
-	font-size: 1rem;
+	font-size: var(--text-md);
 	font-weight: 700;
 	color: var(--color-text);
 }
 
-.footer-note,
 .footer-meta {
-	font-size: 0.9rem;
+	font-size: var(--text-md);
 	color: var(--color-text-secondary);
 }
 
@@ -678,71 +716,71 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	margin-inline: auto;
 }
 
+/*
+ * 票面（Phase 1）：类名暂时保留 .glass-panel 作为兼容钩子，
+ * Phase 3 逐文件改名为 .paper-sheet 后删除这个别名。
+ *
+ * 钞票的「面板」不是玻璃而是双线边框：外线（深墨）→ 纸缝（3px）→ 内线（细墨），
+ * 再在四角压上 L 形角标。整块没有任何 backdrop-filter。
+ */
 .glass-panel {
 	position: relative;
 	overflow: hidden;
-	background: transparent;
-	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgb(var(--card-surface-rgb) / 0.97);
+	border: 1px solid rgb(0 48 110 / 0.3);
 	border-radius: var(--radius-panel);
-	box-shadow: var(--shadow-card);
+	box-shadow:
+		0 1px 0 rgb(255 255 255 / 0.65),
+		0 14px 26px -24px var(--color-shadow-strong);
 }
 
+/* 内线：距外线 3px 的第二道细墨线，即票面的安全框 */
 .glass-panel::after {
 	content: "";
 	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	--glass-panel-blur-effective: min(calc(var(--glass-panel-blur, 18px) * 1.35), 72px);
-	/*
-	 * 染色渐变定义在 ::after 自身：这样 var(--glass-panel-opacity) 能读到
-	 * 面板自己的不透明度（文章页由 .article-shell .glass-panel::after 覆盖），
-	 * 染色强度才会跟着外观设置里的滑块联动。
-	 */
-	--glass-tint-strong: linear-gradient(
-		150deg,
-		rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--glass-panel-opacity, 0.14) * 0.55), 0.3)),
-		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-panel-opacity, 0.14) * 0.15), 0.12))
-			58%,
-		transparent
-	);
-	background:
-		var(--glass-tint-strong),
-		/* 不透明度下限提到 0.45：默认 14% 时原来的实际 alpha 只有 0.11，
-		   卡片几乎与背景同色。下限保证外观设置里的滑块只能让卡片"更实"而不是"消失" */
-		rgba(var(--card-surface-rgb), clamp(0.45, calc(var(--glass-panel-opacity, 0.14) * 2.6), 0.92));
-	backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
-	-webkit-backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
-	/* 玻璃内缘：钴蓝描边压在 inset 高光之上，给透明面板一道冷色边 */
-	box-shadow:
-		inset 0 0 0 1px var(--glass-edge),
-		inset 0 1px 0 rgba(255, 255, 255, 0.16);
+	inset: 3px;
+	border: 1px solid rgb(0 48 110 / 0.16);
+	border-radius: calc(var(--radius-panel) - 1px);
 	pointer-events: none;
 	z-index: 0;
 }
 
+/* 四角角标：8 段渐变画出 4 个 L 形，与内外双线对齐 */
 .glass-panel::before {
 	content: "";
 	position: absolute;
 	inset: 0;
-	border-radius: inherit;
-	background: linear-gradient(
-		180deg,
-		rgba(var(--card-sheen-rgb), 0.12),
-		rgba(var(--card-sheen-rgb), 0.03) 22%,
-		transparent 100%
-	);
 	pointer-events: none;
-	opacity: 0.7;
 	z-index: 1;
-	/* 顶缘高光里混入一点钴蓝，让玻璃的反光不是纯白而带冷调 */
-	box-shadow: inset 0 1px 0 rgb(var(--glass-tint-rgb) / 0.22);
+	--corner-len: 15px;
+	--corner-w: 1.5px;
+	--corner-inset: 7px;
+	background:
+		linear-gradient(var(--color-accent), var(--color-accent)) left var(--corner-inset) top
+		var(--corner-inset) / var(--corner-len) var(--corner-w) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) left var(--corner-inset) top
+		var(--corner-inset) / var(--corner-w) var(--corner-len) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) right var(--corner-inset) top
+		var(--corner-inset) / var(--corner-len) var(--corner-w) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) right var(--corner-inset) top
+		var(--corner-inset) / var(--corner-w) var(--corner-len) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) left var(--corner-inset) bottom
+		var(--corner-inset) / var(--corner-len) var(--corner-w) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) left var(--corner-inset) bottom
+		var(--corner-inset) / var(--corner-w) var(--corner-len) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) right var(--corner-inset) bottom
+		var(--corner-inset) / var(--corner-len) var(--corner-w) no-repeat,
+		linear-gradient(var(--color-accent), var(--color-accent)) right var(--corner-inset) bottom
+		var(--corner-inset) / var(--corner-w) var(--corner-len) no-repeat;
+	opacity: 0.5;
 }
 
-/* 文章页 glass-panel 独立参数，覆盖默认卡片变量 */
-.article-shell .glass-panel::after {
-	--glass-panel-blur: var(--article-panel-blur, 18px);
-	--glass-panel-opacity: calc(var(--article-panel-opacity, 14) / 100);
-}
+/*
+ * 文章页曾经用这条规则把面板参数改指向 --article-panel-*（玻璃不透明度/模糊）。
+ * 纸片体系下不再有这两个量，规则整体移除。数据库字段与后台滑块保留，
+ * Phase 4 再决定映射方式。
+ */
+
 
 .glass-panel > * {
 	position: relative;
@@ -758,7 +796,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	background: rgb(var(--color-accent-rgb) / 0.08);
 	border: 1px solid rgb(var(--color-accent-rgb) / 0.12);
 	color: var(--color-accent-hover);
-	font-size: 0.82rem;
+	font-size: var(--text-sm);
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 }
@@ -766,27 +804,27 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 .page-title {
 	/* 中文标题行高 1.04 会把上下笔画压到一起；1.12 既紧凑又不挤 */
 	font-family: var(--font-serif-body);
-	font-size: clamp(1.9rem, 1.5rem + 2.4vw, 4rem);
+	font-size: var(--text-3xl);
 	line-height: 1.12;
 	letter-spacing: -0.03em;
 }
 
 .page-intro {
 	max-width: 44rem;
-	font-size: clamp(1.02rem, 0.95rem + 0.35vw, 1.22rem);
+	font-size: var(--text-lg);
 	line-height: 1.75;
 	color: var(--color-text-secondary);
 }
 
 .section-heading {
-	font-size: clamp(1.6rem, 1.25rem + 1vw, 2.2rem);
+	font-size: var(--text-2xl);
 	line-height: 1.1;
 	letter-spacing: -0.03em;
 }
 
 .section-subheading {
 	color: var(--color-text-secondary);
-	font-size: var(--font-size-sm);
+	font-size: var(--text-sm);
 	line-height: 1.8;
 }
 
@@ -849,7 +887,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	background: rgb(var(--color-accent-rgb) / 0.07);
 	border: 1px solid rgb(var(--color-accent-rgb) / 0.14);
 	color: var(--color-text-secondary);
-	font-size: 0.84rem;
+	font-size: var(--text-sm);
 	font-variant-numeric: tabular-nums;
 	backdrop-filter: blur(12px) saturate(120%);
 	-webkit-backdrop-filter: blur(12px) saturate(120%);
@@ -865,7 +903,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	max-width: var(--max-width-prose);
 	/* body 已改成无衬线（UI 用），正文在这里显式切回衬线体 */
 	font-family: var(--font-serif-body);
-	font-size: 1.04rem;
+	font-size: var(--text-md);
 	line-height: 1.95;
 	color: var(--color-text-secondary);
 }
@@ -886,19 +924,19 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 }
 
 .prose h1 {
-	font-size: var(--font-size-3xl);
+	font-size: var(--text-3xl);
 }
 
 .prose h2 {
-	font-size: clamp(1.55rem, 1.3rem + 0.75vw, 2rem);
+	font-size: var(--text-2xl);
 }
 
 .prose h3 {
-	font-size: clamp(1.28rem, 1.1rem + 0.45vw, 1.55rem);
+	font-size: var(--text-xl);
 }
 
 .prose h4 {
-	font-size: 1.15rem;
+	font-size: var(--text-lg);
 }
 
 /* 正文标题下划线：仿 claude.css 的短强调色下划条 */
@@ -957,7 +995,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 .prose table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 0.94rem;
+	font-size: var(--text-md);
 	font-family: var(--font-sans);
 }
 
@@ -1157,7 +1195,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	margin-top: 2.5rem;
 	padding-top: 1.25rem;
 	border-top: 1px solid var(--color-border);
-	font-size: 0.88rem;
+	font-size: var(--text-sm);
 	color: var(--color-text-muted);
 }
 
@@ -1218,7 +1256,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	gap: 0.4rem;
 	padding: 0.6rem 1rem 0.3rem;
 	font-weight: 700;
-	font-size: 0.92rem;
+	font-size: var(--text-md);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
@@ -1232,7 +1270,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 .prose .prose-callout-body {
 	padding: 0 1rem 0.8rem;
-	font-size: 0.96rem;
+	font-size: var(--text-md);
 }
 
 .prose .prose-callout-body > :first-child {
@@ -1364,7 +1402,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	justify-content: center;
 	height: 100%;
 	color: var(--color-text-muted);
-	font-size: 0.92rem;
+	font-size: var(--text-md);
 }
 
 /* ── PlantUML ─────────────────────────────────────────────────────────── */
@@ -1401,7 +1439,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 .prose .prose-kanban-col-header {
 	font-weight: 700;
-	font-size: 0.92rem;
+	font-size: var(--text-md);
 	padding-bottom: 0.5rem;
 	margin-bottom: 0.5rem;
 	border-bottom: 2px solid var(--color-accent);
@@ -1418,7 +1456,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	padding: 0.45rem 0.6rem;
 	background: rgba(255, 255, 255, 0.08);
 	border-radius: 8px;
-	font-size: 0.9rem;
+	font-size: var(--text-md);
 	border: 1px solid var(--color-border);
 	color: var(--color-text-secondary);
 	transition: box-shadow var(--transition);
@@ -1656,7 +1694,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 .prose .prose-timeline-header {
 	font-weight: 700;
-	font-size: 1.05rem;
+	font-size: var(--text-md);
 	color: var(--color-text);
 	margin-bottom: 0.75rem;
 	padding-bottom: 0.3rem;
@@ -1665,21 +1703,21 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 .prose .prose-timeline-title {
 	font-weight: 700;
-	font-size: 1rem;
+	font-size: var(--text-md);
 	color: var(--color-text);
 	margin-bottom: 0.3rem;
 }
 
 .prose .prose-timeline-subtitle {
 	font-weight: 600;
-	font-size: 0.94rem;
+	font-size: var(--text-md);
 	color: var(--color-text-secondary);
 	margin-bottom: 0.2rem;
 	margin-top: 0.4rem;
 }
 
 .prose .prose-timeline-desc {
-	font-size: 0.92rem;
+	font-size: var(--text-md);
 	color: var(--color-text-muted);
 	margin-top: 0.15rem;
 }
@@ -1708,7 +1746,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 .prose .prose-calendar-date-header {
 	padding: 0.45rem 0.8rem;
 	font-weight: 700;
-	font-size: 0.92rem;
+	font-size: var(--text-md);
 	background: rgb(var(--color-accent-rgb) / 0.08);
 	color: var(--color-text);
 	border-bottom: 1px solid var(--color-border);
@@ -1720,7 +1758,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	justify-content: space-between;
 	gap: 0.5rem;
 	padding: 0.35rem 0.8rem;
-	font-size: 0.9rem;
+	font-size: var(--text-md);
 	border-bottom: 1px solid rgba(128, 128, 128, 0.08);
 }
 
@@ -1733,7 +1771,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 }
 
 .prose .prose-calendar-event-tag {
-	font-size: 0.78rem;
+	font-size: var(--text-sm);
 	padding: 0.1rem 0.4rem;
 	border-radius: 4px;
 	background: rgb(var(--color-accent-rgb) / 0.12);
@@ -1841,7 +1879,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	border: 1px solid var(--code-window-chip-border);
 	background: var(--code-window-chip-bg);
 	color: var(--code-window-text);
-	font-size: 0.72rem;
+	font-size: var(--text-sm);
 	font-weight: 600;
 	letter-spacing: 0.02em;
 	line-height: 1.3;
@@ -1858,7 +1896,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	border: 1px solid rgba(255, 255, 255, 0.14);
 	background: var(--code-window-copy-bg);
 	color: var(--code-window-copy-text);
-	font-size: 0.72rem;
+	font-size: var(--text-sm);
 	font-weight: 600;
 	line-height: 1.15;
 	cursor: pointer;
@@ -1996,7 +2034,7 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	}
 
 	.prose {
-		font-size: 1rem;
+		font-size: var(--text-md);
 		line-height: 1.85;
 	}
 
@@ -2010,11 +2048,11 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	}
 
 	.prose .prose-code-lang {
-		font-size: 0.68rem;
+		font-size: var(--text-sm);
 	}
 
 	.prose .prose-code-copy {
-		font-size: 0.66rem;
+		font-size: var(--text-sm);
 		padding: 0.22rem 0.52rem;
 	}
 

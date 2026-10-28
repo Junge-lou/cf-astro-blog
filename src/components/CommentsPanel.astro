@@ -99,12 +99,12 @@ const momoSlugId = `blog/${slug}`;
 	}
 
 	.comments-toggle-copy strong {
-		font-size: 1rem;
+		font-size: var(--text-md);
 		color: var(--color-text);
 	}
 
 	.comments-toggle-copy small {
-		font-size: 0.86rem;
+		font-size: var(--text-sm);
 		color: var(--color-text-muted);
 		line-height: 1.65;
 	}
@@ -118,7 +118,7 @@ const momoSlugId = `blog/${slug}`;
 		border-radius: 999px;
 		background: rgba(var(--card-sheen-rgb), 0.12);
 		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
-		font-size: 1.2rem;
+		font-size: var(--text-lg);
 		color: var(--color-accent-hover);
 		transition:
 			transform var(--transition),
@@ -150,7 +150,7 @@ const momoSlugId = `blog/${slug}`;
 
 	.comments-note,
 	.comments-empty-state {
-		font-size: 0.92rem;
+		font-size: var(--text-md);
 		color: var(--color-text-muted);
 		line-height: 1.75;
 	}

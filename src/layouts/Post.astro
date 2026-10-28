@@ -248,7 +248,7 @@ const hasToc = tocEntries.length > 0;
 
 	.article-toc-head > span {
 		display: block;
-		font-size: 0.78rem;
+		font-size: var(--text-sm);
 		line-height: 1.5;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -259,7 +259,7 @@ const hasToc = tocEntries.length > 0;
 
 	.article-transparency-toggle-compact {
 		padding: 0.38rem 0.62rem;
-		font-size: 0.76rem;
+		font-size: var(--text-sm);
 		line-height: 1.1;
 		white-space: nowrap;
 	}
@@ -335,7 +335,7 @@ const hasToc = tocEntries.length > 0;
 		display: block;
 		padding: 0.3rem 0.55rem;
 		border-radius: 0.45rem;
-		font-size: 0.875rem;
+		font-size: var(--text-sm);
 		line-height: 1.55;
 		font-family: var(--font-strong);
 		font-weight: 450;
@@ -404,7 +404,7 @@ const hasToc = tocEntries.length > 0;
 		background: rgba(var(--card-sheen-rgb), 0.08);
 		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
 		color: var(--color-text-secondary);
-		font-size: 0.84rem;
+		font-size: var(--text-sm);
 		font-family: var(--font-strong);
 		backdrop-filter: blur(10px) saturate(120%);
 		-webkit-backdrop-filter: blur(10px) saturate(120%);
@@ -421,7 +421,7 @@ const hasToc = tocEntries.length > 0;
 		background: rgba(var(--card-sheen-rgb), 0.08);
 		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
 		color: var(--color-text-secondary);
-		font-size: 0.88rem;
+		font-size: var(--text-sm);
 		backdrop-filter: blur(10px) saturate(120%);
 		-webkit-backdrop-filter: blur(10px) saturate(120%);
 	}
@@ -468,7 +468,7 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	.article-kicker {
-		font-size: 0.82rem;
+		font-size: var(--text-sm);
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--color-accent);
@@ -476,14 +476,14 @@ const hasToc = tocEntries.length > 0;
 
 	.article-title {
 		font-family: var(--font-serif-body);
-		font-size: clamp(1.95rem, 1.6rem + 2vw, 3.6rem);
+		font-size: var(--text-4xl);
 		line-height: 1.14;
 		letter-spacing: -0.03em;
 	}
 
 	.article-summary {
 		max-width: 42rem;
-		font-size: 1.04rem;
+		font-size: var(--text-md);
 		line-height: 1.9;
 		color: var(--color-text-secondary);
 	}

@@ -1,8 +1,6 @@
 (() => {
-	const HERO_SELECTOR = "[data-hero-depth]";
 	const TILT_SELECTOR = "[data-tilt-card]";
 	const FINE_POINTER_QUERY = "(any-hover: hover) and (any-pointer: fine)";
-	const HERO_SMOOTHING = 0.16;
 	const TILT_SMOOTHING = 0.2;
 	const MOTION_EPSILON = 0.001;
 	let disposeHomeMotion = () => {};
@@ -22,105 +20,6 @@
 	const stepValue = (current, target, factor) => {
 		const next = current + (target - current) * factor;
 		return Math.abs(target - next) <= MOTION_EPSILON ? target : next;
-	};
-
-	const resetHeroState = (hero) => {
-		hero.style.setProperty("--hero-pointer-x", "0");
-		hero.style.setProperty("--hero-pointer-y", "0");
-		hero.style.setProperty("--hero-scroll-shift", "0px");
-	};
-
-	const attachHeroDepth = (hero, disposers) => {
-		let frame = 0;
-		let currentPointerX = 0;
-		let currentPointerY = 0;
-		let currentScrollShift = 0;
-		let targetPointerX = 0;
-		let targetPointerY = 0;
-		let targetScrollShift = 0;
-
-		const render = () => {
-			currentPointerX = stepValue(currentPointerX, targetPointerX, HERO_SMOOTHING);
-			currentPointerY = stepValue(currentPointerY, targetPointerY, HERO_SMOOTHING);
-			currentScrollShift = stepValue(currentScrollShift, targetScrollShift, HERO_SMOOTHING);
-
-			hero.style.setProperty("--hero-pointer-x", currentPointerX.toFixed(3));
-			hero.style.setProperty("--hero-pointer-y", currentPointerY.toFixed(3));
-			hero.style.setProperty("--hero-scroll-shift", `${currentScrollShift.toFixed(1)}px`);
-
-			if (
-				currentPointerX !== targetPointerX ||
-				currentPointerY !== targetPointerY ||
-				currentScrollShift !== targetScrollShift
-			) {
-				frame = window.requestAnimationFrame(render);
-				return;
-			}
-
-			frame = 0;
-		};
-
-		const requestRender = () => {
-			if (frame) {
-				return;
-			}
-
-			frame = window.requestAnimationFrame(render);
-		};
-
-		const updateScrollShift = () => {
-			targetScrollShift = Math.min(180, Math.max(0, window.scrollY));
-			requestRender();
-		};
-
-		const handlePointerMove = (event) => {
-			if (!isFinePointerEvent(event)) {
-				return;
-			}
-
-			const rect = hero.getBoundingClientRect();
-
-			if (!rect.width || !rect.height) {
-				return;
-			}
-
-			const nextX = (event.clientX - rect.left) / rect.width - 0.5;
-			const nextY = (event.clientY - rect.top) / rect.height - 0.5;
-
-			targetPointerX = nextX * 1.45;
-			targetPointerY = nextY * 1.3;
-			requestRender();
-		};
-
-		const handlePointerLeave = () => {
-			targetPointerX = 0;
-			targetPointerY = 0;
-			requestRender();
-		};
-
-		resetHeroState(hero);
-		updateScrollShift();
-		hero.addEventListener("pointermove", handlePointerMove);
-		hero.addEventListener("pointerleave", handlePointerLeave);
-		hero.addEventListener("mousemove", handlePointerMove);
-		hero.addEventListener("mouseleave", handlePointerLeave);
-		window.addEventListener("scroll", updateScrollShift, { passive: true });
-		window.addEventListener("resize", updateScrollShift, { passive: true });
-		requestRender();
-
-		disposers.push(() => {
-			if (frame) {
-				window.cancelAnimationFrame(frame);
-			}
-
-			hero.removeEventListener("pointermove", handlePointerMove);
-			hero.removeEventListener("pointerleave", handlePointerLeave);
-			hero.removeEventListener("mousemove", handlePointerMove);
-			hero.removeEventListener("mouseleave", handlePointerLeave);
-			window.removeEventListener("scroll", updateScrollShift);
-			window.removeEventListener("resize", updateScrollShift);
-			resetHeroState(hero);
-		});
 	};
 
 	const resetTiltState = (card) => {
@@ -238,12 +137,7 @@
 		}
 
 		const disposers = [];
-		const hero = document.querySelector(HERO_SELECTOR);
 		const tiltCards = document.querySelectorAll(TILT_SELECTOR);
-
-		if (hero instanceof HTMLElement) {
-			attachHeroDepth(hero, disposers);
-		}
 
 		for (const card of tiltCards) {
 			if (card instanceof HTMLElement) {

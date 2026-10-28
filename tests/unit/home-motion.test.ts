@@ -13,12 +13,21 @@ describe("首页灵动交互保护", () => {
 		assert.match(baseLayoutSource, /site-shell-has-background-image/u);
 	});
 
-	test("首页会提供毛玻璃 Hero 与信号卡结构", async () => {
+	test("首页 Hero 为单栏玻璃面板，旧的双栏 / 信号卡结构不再回流", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
-		assert.match(homePageSource, /hero-signal-card/u);
-		assert.match(homePageSource, /hero-main-media/u);
-		assert.match(homePageSource, /hero-aura-primary/u);
+		// 当前结构
+		assert.match(homePageSource, /class="home-hero-copy glass-panel"/u);
+		assert.match(homePageSource, /class="hero-body"/u);
+
+		// 1.7 删除的双栏 Hero / 侧栏信号卡：模板里已无引用，样式也不该再出现，
+		// 否则就是没人使用的死 CSS。这里只匹配**选择器**（带前导点），
+		// 以免误伤样式块顶部那段"删掉了哪些类"的说明性注释。
+		assert.doesNotMatch(homePageSource, /\.hero-signal-card/u);
+		assert.doesNotMatch(homePageSource, /\.hero-main-media/u);
+		assert.doesNotMatch(homePageSource, /\.hero-aura-primary/u);
+		assert.doesNotMatch(homePageSource, /\.home-hero-side/u);
+		assert.doesNotMatch(homePageSource, /\.hero-atmosphere/u);
 	});
 
 	test("首页会单独渲染置顶文章板块并将最近更新与置顶分离", async () => {
@@ -37,25 +46,20 @@ describe("首页灵动交互保护", () => {
 		assert.match(homePageSource, /pinnedPosts\.length > 0 && \(/u);
 	});
 
-	test("右侧信息卡毛玻璃会跟随主题在深浅底之间切换", async () => {
-		const homePageSource = await readFile("src/pages/index.astro", "utf8");
-
-		assert.match(homePageSource, /hero-signal-pane-bg/u);
-		assert.ok(homePageSource.includes(':global([data-theme="dark"]) .hero-signal-card'));
-		assert.ok(homePageSource.includes(':global(:root:not([data-theme="light"]))'));
-		assert.match(homePageSource, /hero-signal-pane-border/u);
-	});
-
-	test("首页交互脚本会在切页后重新初始化并驱动鼠标联动变量", async () => {
+	test("首页交互脚本会在切页后重新初始化并驱动卡片姿态变量", async () => {
 		const homeMotionSource = await readFile("public/home-motion.js", "utf8");
 
 		assert.match(homeMotionSource, /astro:page-load/u);
 		assert.match(homeMotionSource, /astro:before-swap/u);
-		assert.match(homeMotionSource, /--hero-pointer-x/u);
 		assert.match(homeMotionSource, /--tilt-rotate-x/u);
 		assert.match(homeMotionSource, /pointermove/u);
 		assert.match(homeMotionSource, /mousemove/u);
 		assert.match(homeMotionSource, /any-pointer:\s*fine/u);
+
+		// 1.7 删除了 Hero 视差：`[data-hero-depth]` 与 --hero-pointer-* 已无 CSS 消费者，
+		// 脚本不该再监听 scroll/pointer 去写一个没人读的变量。
+		assert.doesNotMatch(homeMotionSource, /data-hero-depth/u);
+		assert.doesNotMatch(homeMotionSource, /--hero-pointer-x/u);
 	});
 
 	test("首页首屏简介支持保留换行展示", async () => {
@@ -63,12 +67,5 @@ describe("首页灵动交互保护", () => {
 
 		assert.match(homePageSource, /\.home-hero-copy \.page-intro/u);
 		assert.match(homePageSource, /white-space:\s*pre-line/u);
-	});
-
-	test("首页右侧信息卡描述支持保留后台录入的换行", async () => {
-		const homePageSource = await readFile("src/pages/index.astro", "utf8");
-
-		assert.match(homePageSource, /\.hero-signal-copy/u);
-		assert.match(homePageSource, /\.hero-signal-copy\s*\{[\s\S]*white-space:\s*pre-line/u);
 	});
 });

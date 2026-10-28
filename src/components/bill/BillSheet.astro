@@ -1,0 +1,442 @@
+---
+import { DEFAULT_BILL_SHEET_CONFIG, DEFAULT_BILL_ZONES, type BillZone } from "@/lib/bill-config";
+import { cornerRosette, guillocheTile } from "@/lib/bill-ornament";
+
+interface Props {
+	siteName: string;
+	portraitSrc: string;
+	kicker: string;
+	title: string;
+	intro: string;
+	totalPosts: number;
+	latestLabel: string;
+	latestHref: string;
+	pinnedHref: string;
+}
+
+const {
+	siteName,
+	portraitSrc,
+	kicker,
+	title,
+	intro,
+	totalPosts,
+	latestLabel,
+	latestHref,
+	pinnedHref,
+} = Astro.props;
+
+const cfg = DEFAULT_BILL_SHEET_CONFIG;
+
+/*
+ * 纹样全部在构建期由参数方程生成（见 src/lib/bill-ornament.ts），
+ * 不引用任何纸币素材。
+ */
+const guilloche = guillocheTile({
+	stroke: cfg.inkColor,
+	density: cfg.guillocheDensity,
+	size: 120,
+	opacity: 0.32,
+});
+const corner = cornerRosette({ stroke: cfg.inkColor, size: 64, opacity: 0.5 });
+
+const serial = `№ ${String(totalPosts).padStart(6, "0")}`;
+
+/** 解析每个区块实际指向，并把动态数据灌进文案。 */
+function resolve(zone: BillZone): { href: string; text: string } {
+	switch (zone.id) {
+		case "Z2":
+			return { href: zone.href, text: String(totalPosts).padStart(2, "0") };
+		case "Z3":
+			return { href: zone.href, text: `${siteName} · ${serial}` };
+		case "Z5":
+		case "Z7":
+		case "Z8":
+		case "Z13":
+			return { href: zone.id === "Z13" ? pinnedHref : zone.href, text: "100" };
+		case "Z12":
+			return { href: latestHref, text: latestLabel };
+		case "Z15":
+			return { href: zone.href, text: serial };
+		default:
+			return { href: zone.href, text: zone.label };
+	}
+}
+
+const zones = DEFAULT_BILL_ZONES.filter((zone) => zone.enabled).map((zone) => ({
+	zone,
+	...resolve(zone),
+}));
+
+const styleVars = {
+	"--bill-ratio": String(cfg.aspectRatio),
+	"--bill-paper": cfg.paperColor,
+	"--bill-ink": cfg.inkColor,
+	"--bill-frame": `${cfg.frameWeight}px`,
+	"--bill-guilloche": guilloche,
+	"--bill-corner": corner,
+} as Record<string, string>;
+---
+
+<section class="bill" style={styleVars} aria-label="站点导览票面">
+	<div class="bill__frame" aria-hidden="true"></div>
+	<div class="bill__micro" aria-hidden="true">{cfg.microText.repeat(6)}</div>
+
+	{
+		zones.map(({ zone, href, text }) => {
+			const geo = `left:${zone.x}%;top:${zone.y}%;width:${zone.w}%;height:${zone.h}%;`;
+			const className = `bill__zone bill__zone--${zone.kind} bill__zone--tier${zone.tier ?? 2}`;
+			const inner =
+				zone.kind === "portrait" ? (
+					<span class="bill__portrait">
+						<img src={portraitSrc} alt="" width="240" height="240" loading="eager" decoding="async" />
+					</span>
+				) : zone.kind === "seal" ? (
+					<span class="bill__seal" aria-hidden="true">
+						<span class="bill__seal-ring" />
+						<span class="bill__seal-core">{siteName.slice(0, 1)}</span>
+					</span>
+				) : zone.kind === "marker" ? (
+					<span class="bill__marker" aria-hidden="true">
+						<span class="bill__bell" />
+						<span class="bill__marker-caption">主题</span>
+					</span>
+				) : (
+					<span class="bill__text">{text}</span>
+				);
+
+			return zone.id === "Z14" ? (
+				<button type="button" class={`${className} bill__zone--button`} style={geo} data-bill-theme>
+					{inner}
+				</button>
+			) : (
+				<a
+					href={href}
+					class={className}
+					style={geo}
+					aria-label={zone.ariaLabel}
+					data-astro-prefetch={href.startsWith("/") ? "hover" : undefined}
+				>
+					{inner}
+				</a>
+			);
+		})
+	}
+
+	<div class="bill__masthead">
+		<span class="bill__kicker">{kicker}</span>
+		<h1 class="bill__title">{title}</h1>
+	</div>
+</section>
+
+<!-- 票面下方的“法定货币”式义务说明行：保住导语内容不让位给图形 -->
+<p class="bill__obligation">{intro}</p>
+
+<!-- 窄屏不复刻 2.35:1 比例，改为同一批链接的纵向列表 -->
+<nav class="bill-list" aria-label="站点导览">
+	{
+		zones.map(({ zone, href, text }) => (
+			<a href={href || "/"} class="bill-list__item" aria-label={zone.ariaLabel}>
+				<span class="bill-list__id">{zone.id}</span>
+				<span class="bill-list__text">{text || zone.ariaLabel}</span>
+			</a>
+		))
+	}
+</nav>
+
+<style>
+	.bill {
+		position: relative;
+		width: 100%;
+		aspect-ratio: var(--bill-ratio);
+		container-type: inline-size;
+		background-color: var(--bill-paper);
+		border: var(--bill-frame) solid rgb(0 48 110 / 0.42);
+		box-shadow:
+			inset 0 0 0 3px var(--bill-paper),
+			inset 0 0 0 4px rgb(0 48 110 / 0.22),
+			0 18px 34px -30px var(--color-shadow-strong);
+		overflow: hidden;
+		isolation: isolate;
+	}
+
+	/* 扭索纹花边：B 方案，纹样铺在内框上，再用遮罩只留四个角与边缘 */
+	.bill__frame {
+		position: absolute;
+		inset: 6px;
+		border: 1px solid rgb(0 48 110 / 0.28);
+		background-image: var(--bill-guilloche);
+		background-size: 120px 120px;
+		opacity: 0.5;
+		-webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+		mask-image:
+			linear-gradient(#000 0 0) top / 100% 18% no-repeat,
+			linear-gradient(#000 0 0) bottom / 100% 18% no-repeat;
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.bill__micro {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 1.4%;
+		font-family: var(--font-mono);
+		font-size: 1.05cqw;
+		letter-spacing: 0.42em;
+		white-space: nowrap;
+		overflow: hidden;
+		color: rgb(0 48 110 / 0.42);
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.bill__zone {
+		position: absolute;
+		display: grid;
+		place-items: center;
+		color: var(--bill-ink);
+		text-decoration: none;
+		border-radius: 2px;
+		transition:
+			background-color 180ms ease,
+			color 180ms ease;
+	}
+
+	a.bill__zone:hover,
+	a.bill__zone:focus-visible,
+	.bill__zone--button:hover,
+	.bill__zone--button:focus-visible {
+		background-color: rgb(0 71 171 / 0.07);
+		color: var(--color-accent-hover);
+	}
+
+	.bill__zone:focus-visible,
+	.bill__zone--button:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	.bill__zone--button {
+		border: 0;
+		background: transparent;
+		cursor: pointer;
+		font: inherit;
+	}
+
+	/* 面额：等宽数字，票面感靠字距而非装饰 */
+	.bill__zone--denomination .bill__text {
+		font-family: var(--font-strong);
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		line-height: 1;
+	}
+
+	.bill__zone--tier1 .bill__text {
+		font-size: 13cqw;
+	}
+
+	.bill__zone--tier2 .bill__text {
+		font-size: 6.4cqw;
+	}
+
+	.bill__zone--tier3 .bill__text {
+		font-size: 3.4cqw;
+	}
+
+	/* 花体铭文：保留雕刻体排印风格（大写字距 + 细线），只换内容 */
+	.bill__zone--rule .bill__text {
+		font-family: var(--font-serif-body);
+		font-size: 2.5cqw;
+		letter-spacing: 0.26em;
+		text-transform: uppercase;
+		text-align: center;
+	}
+
+	.bill__zone--tier2.bill__zone--rule .bill__text {
+		font-size: 3.1cqw;
+		letter-spacing: 0.34em;
+	}
+
+	.bill__zone--serial .bill__text {
+		font-family: var(--font-mono);
+		font-size: 2.2cqw;
+		letter-spacing: 0.16em;
+		white-space: nowrap;
+	}
+
+	.bill__zone--signature .bill__text {
+		font-family: var(--font-serif-em);
+		font-size: 3.2cqw;
+		font-style: italic;
+		transform: rotate(-2deg);
+	}
+
+	.bill__portrait {
+		width: 100%;
+		height: 100%;
+		display: grid;
+		place-items: center;
+	}
+
+	.bill__portrait img {
+		width: 78%;
+		height: auto;
+		aspect-ratio: 1;
+		object-fit: cover;
+		filter: grayscale(1) contrast(1.15) sepia(0.18);
+		mix-blend-mode: multiply;
+	}
+
+	/* 原创圆章：同心细环 + 中心字，不含任何机构徽记 */
+	.bill__seal {
+		position: relative;
+		width: 72%;
+		aspect-ratio: 1;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+	}
+
+	.bill__seal-ring {
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		border: 1px solid rgb(0 48 110 / 0.45);
+		box-shadow:
+			inset 0 0 0 3px var(--bill-paper),
+			inset 0 0 0 4px rgb(0 48 110 / 0.3),
+			inset 0 0 0 7px var(--bill-paper),
+			inset 0 0 0 8px rgb(0 48 110 / 0.2);
+	}
+
+	.bill__seal-core {
+		font-family: var(--font-serif-body);
+		font-size: 5cqw;
+		letter-spacing: 0.08em;
+		color: rgb(0 48 110 / 0.72);
+	}
+
+	.bill__marker {
+		display: grid;
+		justify-items: center;
+		gap: 1cqw;
+	}
+
+	.bill__bell {
+		width: 5.2cqw;
+		height: 5.2cqw;
+		border: 1px solid rgb(0 48 110 / 0.55);
+		border-radius: 50% 50% 46% 46%;
+		box-shadow: inset 0 0 0 2px var(--bill-paper), inset 0 0 0 3px rgb(0 48 110 / 0.3);
+	}
+
+	.bill__marker-caption {
+		font-family: var(--font-mono);
+		font-size: 1.5cqw;
+		letter-spacing: 0.3em;
+		color: rgb(0 48 110 / 0.6);
+	}
+
+	/* 报头：对应票面右上 “THE UNITED STATES OF AMERICA” 的位置，
+	   这里是全页唯一的 h1（真实可见文字，不是隐藏占位） */
+	.bill__masthead {
+		position: absolute;
+		left: 46%;
+		top: 2.5%;
+		width: 42%;
+		height: 15%;
+		display: grid;
+		place-items: center;
+		align-content: center;
+		gap: 0.6cqw;
+		text-align: center;
+		pointer-events: none;
+		z-index: 2;
+	}
+
+	.bill__kicker {
+		font-family: var(--font-mono);
+		font-size: 1.55cqw;
+		letter-spacing: 0.34em;
+		color: rgb(0 48 110 / 0.55);
+	}
+
+	.bill__title {
+		margin: 0;
+		font-family: var(--font-serif-body);
+		font-size: 2.35cqw;
+		font-weight: 600;
+		line-height: 1.28;
+		letter-spacing: 0.06em;
+		color: rgb(0 48 110 / 0.92);
+	}
+
+	/* ── 窄屏：同一批链接改纵向列表 ── */
+	.bill__obligation {
+		max-width: var(--max-width-prose);
+		margin: var(--space-sm) auto 0;
+		font-family: var(--font-serif-body);
+		font-size: var(--text-sm);
+		line-height: 1.6;
+		letter-spacing: 0.02em;
+		text-align: center;
+		color: var(--color-text-muted);
+	}
+
+	.bill-list {
+		display: none;
+	}
+
+	@media (max-width: 768px) {
+		.bill {
+			display: none;
+		}
+
+		.bill-list {
+			display: grid;
+			gap: 0;
+			border: 1px solid rgb(0 48 110 / 0.3);
+			border-radius: var(--radius-card);
+			overflow: hidden;
+			background: rgb(var(--card-surface-rgb) / 0.97);
+		}
+
+		.bill-list__item {
+			display: flex;
+			align-items: center;
+			gap: var(--space-sm);
+			padding: var(--space-sm) var(--space-md);
+			color: var(--color-text);
+			text-decoration: none;
+			border-bottom: 1px solid rgb(0 48 110 / 0.12);
+			font-size: var(--text-md);
+		}
+
+		.bill-list__item:last-child {
+			border-bottom: 0;
+		}
+
+		.bill-list__id {
+			font-family: var(--font-mono);
+			font-size: var(--text-sm);
+			color: var(--color-text-muted);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.bill__zone {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	// 票面上的「墨水瓶」区块承担主题切换：复用主题脚本的既有约定
+	const toggle = document.querySelector<HTMLButtonElement>("[data-bill-theme]");
+	toggle?.addEventListener("click", async () => {
+		const button = document.querySelector<HTMLElement>(".theme-toggle");
+		button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	});
+</script>

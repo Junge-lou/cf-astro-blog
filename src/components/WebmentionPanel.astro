@@ -333,7 +333,7 @@ const { targetUrl } = Astro.props;
 	.wm-section { margin: 0; }
 
 	.wm-title {
-		font-size: 1rem;
+		font-size: var(--text-md);
 		font-weight: 600;
 		color: var(--color-text);
 		margin: 0 0 0.9rem;
@@ -353,7 +353,7 @@ const { targetUrl } = Astro.props;
 	.wm-empty {
 		text-align: center;
 		color: var(--color-text-muted);
-		font-size: 0.9rem;
+		font-size: var(--text-md);
 		padding: 1rem 0;
 	}
 
@@ -404,7 +404,7 @@ const { targetUrl } = Astro.props;
 		justify-content: center;
 		background: var(--color-accent-soft);
 		color: var(--color-accent-hover);
-		font-size: 1rem;
+		font-size: var(--text-md);
 		font-weight: 700;
 		flex-shrink: 0;
 	}
@@ -418,13 +418,13 @@ const { targetUrl } = Astro.props;
 	}
 
 	.wm-author {
-		font-size: 0.92rem;
+		font-size: var(--text-md);
 		font-weight: 650;
 		color: var(--color-text);
 	}
 
 	.wm-meta {
-		font-size: 0.78rem;
+		font-size: var(--text-sm);
 		color: var(--color-text-muted);
 	}
 
@@ -432,7 +432,7 @@ const { targetUrl } = Astro.props;
 		flex-shrink: 0;
 		background: var(--color-accent-soft);
 		color: var(--color-accent-hover);
-		font-size: 0.73rem;
+		font-size: var(--text-sm);
 		font-weight: 500;
 		padding: 0.14rem 0.55rem;
 		border-radius: 999px;
@@ -443,7 +443,7 @@ const { targetUrl } = Astro.props;
 	.wm-content {
 		margin: 0.55rem 0 0;
 		color: var(--color-text-secondary);
-		font-size: 0.9rem;
+		font-size: var(--text-md);
 		line-height: 1.7;
 	}
 
@@ -457,7 +457,7 @@ const { targetUrl } = Astro.props;
 	/* ── 提示 ── */
 	.wm-hint {
 		margin: 0.9rem 0 0;
-		font-size: 0.84rem;
+		font-size: var(--text-sm);
 		color: var(--color-text-muted);
 		line-height: 1.7;
 	}
@@ -473,7 +473,7 @@ const { targetUrl } = Astro.props;
 		display: inline;
 		padding: 0.08rem 0.55rem;
 		margin: 0 0.15rem;
-		font-size: 0.78rem;
+		font-size: var(--text-sm);
 		font-family: inherit;
 		color: var(--color-text-secondary);
 		background-color: rgba(var(--card-surface-rgb), 0.6);
@@ -503,7 +503,7 @@ const { targetUrl } = Astro.props;
 
 	.wm-form-label {
 		display: block;
-		font-size: 0.83rem;
+		font-size: var(--text-sm);
 		font-weight: 500;
 		color: var(--color-text-muted);
 		margin-bottom: 0.45rem;
@@ -518,7 +518,7 @@ const { targetUrl } = Astro.props;
 		flex: 1 1 auto;
 		min-width: 0;
 		padding: 0.4rem 0.7rem;
-		font-size: 0.88rem;
+		font-size: var(--text-sm);
 		font-family: inherit;
 		color: var(--color-text);
 		background-color: rgba(var(--card-surface-rgb), 0.65);
@@ -538,7 +538,7 @@ const { targetUrl } = Astro.props;
 	.wm-submit {
 		flex-shrink: 0;
 		padding: 0.4rem 1.1rem;
-		font-size: 0.88rem;
+		font-size: var(--text-sm);
 		font-weight: 600;
 		font-family: inherit;
 		color: #fff;
@@ -568,7 +568,7 @@ const { targetUrl } = Astro.props;
 	}
 
 	.wm-summary-item {
-		font-size: 0.82rem;
+		font-size: var(--text-sm);
 		color: var(--color-text-secondary);
 	}
 
@@ -607,7 +607,7 @@ const { targetUrl } = Astro.props;
 		justify-content: center;
 		background: var(--color-accent-soft);
 		color: var(--color-accent-hover);
-		font-size: 0.75rem;
+		font-size: var(--text-sm);
 		font-weight: 700;
 	}
 
@@ -615,7 +615,7 @@ const { targetUrl } = Astro.props;
 		position: absolute;
 		bottom: -2px;
 		right: -2px;
-		font-size: 10px;
+		font-size: var(--text-sm);
 		line-height: 1;
 		background: var(--color-bg);
 		border-radius: 50%;
@@ -644,7 +644,7 @@ const { targetUrl } = Astro.props;
 	}
 
 	.wm-time {
-		font-size: 0.73rem;
+		font-size: var(--text-sm);
 		color: var(--color-text-muted);
 		margin-top: 0.4rem;
 		display: inline-block;

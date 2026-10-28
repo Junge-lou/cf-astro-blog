@@ -16,6 +16,14 @@
 - 正文 `.prose`、页面标题、文章标题显式使用衬线体，保留原有阅读气质
 - 页内标题行高 1.02→1.14、字距 -0.05em→-0.02em（中文标题不再上下粘连）
 
+## 字号刻度：黄金比例
+
+- 全站字号从 **46 个散落取值** 收敛为 **7 档**，级差 √φ ≈ 1.272（每 2 档 = φ，每 4 档 = φ²）
+- 档位：12.58 / 16 / 20.35 / 25.89 / 32.93 / 41.89 / 53.28 px，正文锚定 16px
+- 后三档写成 `clamp()`，上下界都落在刻度上，移动端不需要第二套字号表
+- 前后端 140 处 `font-size` 全部改走 `var(--text-*)`；`em` 与 `html` 根字号是仅有的两个例外
+- 新增 `tests/unit/type-scale.test.ts` 守住刻度，详见 `docs/design-typography.md`
+
 ## 首页信息架构
 
 - 移除 Hero 右侧栏与 `hero-sidebar-fit.js`：同一篇文章此前会在侧栏、置顶、最近更新里**出现三次**
@@ -36,6 +44,17 @@
 - 窄屏导航不再裁掉激活态胶囊、不再常驻横向滚动条
 - 删除从未被 import 的 `src/styles/claude.css`（3755 行死代码）
 - 窄屏（≤720px）关闭 `backdrop-filter`，改用已提高下限的纯色玻璃
+
+## 死代码清理
+
+- `src/pages/index.astro` 样式块 **884 行 → 263 行**：删掉 Hero 双栏 / 侧栏信号卡的
+  全部遗留规则（`home-hero-main`、`home-hero-side`、`hero-main-media`、`hero-signal-*`、
+  `hero-metric`、`hero-atmosphere`/`aura`/`beam`/`grid`、`home-grid`）——模板里已无引用
+- `public/home-motion.js` **270 行 → 164 行**：`[data-hero-depth]` 已不存在，
+  原先写入的 `--hero-pointer-x/y`、`--hero-scroll-shift` 已无任何 CSS 消费者，
+  一并移除对应的 pointer/scroll 监听；卡片姿态（`[data-tilt-card]`）逻辑保留
+- `global.css` 移除 `.footer-note`（模板只用 `.footer-meta`）
+- 顺带修掉 `index.astro` 样式块末尾多出的一个 `}`（CSS 语法错误）
 
 ---
 
