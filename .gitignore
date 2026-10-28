@@ -77,3 +77,7 @@ media/
 
 # 纸币参考图（仅用于排版标定；真实货币图像不得进入发布产物）
 .reference/
+
+# 本地工具产物：python 字节码缓存与他人工具目录
+__pycache__/
+.workbuddy/
