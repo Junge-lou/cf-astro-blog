@@ -33,9 +33,40 @@ function isLinkActive(href: string) {
 		<div class="site-nav-shell-scroll">
 			<div class="site-nav-shell">
 				<div class="site-brand">
-					<a href="/" class="site-brand-mark-link" aria-label={`${siteConfig.name} 首页`}>
+					{/*
+						品牌头像同时是后台的隐蔽入口，刻意指向登录页而非首页（站点标题链接负责回首页）。
+
+						头像自托管：原来直接引用腾讯云 COS 的 1.79MB / 76 帧 GIF，跨域 + 体积
+						都可能让浏览器判定为异常响应而显示破图。现在改成本地的 96px WebP
+						（动画版 99KB，静态版 2.7KB），同源加载且不依赖第三方存储。
+
+						prefers-reduced-motion 时用 <picture> 退回静态帧，避免给前庭敏感用户
+						反复播放 5 秒循环动画。
+
+						data-astro-prefetch="false"：避免鼠标划过就去预取 /api/auth/login——
+						该 GET 会签发一个登录 CSRF token 写进 KV，预取纯属浪费。
+					*/}
+					<a
+						href="/api/auth/login"
+						class="site-brand-mark-link"
+						aria-label="打开站点入口"
+						data-astro-prefetch="false"
+					>
 						<span class="site-brand-mark" aria-hidden="true">
-							<span class="site-brand-monogram">K</span>
+							<picture>
+								<source
+									media="(prefers-reduced-motion: reduce)"
+									srcset="/brand-avatar-static.webp"
+									type="image/webp"
+								/>
+								<img
+									src="/brand-avatar.webp"
+									alt=""
+									width="96"
+									height="96"
+									decoding="async"
+								/>
+							</picture>
 						</span>
 					</a>
 					<a href="/" class="site-brand-copy-link" aria-label={siteConfig.name}>
@@ -202,25 +233,24 @@ function isLinkActive(href: string) {
 		width: 2.8rem;
 		height: 2.8rem;
 		border-radius: var(--radius-sm);
-		padding: 0.28rem;
+		overflow: hidden;
 		background: rgb(var(--color-accent-rgb) / 0.1);
 		border: 1px solid rgb(var(--color-accent-rgb) / 0.18);
 		box-shadow: 0 12px 28px -24px rgb(var(--color-accent-rgb) / 0.45);
 	}
 
-	/* 站点标志：内联字母，不依赖外部图片（此前用腾讯云 COS 的 GIF，被浏览器 ORB 拦截成破图） */
-	.site-brand-monogram {
-		display: grid;
-		place-items: center;
+	/* 头像用 `<picture>` 包一层，为了给 prefers-reduced-motion 留静态退路 */
+	.site-brand-mark picture {
+		display: block;
 		width: 100%;
 		height: 100%;
-		border-radius: calc(var(--radius-sm) - 4px);
-		background: linear-gradient(150deg, var(--color-accent), var(--color-accent-hover));
-		color: #f8fbff;
-		font-family: var(--font-strong);
-		font-size: 1.05rem;
-		font-weight: 700;
-		line-height: 1;
+	}
+
+	.site-brand-mark img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.site-brand-copy {
@@ -451,7 +481,6 @@ function isLinkActive(href: string) {
 		.site-brand-mark {
 			width: 2.45rem;
 			height: 2.45rem;
-			padding: 0.22rem;
 		}
 
 		.site-brand-copy strong {
