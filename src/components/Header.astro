@@ -33,14 +33,9 @@ function isLinkActive(href: string) {
 		<div class="site-nav-shell-scroll">
 			<div class="site-nav-shell">
 				<div class="site-brand">
-					<a href="/api/auth/login" class="site-brand-mark-link" aria-label="打开站点入口">
+					<a href="/" class="site-brand-mark-link" aria-label={`${siteConfig.name} 首页`}>
 						<span class="site-brand-mark" aria-hidden="true">
-							<img
-								src="https://ffaff-1387930382.cos.ap-guangzhou.myqcloud.com/piclist/9d8d2ef898734ec740c6b5b379494beb.gif"
-								alt=""
-								loading="eager"
-								decoding="async"
-							/>
+							<span class="site-brand-monogram">K</span>
 						</span>
 					</a>
 					<a href="/" class="site-brand-copy-link" aria-label={siteConfig.name}>
@@ -206,18 +201,26 @@ function isLinkActive(href: string) {
 		justify-content: center;
 		width: 2.8rem;
 		height: 2.8rem;
-		border-radius: 4px;
+		border-radius: var(--radius-sm);
 		padding: 0.28rem;
 		background: rgb(var(--color-accent-rgb) / 0.1);
 		border: 1px solid rgb(var(--color-accent-rgb) / 0.18);
 		box-shadow: 0 12px 28px -24px rgb(var(--color-accent-rgb) / 0.45);
 	}
 
-	.site-brand-mark img {
-		display: block;
+	/* 站点标志：内联字母，不依赖外部图片（此前用腾讯云 COS 的 GIF，被浏览器 ORB 拦截成破图） */
+	.site-brand-monogram {
+		display: grid;
+		place-items: center;
 		width: 100%;
 		height: 100%;
-		object-fit: contain;
+		border-radius: calc(var(--radius-sm) - 4px);
+		background: linear-gradient(150deg, var(--color-accent), var(--color-accent-hover));
+		color: #f8fbff;
+		font-family: var(--font-strong);
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1;
 	}
 
 	.site-brand-copy {
@@ -424,6 +427,18 @@ function isLinkActive(href: string) {
 	}
 
 	@media (max-width: 640px) {
+		/* 窄屏下导航是一行可横向滚动的列表：给滚动容器留出垂直余量并隐藏滚动条，
+		   否则激活态胶囊的上下边缘会被 overflow 裁掉，还会常驻一条细横条。 */
+		.site-nav-shell-scroll {
+			overflow-y: visible;
+			padding-block: 2px;
+			scrollbar-width: none;
+		}
+
+		.site-nav-shell-scroll::-webkit-scrollbar {
+			display: none;
+		}
+
 		.site-nav-shell {
 			gap: 0.56rem;
 			padding: 0.72rem 0.8rem;

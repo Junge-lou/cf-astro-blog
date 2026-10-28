@@ -105,7 +105,7 @@ const hasToc = tocEntries.length > 0;
 							data-article-transparency-toggle="true"
 							aria-pressed="false"
 						>
-							取消透明度
+							专注阅读
 						</button>
 					</div>
 					<div class="article-toc-body">
@@ -123,7 +123,7 @@ const hasToc = tocEntries.length > 0;
 			</aside>
 		)}
 		<div class="article-main">
-			<header class="article-hero glass-panel">
+			<header class="article-hero">
 				<div class="article-hero-tools">
 					<a href="/blog" class="article-back">返回归档</a>
 					<button
@@ -132,7 +132,7 @@ const hasToc = tocEntries.length > 0;
 						data-article-transparency-toggle="true"
 						aria-pressed="false"
 					>
-						取消透明度
+						专注阅读
 					</button>
 					<div class="article-hero-stats" aria-label="文章字数与阅读时间">
 						<span class="article-hero-stat">{articleLengthLabel}</span>
@@ -366,15 +366,16 @@ const hasToc = tocEntries.length > 0;
 		scroll-margin-top: 6.5rem;
 	}
 
-	.article-hero,
 	.article-body,
 	.article-webmention-card {
 		padding: clamp(1.4rem, 1rem + 2vw, 2.5rem);
 	}
 
+	/* 标题区不再包一层玻璃面板：与正文同一张纸上，层级靠字号/留白而不是边框 */
 	.article-hero {
 		display: grid;
 		gap: 1rem;
+		padding: 0 0 clamp(1rem, 2vw, 1.6rem);
 	}
 
 	.article-hero-tools {
@@ -474,9 +475,10 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	.article-title {
-		font-size: clamp(2.4rem, 1.8rem + 2vw, 4.4rem);
-		line-height: 1.02;
-		letter-spacing: -0.05em;
+		font-family: var(--font-serif-body);
+		font-size: clamp(1.95rem, 1.6rem + 2vw, 3.6rem);
+		line-height: 1.14;
+		letter-spacing: -0.03em;
 	}
 
 	.article-summary {

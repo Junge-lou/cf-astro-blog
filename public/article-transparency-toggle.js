@@ -115,7 +115,8 @@
 	};
 
 	const updateToggleLabel = (button, enabled) => {
-		button.textContent = enabled ? "恢复透明度" : "取消透明度";
+		// 「取消透明度」听起来像撤销操作，改成描述阅读状态的词
+		button.textContent = enabled ? "退出专注" : "专注阅读";
 		button.setAttribute("aria-pressed", String(enabled));
 	};
 

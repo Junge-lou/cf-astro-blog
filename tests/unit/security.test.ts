@@ -14,7 +14,8 @@ describe("安全工具", () => {
 	test("renderSafeMarkdown 会转义原始 HTML ", async () => {
 		const html = await renderSafeMarkdown('# 标题\n<script>alert("xss")</script>');
 
-		assert.match(html, /<h1 id="标题">标题<\/h1>/u);
+		// 正文里的 h1 会降级为 h2（页面已有一个 h1 标题），见 renderer.heading
+		assert.match(html, /<h2 id="标题">标题<\/h2>/u);
 		assert.ok(!html.includes("<script>"));
 		assert.ok(html.includes("&lt;script&gt;alert"));
 	});
@@ -218,7 +219,7 @@ describe("安全工具", () => {
 		const html = await renderSafeMarkdown("[TOC]\n\n# 标题\n\n正文内容");
 
 		assert.ok(!html.includes("[TOC]"));
-		assert.match(html, /<h1 id="标题">标题<\/h1>/u);
+		assert.match(html, /<h2 id="标题">标题<\/h2>/u);
 		assert.match(html, /正文内容/u);
 	});
 

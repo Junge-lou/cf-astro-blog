@@ -58,7 +58,9 @@
 
 	const formatLocalDate = (date, style) => {
 		const options = STYLE_OPTIONS[style] || STYLE_OPTIONS.date;
-		return new Intl.DateTimeFormat(undefined, options).format(date);
+		// 站点语言是中文，强制 zh-CN：此前用 undefined 跟随浏览器语言，
+		// 英文环境会把日期渲染成 "October 27, 2026"，与中文正文混排。
+		return new Intl.DateTimeFormat("zh-CN", options).format(date);
 	};
 
 	const localizeElement = (element) => {

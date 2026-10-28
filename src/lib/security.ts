@@ -1044,7 +1044,11 @@ async function renderSafeMarkdownInternal(
 		}
 
 		const innerHtml = this.parser.parseInline(token.tokens ?? []);
-		return `<h${level} id="${escapeAttribute(headingId)}">${innerHtml}</h${level}>`;
+		// 页面里已经有 <h1>（文章标题），正文再用 `# 标题` 就会出现第二个 h1：
+		// 对 SEO 与屏幕阅读器都是错误结构。这里把 h1 降级为 h2，
+		// 但 TOC 判断仍用原始的 depthLevel（h1 不进入目录，避免与页面标题重复）。
+		const renderedLevel = Math.max(2, level);
+		return `<h${renderedLevel} id="${escapeAttribute(headingId)}">${innerHtml}</h${renderedLevel}>`;
 	};
 
 	// ── Typora 语法预处理管线 ──────────────────────────────────────────────
