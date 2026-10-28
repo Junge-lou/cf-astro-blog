@@ -68,7 +68,6 @@ npm run smoke                     # 默认 http://127.0.0.1:8787
 **静默丢弃**，文件却看起来完全正常，单测也发现不了。退出码非 0 即表示有检查失败，
 可以直接当作部署门禁。
 
-
 ### 迁移之后：必要时刷新查询统计
 
 `drizzle/0025_public_query_indexes.sql` 建立的部分索引（以 `published_at DESC` 打头）
@@ -133,3 +132,32 @@ npx wrangler d1 execute blog --remote --command "ANALYZE"
 - 后台「删除」是软删除（移入回收站），「彻底删除」才是物理删除。
 - `sync:posts` 只管理 `source='file'` 的文章：删除仓库里的 `.md` 文件会在下次部署时把对应文章移入回收站；重新编辑文件则恢复。
 - 上线本次改动后，需执行一次 `npm run db:migrate:remote` 应用 `0023` 迁移。
+
+## 7. 类型检查：TypeScript 7 与 6 并存
+
+TypeScript 7（Go 原生重写）**不提供编程 API**，而 `@astrojs/check`（Volar 系）必须通过 API
+嵌入编译器，因此两者只能并存，不能简单地把 `typescript` 换成 7.x：
+
+| package.json 条目 | 实际包 | 作用 |
+| --- | --- | --- |
+| `"@typescript/native": "npm:typescript@^7.x"` | TypeScript 7 | 提供 `tsc` 命令，供 `npm run typecheck` 使用（快 ~10x） |
+| `"typescript": "npm:@typescript/typescript6@^6.x"` | TypeScript 6 | 提供 `tsc6` 命令 + `import "typescript"` 的 API，供 `astro check` 等工具使用 |
+
+- 日常只跑 `npm run typecheck`（TS 7）即可，秒级出结果。
+- 需要与 Astro 内部检查结果对齐时用 `npm run typecheck:ts6`（两者各自独立写 `tsconfig.tsbuildinfo`，不会互相污染增量缓存）。
+- **不要把 `typescript` 改回普通的 `^6`/`^7` 版本号**：`^7` 会让 `astro check` 因缺少 API 而失败；普通 `^6` 会与 TS 7 争抢 `.bin/tsc`。
+- TS 7 已移除 `baseUrl`，`tsconfig.json` 中的 `paths` 改为相对 tsconfig 目录书写（`"@/*": ["./src/*"]`）。
+
+## 8. 依赖安全与 override 说明
+
+`package.json` 的 `overrides` 只保留两条必要项，改动前请先看这里的原因：
+
+| override | 原因 |
+| --- | --- |
+| `miniflare → undici@^7.30.1` | `@astrojs/cloudflare` 的传递依赖 `@cloudflare/vite-plugin` 固定内嵌 `wrangler@4.152.0`，其 `miniflare` 拉入有漏洞的 `undici@7.29.x`（DoS / TLS 校验绕过等）。把 `miniflare` 的 `undici` 提到 7.30.1 即可消除整条告警链，且与根 `wrangler` 的版本自然去重。 |
+| `minimist` / `nth-check` | 历史遗留的同类兜底，防止传递依赖回落到有漏洞的旧版本。 |
+
+注意两点：
+
+1. **修改 `overrides` 后必须删掉 `package-lock.json` 重新 `npm install`**。npm 不会重写锁文件里已存在的嵌套条目，会出现 `invalid: "^x.y.z" from node_modules/...` 但安装结果不变的假象。
+2. `@remy/webmention@1.5.0` 仍会带出 `cheerio@0.22 → lodash.pick`（原型污染，**上游无修复版本**）。它只被 `scripts/send-webmentions.mjs` 调用的 `wm` CLI 使用，属于发布期一次性进程，故暂按"已知可接受风险"保留；若后续要彻底消除，需要把该脚本改为直接用 `fetch` 实现 Webmention 端点发现与投递。

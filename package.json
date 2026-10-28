@@ -1,11 +1,11 @@
 {
 	"name": "cf-astro-blog-starter",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"type": "module",
 	"private": true,
 	"description": "基于 Astro、Hono 与 Cloudflare Workers 的内置后台站点模板",
 	"engines": {
-		"node": ">=22.0.0"
+		"node": ">=24.0.0"
 	},
 	"scripts": {
 		"dev": "astro dev",
@@ -17,8 +17,10 @@
 		"sync:posts:local": "node scripts/sync-local-posts.mjs --local",
 		"export:posts": "node scripts/export-posts.mjs --remote",
 		"export:posts:local": "node scripts/export-posts.mjs --local",
-		"check": "astro check && biome check src public tests scripts",
+		"check": "astro check && npm run typecheck && biome check src public tests scripts",
 		"check:fix": "biome check --write src public tests scripts",
+		"typecheck": "tsc --noEmit",
+		"typecheck:ts6": "tsc6 --noEmit --tsBuildInfoFile node_modules/.cache/tsconfig.ts6.tsbuildinfo",
 		"format": "biome format --write src public tests scripts README.md astro.config.mjs",
 		"lint": "biome lint src public tests scripts",
 		"test": "tsx --test tests/integration/*.test.ts tests/unit/*.test.ts",
@@ -60,36 +62,40 @@
 		}
 	},
 	"dependencies": {
-		"@astrojs/cloudflare": "^14.1.7",
-		"@fontsource-variable/lora": "^5.2.8",
-		"@fontsource/cormorant-garamond": "^5.2.11",
-		"@fontsource/space-grotesk": "^5.2.10",
-		"@modelcontextprotocol/sdk": "^1.27.1",
-		"astro": "^7.1.6",
-		"drizzle-orm": "^0.45.1",
-		"hono": "^4.12.8",
-		"jose": "^6.1.3",
-		"katex": "^0.19.0",
-		"marked": "^18.1.0",
+		"@astrojs/cloudflare": "^14.4.2",
+		"@fontsource-variable/lora": "^5.3.0",
+		"@fontsource/cormorant-garamond": "^5.3.0",
+		"@fontsource/space-grotesk": "^5.3.0",
+		"@modelcontextprotocol/sdk": "^1.32.2",
+		"astro": "^7.4.2",
+		"drizzle-orm": "^0.45.4",
+		"hono": "^4.13.14",
+		"jose": "^6.2.13",
+		"katex": "^0.19.1",
+		"marked": "^18.1.2",
 		"node-emoji": "^2.2.0",
-		"sanitize-html": "^2.17.4"
+		"sanitize-html": "^2.18.1"
 	},
 	"devDependencies": {
-		"@astrojs/check": "^0.9.10",
-		"@biomejs/biome": "^2.3.11",
-		"@cloudflare/workers-types": "^5.20260730.1",
+		"@astrojs/check": "^0.9.12",
+		"@biomejs/biome": "^2.6.3",
+		"@cloudflare/workers-types": "^5.20261028.1",
 		"@remy/webmention": "^1.5.0",
-		"@types/node": "^26.6.4",
-		"@types/sanitize-html": "^2.16.1",
+		"@types/node": "^26.6.5",
+		"@types/sanitize-html": "^2.16.2",
+		"@typescript/native": "npm:typescript@^7.0.2",
 		"drizzle-kit": "^0.31.11",
 		"gray-matter": "^4.0.3",
 		"sharp": "^0.35.5",
-		"tsx": "^4.21.0",
-		"typescript": "^5.9.3",
-		"wrangler": "^4.50.0"
+		"tsx": "^4.23.15",
+		"typescript": "npm:@typescript/typescript6@^6.0.2",
+		"wrangler": "^4.154.0"
 	},
 	"overrides": {
 		"minimist": "^1.2.8",
-		"nth-check": "^2.0.1"
+		"nth-check": "^2.0.1",
+		"miniflare": {
+			"undici": "^7.30.1"
+		}
 	}
 }

@@ -96,7 +96,7 @@
 ## 3. 技术栈
 
 | 层次 | 技术 |
-|------|------|
+| ------ | ------ |
 | **框架** | Astro 7（SSR mode） |
 | **API 层** | Hono（集成于 Astro 中间件） |
 | **数据库** | Cloudflare D1（SQLite）+ Drizzle ORM |
@@ -108,15 +108,15 @@
 | **数学** | KaTeX |
 | **搜索** | D1 服务端检索（SSR） |
 | **检查** | Biome（lint + format） |
-| **类型** | TypeScript + `@astrojs/check` |
+| **类型** | TypeScript 7（`tsc` CLI，`npm run typecheck`）+ TypeScript 6 API（`@astrojs/check` 依赖）+ `@astrojs/check` |
 
 ---
 
 ## 4. 环境要求
 
 | 依赖 | 版本要求 |
-|------|----------|
-| **Node.js** | ≥ 22（`package.json` 的 `engines` 已声明；CI 与部署工作流均用 24） |
+| ------ | ---------- |
+| **Node.js** | ≥ 24（`package.json` 的 `engines` 已声明；CI 与部署工作流、`.nvmrc` 均用 26 LTS） |
 | **npm** | ≥ 9 |
 | **Cloudflare 账号** | 需开通 Workers Paid 计划（D1 / R2 / KV 均需） |
 | **Wrangler CLI** | 建议最新版（`npx wrangler --version`） |
@@ -221,7 +221,7 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 #### 5.3.1 配置方式说明
 
 | 配置途径 | 适用场景 | 安全性 |
-|----------|----------|--------|
+| ---------- | ---------- | -------- |
 | `wrangler.jsonc` → `vars` | 非敏感变量，可随代码提交 | 明文 |
 | Cloudflare Dashboard → **Secrets** | 密钥、Token、密码哈希 | 加密存储 |
 | `wrangler secret put` 命令 | 同上，命令行操作 | 加密存储 |
@@ -232,7 +232,7 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 ##### Cloudflare 资源绑定（在 `wrangler.jsonc` 中配置，非环境变量）
 
 | 绑定名 | 类型 | 说明 | 必需 |
-|--------|------|------|:----:|
+| -------- | ------ | ------ | :----: |
 | `DB` | D1Database | 文章、分类、标签、设置等数据存储 | ✅ |
 | `MEDIA_BUCKET` | R2Bucket | 媒体文件（图片、封面图）存储 | ✅ |
 | `SESSION` | KVNamespace | 后台会话 Token 存储与登录限流 | ✅ |
@@ -250,7 +250,7 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 ###### 🔑 后台认证（核心必需）
 
 | 变量名 | 说明 | 生成方式 | 必需 |
-|--------|------|----------|:----:|
+| -------- | ------ | ---------- | :----: |
 | `JWT_SECRET` | JWT 签名密钥，长度必须 ≥ 32 字符 | `openssl rand -hex 32` | ✅ |
 | `ADMIN_USERNAME` | 后台登录用户名 | 自定义，如 `"admin"` | ✅ |
 | `ADMIN_PASSWORD_HASH` | 后台密码的 PBKDF2 哈希值 | `npm run hash:password -- 你的密码` | ✅ |
@@ -258,7 +258,7 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 ###### 🐙 GitHub OAuth 登录（可选，配置后可通过 GitHub 账号一键登录）
 
 | 变量名 | 说明 | 生成方式 | 必需 |
-|--------|------|----------|:----:|
+| -------- | ------ | ---------- | :----: |
 | `ADMIN_GITHUB_LOGIN` | 允许登录的 GitHub 用户名 | 你的 GitHub 用户名 | 可选 |
 | `GITHUB_OAUTH_CLIENT_ID` | GitHub OAuth App 的 Client ID | 在 GitHub 创建 OAuth App 获取 | 可选 |
 | `GITHUB_OAUTH_CLIENT_SECRET` | GitHub OAuth App 的 Client Secret | 在 GitHub 创建 OAuth App 获取 | 可选 |
@@ -290,7 +290,7 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 ###### 🤖 AI 端点（可选，用于后台 AI 写作辅助与公开 API）
 
 | 变量名 | 说明 | 必需 |
-|--------|------|:----:|
+| -------- | ------ | :----: |
 | `AI_INTERNAL_API_KEY` | 后台内部 AI 调用的 API Key | 可选 |
 | `AI_PUBLIC_API_KEY` | 公开 AI 端点 `/api/public-ai` 的鉴权 Key | 可选 |
 | `PUBLIC_AI_RATE_LIMIT_PER_MINUTE` | 公开 AI 每分钟每 IP 限流次数（默认 10） | 可选 |
@@ -301,7 +301,7 @@ id = 6e47bbd68a64499c8f26106a30e8a55b
 ###### 🔌 MCP 服务（可选，Model Context Protocol 服务端）
 
 | 变量名 | 说明 | 必需 |
-|--------|------|:----:|
+| -------- | ------ | :----: |
 | `MCP_BEARER_TOKEN` | MCP 服务的 Bearer Token 鉴权密钥 | 可选 |
 | `MCP_RATE_LIMIT_PER_MINUTE` | MCP 每分钟限流次数（默认 30） | 可选 |
 | `MCP_AUTH_FAIL_LIMIT_PER_MINUTE` | MCP 认证失败限流阈值（默认 10） | 可选 |
@@ -403,7 +403,7 @@ const COMMENTS_ORIGIN = "https://comments.你的域名.com";
 工作流支持三种触发方式：
 
 | 触发方式 | 说明 |
-|----------|------|
+| ---------- | ------ |
 | `push` 到 `main` 分支 | 推送代码自动部署（部署后补发 Webmention） |
 | `repository_dispatch`（`rebuild-search-index`） | 发文触发，仅补发 Webmention（轻量，不构建） |
 | `workflow_dispatch` | 在 GitHub Actions 页面手动触发 |

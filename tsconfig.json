@@ -1,9 +1,9 @@
 {
 	"extends": "astro/tsconfigs/strict",
 	"compilerOptions": {
-		"baseUrl": ".",
+		// TypeScript 7 已移除 baseUrl，paths 直接相对 tsconfig 所在目录解析
 		"paths": {
-			"@/*": ["src/*"]
+			"@/*": ["./src/*"]
 		},
 		"types": ["@cloudflare/workers-types", "node"],
 		// 严格模式补充
@@ -14,6 +14,14 @@
 		"incremental": true,
 		"tsBuildInfoFile": "node_modules/.cache/tsconfig.tsbuildinfo"
 	},
-	"include": ["src", "tests", "scripts", "env.d.ts", "astro.config.mjs"],
-	"exclude": ["node_modules", "dist", ".astro", ".wrangler"]
+	// .astro/types.d.ts 由 `astro sync` 生成（astro:content 等虚拟模块的类型声明）
+	"include": [
+		"src",
+		"tests",
+		"scripts",
+		"env.d.ts",
+		"astro.config.mjs",
+		".astro/types.d.ts"
+	],
+	"exclude": ["node_modules", "dist", ".wrangler"]
 }
