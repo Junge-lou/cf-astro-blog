@@ -1,32 +1,45 @@
 ---
-import { DEFAULT_BILL_SHEET_CONFIG, DEFAULT_BILL_ZONES, type BillZone } from "@/lib/bill-config";
-import { cornerRosette, guillocheTile } from "@/lib/bill-ornament";
+import {
+	BILL_CAP_RATIO,
+	BILL_MIN_SCALE_X,
+	BILL_TEXT_MM,
+	BILL_TYPE_METRICS,
+	BILL_ZONE_ADVANCE,
+	BILL_ZONE_LINE_HEIGHT,
+	BILL_ZONE_TRACKING,
+	type BillSheetConfig,
+	type BillZone,
+	DEFAULT_BILL_SHEET_CONFIG,
+	DEFAULT_BILL_ZONES,
+} from "@/lib/bill-config";
+import { cornerFlourish, guillocheTile, inkwellMark, scrollBand } from "@/lib/bill-ornament";
 
 interface Props {
 	siteName: string;
 	portraitSrc: string;
-	kicker: string;
 	title: string;
 	intro: string;
 	totalPosts: number;
-	latestLabel: string;
 	latestHref: string;
-	pinnedHref: string;
+	/** 后台可编排的票面参数；缺省时用代码里的默认值 */
+	config?: BillSheetConfig;
+	zones?: BillZone[];
+	textMm?: Record<string, number>;
 }
 
 const {
 	siteName,
 	portraitSrc,
-	kicker,
 	title,
 	intro,
 	totalPosts,
-	latestLabel,
 	latestHref,
-	pinnedHref,
+	config = DEFAULT_BILL_SHEET_CONFIG,
+	zones: zoneConfig = DEFAULT_BILL_ZONES,
+	textMm: textMmConfig = BILL_TEXT_MM,
 } = Astro.props;
 
-const cfg = DEFAULT_BILL_SHEET_CONFIG;
+const cfg = config;
 
 /*
  * 纹样全部在构建期由参数方程生成（见 src/lib/bill-ornament.ts），
@@ -38,35 +51,174 @@ const guilloche = guillocheTile({
 	size: 120,
 	opacity: 0.32,
 });
-const corner = cornerRosette({ stroke: cfg.inkColor, size: 64, opacity: 0.5 });
+/* 角花：只画左上象限，另外三角由 CSS 翻转复用 */
+const corner = cornerFlourish({ stroke: cfg.inkColor, size: 96, opacity: 0.62 });
+/* 卷草横带：沿上下边缘连续铺开 */
+const scroll = scrollBand({ stroke: cfg.inkColor, period: 220, height: 44, opacity: 0.5 });
+/* 变色墨水瓶：票面中右部那枚「墨水瓶 + 铃铛」，实测 14.1 x 14.0 mm */
+const inkwell = inkwellMark({ stroke: cfg.inkColor, paper: cfg.paperColor, opacity: 0.72 });
 
-const serial = `№ ${String(totalPosts).padStart(6, "0")}`;
+const serial = String(totalPosts).padStart(6, "0");
+
+/** 毫米 → cqw：票面宽 156 mm，故 1 mm = 100/156 cqw。 */
+const mmToCqw = (mm: number) => `${((mm * 100) / 156).toFixed(3)}cqw`;
+
+/**
+ * 铭文的排版解算。
+ *
+ * BILL_TEXT_MM 存的是真钞实测的**字高**，所以字号严格由字高反算：
+ *   font-size = 字高 / BILL_CAP_RATIO
+ *
+ * 但真钞的字高与行宽是同时锁死的，而页面用的 Lora / Space Grotesk 比真钞的窄体字宽得多。
+ * 只调字号必然二选一：要么字高对、行宽溢出；要么行宽对、字高偏小。
+ * 凹版印刷本来就是窄体，所以这里用横向压缩（--inscsx）把行宽压回真钞尺寸：
+ *   ① 竖向：字高与行盒都不得超出区块高度
+ *   ② 横向：算出该字号下的自然行宽，压到区块宽度
+ *   ③ 压缩超过 BILL_MIN_SCALE_X 就不再压，改为退字号（宁可小一点，也不要变形）
+ */
+const inscVars = (zone: BillZone, text: string) => {
+	const metric = BILL_TYPE_METRICS[zone.kind];
+	const capMm = textMmConfig[zone.id] ?? 2.5;
+	// 字距可以按区块覆盖：真钞每行铭文的字距并不一致，见 BILL_ZONE_TRACKING
+	const tracking = BILL_ZONE_TRACKING[zone.id] ?? metric.tracking;
+	// 单字字宽同理：同一 kind 下不同字符串的平均字宽能差 50%（见 BILL_ZONE_ADVANCE）
+	const advance = BILL_ZONE_ADVANCE[zone.id] ?? metric.advance;
+	// 行高同理可以按区块覆盖（见 BILL_ZONE_LINE_HEIGHT）：三行报头靠它把行距收紧
+	const lineHeight = BILL_ZONE_LINE_HEIGHT[zone.id] ?? metric.lineHeight;
+
+	// 竖排文字的长度方向是盒高
+	const vertical = zone.kind === "legal";
+	const runMm = vertical ? (zone.h / 100) * 66.3 : (zone.w / 100) * 156;
+	const depthMm = vertical ? (zone.w / 100) * 156 : (zone.h / 100) * 66.3;
+
+	const lines = text
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean);
+	const totalChars = lines.reduce((sum, line) => sum + line.length, 0);
+	const longest = Math.max(...lines.map((line) => line.length), 1);
+	const charEm = advance + tracking;
+
+	// ① 字号严格由字高反算。区块要装下 rows 行，所以高度上限得除以「行数 × 行距」：
+	//    铭文里作者的 \n 是硬换行，rows 可能 > 1，少了这一步多行块会直接溢出区块
+	//    （2026-10-29 修：三行版 THE / UNITED STATES / OF AMERICA 曾上下各漫出 3 mm）。
+	let rows = lines.length;
+	let fontMm = Math.min(capMm / BILL_CAP_RATIO, depthMm / (rows * lineHeight));
+
+	// ② 先试单行：算出行宽刚好等于区块宽度所需的压缩比
+	let scaleX = runMm / (longest * charEm * fontMm);
+
+	// ③ 压缩超过下限就不硬压，改为折行重新解算
+	if (scaleX < BILL_MIN_SCALE_X) {
+		let solved = Math.max(rows, 1);
+		for (let pass = 0; pass < 4; pass += 1) {
+			const tryFont = Math.min(capMm / BILL_CAP_RATIO, depthMm / (solved * lineHeight));
+			const perRow = Math.max(1, Math.floor(runMm / (charEm * tryFont)));
+			const next = Math.max(1, Math.ceil(totalChars / perRow));
+			if (next === solved) break;
+			solved = next;
+		}
+		rows = solved;
+		fontMm = Math.min(capMm / BILL_CAP_RATIO, depthMm / (rows * lineHeight));
+
+		const perRow = Math.max(1, Math.ceil(totalChars / rows));
+		scaleX = Math.min(1, runMm / (perRow * charEm * fontMm));
+
+		// 折行后还要压得很狠，说明盒子实在太小：退字号，保住字形
+		if (scaleX < BILL_MIN_SCALE_X) {
+			fontMm *= scaleX / BILL_MIN_SCALE_X;
+			scaleX = BILL_MIN_SCALE_X;
+		}
+	}
+
+	// 换行策略：铭文自带 \n 时用 `pre`（只认作者写的换行，不再自动折行）；
+	// 靠解算器折行的用 `pre-line`（让它按盒子宽度自然折）。
+	// 这条区分是必需的：换到 Playfair 后字变宽，`pre-line` 会把作者的
+	// “THE UNITED STATES / OF AMERICA” 再拆成三行。
+	const explicitBreak = text.includes("\n");
+	const decls = [
+		`--insc:${mmToCqw(fontMm)}`,
+		`--instrk:${tracking}em`,
+		`--insclh:${lineHeight}`,
+		`--inscsx:${Math.min(scaleX, 1).toFixed(3)}`,
+		`--inscws:${rows > 1 ? (explicitBreak ? "pre" : "pre-line") : "nowrap"}`,
+		`--inscw:${rows > 1 && !explicitBreak ? "100%" : "max-content"}`,
+	];
+	return `${decls.join(";")};`;
+};
+
+/** `?grid=1` 时叠加百分比网格与坐标图例，用于和参考票面校对。 */
+const showGrid = Astro.url.searchParams.get("grid") === "1";
+const gridSteps = Array.from({ length: 11 }, (_, i) => i * 10);
+
+/**
+ * 票面可见文字：一律使用美元原版铭文。
+ * 美元票面文字属于美国政府作品/短语，不受版权保护，可直接作为装饰文字使用。
+ * 三个 {serial} 会被替换成真实序号（CB000042B 的形式，字母与数字之间不留空格）。
+ */
+const INSCRIPTIONS: Record<string, string> = {
+	Z1: "",
+	Z2: "100",
+	Z3: "CB{serial}B",
+	Z4: "FEDERAL RESERVE NOTE",
+	Z5: "100",
+	Z6: "100",
+	Z7: "100",
+	Z8: "100",
+	Z9: "",
+	Z10: "ONE HUNDRED DOLLARS",
+	Z11: "Secretary of the Treasury",
+	Z12: "Treasurer of the United States",
+	Z13: "100",
+	Z14: "",
+	Z15: "CB{serial}B",
+	Z16: "THIS NOTE IS LEGAL TENDER\nFOR ALL DEBTS, PUBLIC AND PRIVATE",
+	Z17: "H8",
+	Z18: "JULY 4, 1776",
+	Z21: "FRANKLIN",
+	// 报头铭文：原来是硬编码的 .bill__masthead，现独立成区块 Z23（站长要求）。
+	// 2026-10-29：按真钐的三行排法 THE / UNITED STATES / OF AMERICA，
+	// 三行分别渲染成 .bill__line，方便统一压成扁平状。
+	Z23: "THE\nUNITED STATES\nOF AMERICA",
+};
 
 /** 解析每个区块实际指向，并把动态数据灌进文案。 */
 function resolve(zone: BillZone): { href: string; text: string } {
+	const inscription = (INSCRIPTIONS[zone.id] ?? zone.label).replace("{serial}", serial);
+
 	switch (zone.id) {
-		case "Z2":
-			return { href: zone.href, text: String(totalPosts).padStart(2, "0") };
-		case "Z3":
-			return { href: zone.href, text: `${siteName} · ${serial}` };
-		case "Z5":
-		case "Z7":
-		case "Z8":
-		case "Z13":
-			return { href: zone.id === "Z13" ? pinnedHref : zone.href, text: "100" };
 		case "Z12":
-			return { href: latestHref, text: latestLabel };
-		case "Z15":
-			return { href: zone.href, text: serial };
+			// 铭文是“Treasurer of the United States”，链接指向最新一篇
+			return { href: latestHref, text: inscription };
 		default:
-			return { href: zone.href, text: zone.label };
+			return { href: zone.href, text: inscription };
 	}
 }
 
-const zones = DEFAULT_BILL_ZONES.filter((zone) => zone.enabled).map((zone) => ({
-	zone,
-	...resolve(zone),
-}));
+/**
+ * 组件图的内联样式。全部走默认值白名单之外的值在归一化层就被纠正了，
+ * 这里再兜底一次默认值，保证旧数据（无 fit/blend 字段）也能正确渲染。
+ */
+const artVars = (zone: BillZone) => {
+	const art = zone.art;
+	if (!art) {
+		return "";
+	}
+	const decls = [
+		`object-fit:${art.fit ?? "contain"}`,
+		`object-position:${art.align ?? "center"}`,
+		`mix-blend-mode:${art.blend ?? "multiply"}`,
+		`opacity:${art.opacity ?? 1}`,
+	];
+	return `${decls.join(";")};`;
+};
+
+const zones = zoneConfig
+	.filter((zone) => zone.enabled)
+	.map((zone) => ({
+		zone,
+		...resolve(zone),
+	}));
 
 const styleVars = {
 	"--bill-ratio": String(cfg.aspectRatio),
@@ -75,69 +227,195 @@ const styleVars = {
 	"--bill-frame": `${cfg.frameWeight}px`,
 	"--bill-guilloche": guilloche,
 	"--bill-corner": corner,
+	"--bill-scroll": scroll,
+	"--bill-inkwell": inkwell,
 } as Record<string, string>;
 ---
 
 <section class="bill" style={styleVars} aria-label="站点导览票面">
-	<div class="bill__frame" aria-hidden="true"></div>
+	{
+		/* 整票边框图存在时铺满最底层，取代参数化纹样（四角 100 已画死在图里）。
+		   清空 config.frameArt 即回退：guilloche/角花/卷草是降级路径，代码保留不删。 */
+		cfg.frameArt ? (
+			<img
+				class="bill__frame-art"
+				src={cfg.frameArt}
+				alt=""
+				loading="eager"
+				decoding="async"
+			/>
+		) : (
+			<>
+				<div class="bill__frame" aria-hidden="true"></div>
+				<!-- 中间补底：极淡的扭索纹，只负责把空白填实，不参与层级 -->
+				<div class="bill__bedding" aria-hidden="true"></div>
+			</>
+		)
+	}
+
+	<!-- 花边：四角角花 + 上下卷草带。全部由参数方程生成，不含纸币图像。 -->
+	{
+		cfg.cornerOrnament && !cfg.frameArt && (
+			<>
+				<div class="bill__corner bill__corner--tl" aria-hidden="true" />
+				<div class="bill__corner bill__corner--tr" aria-hidden="true" />
+				<div class="bill__corner bill__corner--bl" aria-hidden="true" />
+				<div class="bill__corner bill__corner--br" aria-hidden="true" />
+				<div class="bill__scroll bill__scroll--top" aria-hidden="true" />
+				<div class="bill__scroll bill__scroll--bottom" aria-hidden="true" />
+			</>
+		)
+	}
+
 	<div class="bill__micro" aria-hidden="true">{cfg.microText.repeat(6)}</div>
 
 	{
 		zones.map(({ zone, href, text }) => {
-			const geo = `left:${zone.x}%;top:${zone.y}%;width:${zone.w}%;height:${zone.h}%;`;
-			const className = `bill__zone bill__zone--${zone.kind} bill__zone--tier${zone.tier ?? 2}`;
-			const inner =
-				zone.kind === "portrait" ? (
-					<span class="bill__portrait">
-						<img src={portraitSrc} alt="" width="240" height="240" loading="eager" decoding="async" />
+			const geo = `left:${zone.x}%;top:${zone.y}%;width:${zone.w}%;height:${zone.h}%;${
+				zone.z !== undefined ? `z-index:${zone.z};` : ""
+			}`;
+			const oval = zone.kind === "portrait" && cfg.portraitShape === "oval";
+			const className = `bill__zone bill__zone--${zone.kind} bill__zone--tier${zone.tier ?? 2}${oval ? " bill__zone--oval" : ""}`;
+			// 挂了组件图就只用图渲染，文本解算（BILL_TEXT_MM 等常量）对它不生效——
+			// 这些常量是回退路径：删掉 art 字段即恢复原渲染，不要删常量。
+			const inner = zone.art?.src ? (
+				<span class="bill__art">
+					<img src={zone.art.src} alt="" style={artVars(zone)} loading="eager" decoding="async" />
+				</span>
+			) : zone.kind === "portrait" ? (
+				<span class="bill__portrait">
+					<img src={portraitSrc} alt="" width="240" height="240" loading="eager" decoding="async" />
+				</span>
+			) : zone.kind === "seal" ? (
+				<span class="bill__seal" aria-hidden="true">
+					<span class="bill__seal-ring" />
+					<span class="bill__seal-core">{siteName.slice(0, 1)}</span>
+				</span>
+			) : zone.kind === "marker" ? (
+				<span class="bill__inkwell" />
+			) : (
+				<span
+					class="bill__text"
+					style={inscVars(zone, text)}
+					data-insc-mm={String(textMmConfig[zone.id] ?? 2.5)}
+				>
+					{text.split("\n").map((line) => (
+						<span class="bill__line">{line}</span>
+					))}
+				</span>
+			);
+
+			// 无 href 的纯装饰区块（如羽毛笔 Z22）渲染成 span，不进 tab 顺序；
+			// pointer-events: none 让它不遮挡下层可点区块（Z22 与 Z18 在真钞上本就叠压）
+			if (href === "" && zone.id !== "Z14") {
+				return (
+					<span
+						class={`${className} bill__zone--deco`}
+						style={geo}
+						data-bill-zone={zone.id}
+						aria-hidden={zone.ariaLabel ? undefined : "true"}
+					>
+						{inner}
 					</span>
-				) : zone.kind === "seal" ? (
-					<span class="bill__seal" aria-hidden="true">
-						<span class="bill__seal-ring" />
-						<span class="bill__seal-core">{siteName.slice(0, 1)}</span>
-					</span>
-				) : zone.kind === "marker" ? (
-					<span class="bill__marker" aria-hidden="true">
-						<span class="bill__bell" />
-						<span class="bill__marker-caption">主题</span>
-					</span>
-				) : (
-					<span class="bill__text">{text}</span>
 				);
+			}
 
 			return zone.id === "Z14" ? (
-				<button type="button" class={`${className} bill__zone--button`} style={geo} data-bill-theme>
+				<button
+					type="button"
+					class={`${className} bill__zone--button`}
+					style={geo}
+					data-bill-zone={zone.id}
+					data-bill-theme
+				>
 					{inner}
+					<span class="bill__hint" aria-hidden="true">{zone.ariaLabel}</span>
 				</button>
+			) : href === "/search" ? (
+				/* 搜索入口要与搜索页共享 view-transition-name：
+				   票面改版前这条链路由首页 hero 上的搜索链接承担，改版后丢了，
+				   于是从首页点进搜索页不再有过渡。 */
+				<a
+					href={href}
+					class={className}
+					style={geo}
+					data-bill-zone={zone.id}
+					aria-label={zone.ariaLabel}
+					transition:name="search-entry"
+					data-astro-prefetch="hover"
+				>
+					{inner}
+					<span class="bill__hint" aria-hidden="true">{zone.ariaLabel}</span>
+				</a>
 			) : (
 				<a
 					href={href}
 					class={className}
 					style={geo}
+					data-bill-zone={zone.id}
 					aria-label={zone.ariaLabel}
 					data-astro-prefetch={href.startsWith("/") ? "hover" : undefined}
 				>
 					{inner}
+					<span class="bill__hint" aria-hidden="true">{zone.ariaLabel}</span>
 				</a>
 			);
 		})
 	}
 
-	<div class="bill__masthead">
-		<span class="bill__kicker">{kicker}</span>
-		<h1 class="bill__title">{title}</h1>
-	</div>
+	{
+		showGrid && (
+			<div class="bill__grid" aria-hidden="true">
+				{gridSteps.map((step) => (
+					<span class="bill__grid-v" style={`left:${step}%`}>
+						<b>{step}</b>
+					</span>
+				))}
+				{gridSteps.map((step) => (
+					<span class="bill__grid-h" style={`top:${step}%`}>
+						<b>{step}</b>
+					</span>
+				))}
+			</div>
+		)
+	}
+
+	<!-- 报头铭文 THE UNITED STATES / OF AMERICA 已独立成区块 Z23，
+	     坐标与字号走 DEFAULT_BILL_ZONES + BILL_TEXT_MM，不再在此硬编码 -->
+	<p class="bill__series" aria-hidden="true">{"SERIES\n2009\nA"}</p>
 </section>
 
-<!-- 票面下方的“法定货币”式义务说明行：保住导语内容不让位给图形 -->
-<p class="bill__obligation">{intro}</p>
+<!-- 票面下方的说明行：
+     可见的是美元原版“法定货币”铭文（装饰性，不进无障碍树），
+     真正的 h1 与中文导语在其后，保证 SEO 与屏幕阅读器可用。 -->
+<p class="bill__obligation" aria-hidden="true">
+	THIS NOTE IS LEGAL TENDER FOR ALL DEBTS, PUBLIC AND PRIVATE
+</p>
+<h1 class="bill__title">{title}</h1>
+<p class="bill__lede">{intro}</p>
 
-<!-- 窄屏不复刻 2.35:1 比例，改为同一批链接的纵向列表 -->
+	{
+		showGrid && (
+			<ol class="bill__legend">
+				{zoneConfig.map((zone) => (
+					<li>
+						{zone.id} · x{zone.x} y{zone.y} w{zone.w} h{zone.h} · {zone.ariaLabel}
+						{zone.enabled ? "" : " · 已关闭"}
+					</li>
+				))}
+			</ol>
+		)
+	}
 <nav class="bill-list" aria-label="站点导览">
 	{
-		zones.map(({ zone, href, text }) => (
+		// 纯装饰区块（无 href 且非主题按钮）不进窄屏列表
+		zones
+			.filter(({ zone, href }) => !(href === "" && zone.id !== "Z14"))
+			.map(({ zone, href, text }) => (
 			<a href={href || "/"} class="bill-list__item" aria-label={zone.ariaLabel}>
-				<span class="bill-list__id">{zone.id}</span>
+				{/* 窄屏兜底：票面的位置关系在这里失效，改回"名称 + 原版铭文"更有用。
+				    原先这里显示区块 id（Z5/Z8…），那是调试信息，不该给读者看。 */}
+				<span class="bill-list__id">{zone.ariaLabel}</span>
 				<span class="bill-list__text">{text || zone.ariaLabel}</span>
 			</a>
 		))
@@ -160,33 +438,104 @@ const styleVars = {
 		isolation: isolate;
 	}
 
-	/* 扭索纹花边：B 方案，纹样铺在内框上，再用遮罩只留四个角与边缘 */
+	/* 扭索纹花边：B 方案。纹样只留在上下两条边带上，
+	   中间还给内容（真钞也是边饰重、中间疏）。 */
 	.bill__frame {
 		position: absolute;
 		inset: 6px;
-		border: 1px solid rgb(0 48 110 / 0.28);
+		border: 1px solid rgb(0 48 110 / 0.22);
 		background-image: var(--bill-guilloche);
-		background-size: 120px 120px;
-		opacity: 0.5;
-		-webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+		background-size: 132px 132px;
+		opacity: 0.22;
+		-webkit-mask-image:
+			linear-gradient(#000 0 0) top / 100% 15% no-repeat,
+			linear-gradient(#000 0 0) bottom / 100% 15% no-repeat;
 		mask-image:
-			linear-gradient(#000 0 0) top / 100% 18% no-repeat,
-			linear-gradient(#000 0 0) bottom / 100% 18% no-repeat;
+			linear-gradient(#000 0 0) top / 100% 15% no-repeat,
+			linear-gradient(#000 0 0) bottom / 100% 15% no-repeat;
 		pointer-events: none;
 		z-index: 0;
+	}
+
+	/* 中间补底：极淡扭索纹，只把空白填实，不做视觉主体 */
+	.bill__bedding {
+		position: absolute;
+		inset: 15% 5% 17%;
+		background-image: var(--bill-guilloche);
+		background-size: 168px 168px;
+		opacity: 0.07;
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	/* 四角角花：同一个左上象限纹样，另外三角靠翻转复用。
+	   尺寸用 cqw，跟着票面宽度缩放，永远保持毫米比例。 */
+	.bill__corner {
+		position: absolute;
+		width: 5.2cqw;
+		height: 5.2cqw;
+		background-image: var(--bill-corner);
+		background-repeat: no-repeat;
+		background-size: 100% 100%;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.bill__corner--tl {
+		left: 0.4%;
+		top: 0.8%;
+	}
+
+	.bill__corner--tr {
+		right: 0.4%;
+		top: 0.8%;
+		transform: scaleX(-1);
+	}
+
+	.bill__corner--bl {
+		left: 0.4%;
+		bottom: 0.8%;
+		transform: scaleY(-1);
+	}
+
+	.bill__corner--br {
+		right: 0.4%;
+		bottom: 0.8%;
+		transform: scale(-1);
+	}
+
+	/* 卷草横带：一个完整正弦周期为一瓦片，横向无缝 */
+	.bill__scroll {
+		position: absolute;
+		left: 5.4%;
+		right: 5.4%;
+		height: 3.6%;
+		background-image: var(--bill-scroll);
+		background-repeat: repeat-x;
+		background-size: auto 100%;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.bill__scroll--top {
+		top: 0.9%;
+	}
+
+	.bill__scroll--bottom {
+		bottom: 1.9%;
+		transform: scaleY(-1);
 	}
 
 	.bill__micro {
 		position: absolute;
 		left: 0;
 		right: 0;
-		bottom: 1.4%;
-		font-family: var(--font-mono);
-		font-size: 1.05cqw;
-		letter-spacing: 0.42em;
+		bottom: 0.5%;
+		font-size: 0.72cqw;
+		letter-spacing: 0.5em;
 		white-space: nowrap;
 		overflow: hidden;
-		color: rgb(0 48 110 / 0.42);
+		color: rgb(0 48 110 / 0.26);
 		pointer-events: none;
 		z-index: 1;
 	}
@@ -198,6 +547,9 @@ const styleVars = {
 		color: var(--bill-ink);
 		text-decoration: none;
 		border-radius: 2px;
+		/* 默认层 = 文字层。组件图区块用 zone.z 覆盖（羽毛笔 1、肖像 5、大 100 6…），
+		   这样图像之间才有真钞那种「谁压在谁上面」的套印层次。 */
+		z-index: 3;
 		transition:
 			background-color 180ms ease,
 			color 180ms ease;
@@ -224,64 +576,201 @@ const styleVars = {
 		font: inherit;
 	}
 
-	/* 面额：等宽数字，票面感靠字距而非装饰 */
+	/*
+	 * 悬停提示：票面可见文字是美元原版铭文，访客看不出功能；
+	 * 悬停/聚焦时把铭文换成中文功能名，既不破坏版式也不增加溢出。
+	 */
+	.bill__hint {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		padding: 0 4px;
+		font-family: var(--font-sans);
+		font-size: 1.5cqw;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		white-space: nowrap;
+		color: var(--color-accent-hover);
+		opacity: 0;
+		transition: opacity 140ms ease;
+		pointer-events: none;
+	}
+
+	.bill__zone:hover .bill__hint,
+	.bill__zone:focus-visible .bill__hint {
+		opacity: 1;
+	}
+
+	.bill__zone:hover > :global(span:not(.bill__hint)),
+	.bill__zone:focus-visible > :global(span:not(.bill__hint)) {
+		opacity: 0;
+	}
+
+	/* 面额数字：用衬线体 + 等宽数字。
+	   原来的 Space Grotesk 是几何无衬线，“0” 的细对角线看着像现代 App，
+	   而真钞巨号是重笔画的雕版字。Lora 700 的笔画重力更接近。 */
 	.bill__zone--denomination .bill__text {
-		font-family: var(--font-strong);
-		font-variant-numeric: tabular-nums;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		line-height: 1;
-	}
-
-	.bill__zone--tier1 .bill__text {
-		font-size: 13cqw;
-	}
-
-	.bill__zone--tier2 .bill__text {
-		font-size: 6.4cqw;
-	}
-
-	.bill__zone--tier3 .bill__text {
-		font-size: 3.4cqw;
-	}
-
-	/* 花体铭文：保留雕刻体排印风格（大写字距 + 细线），只换内容 */
-	.bill__zone--rule .bill__text {
 		font-family: var(--font-serif-body);
-		font-size: 2.5cqw;
-		letter-spacing: 0.26em;
+		font-variant-numeric: lining-nums tabular-nums;
+		font-feature-settings: "lnum" 1, "tnum" 1;
+		font-weight: 700;
+		font-kerning: normal;
+	}
+
+	/* 字号、字距、行高、横向压缩、是否折行全部来自 BILL_TYPE_METRICS 与解算结果 */
+	.bill__zone .bill__text {
+		/* 绝对定位居中，不靠 grid：解算后的字块**未压缩时一定比盒子宽**
+		   （scaleX < 1 就是为了换行宽），而 grid 的 place-items:center 在子项超宽时
+		   会退化成 start，压缩后整体右移、末尾字被挤出盒子（Z4 曾经挤出过 E）。
+		   left/top 50% + translate(-50%,-50%) 不依赖父容器对齐规则，永远居中。
+		   width 由 --inscw 给出：nowrap / pre 按内容宽；需要自动折行时才是 100%。 */
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: var(--inscw, max-content);
+		font-size: var(--insc, 2.5cqw);
+		letter-spacing: var(--instrk, 0em);
+		line-height: var(--insclh, 1.1);
+		white-space: var(--inscws, nowrap);
+		transform: translate(-50%, -50%) scaleX(var(--inscsx, 1));
+		transform-origin: center center;
+	}
+
+	/* 铭文逐行渲染：每行一个块，多行时由父级 text-align:center 居中。
+	   拆行是为了能对单独一行做变形（如 Z23 的 THE 需要压扁）。 */
+	.bill__zone .bill__line {
+		display: block;
+	}
+
+	/* 花体铭文：真钐这些字是凹版**雕刻**的 engraver's roman（高对比 Didone），
+	   不是任何现成字体刻的。之前用 Cormorant（伽拉蒙体系，对比度 ~2:1）
+	   怎么调阴影都不像，所以换成 Playfair Display（对比度 ~4.5:1、大写紧凑），
+	   字身略宽，靠 --inscsx 的横向压缩回到真钐行宽。 */
+	.bill__zone--rule .bill__text {
+		font-family: var(--font-engraved);
+		font-weight: 700;
+		font-kerning: normal;
+		font-feature-settings: "liga" 1, "kern" 1;
 		text-transform: uppercase;
 		text-align: center;
 	}
 
-	.bill__zone--tier2.bill__zone--rule .bill__text {
-		font-size: 3.1cqw;
-		letter-spacing: 0.34em;
+	/* 竖排法定货币铭文：真钞在左侧印章下方 */
+	.bill__zone--legal .bill__text {
+		writing-mode: vertical-rl;
+		font-family: var(--font-serif-body);
+		line-height: var(--insclh, 1.1);
+		letter-spacing: var(--instrk, 0.06em);
+		text-transform: uppercase;
+		text-align: center;
+		max-height: 100%;
+		color: rgb(0 48 110 / 0.62);
 	}
 
+	/* 字号与字距已由解算保证不溢出，所以不再需要截断省略 */
 	.bill__zone--serial .bill__text {
 		font-family: var(--font-mono);
-		font-size: 2.2cqw;
-		letter-spacing: 0.16em;
-		white-space: nowrap;
+		/* 序列号现在是 CB000006B，字母与数字之间已无空格，
+		   所以不再需要 word-spacing 压空格宽度 */
 	}
 
+	/* 注意：这里不能写 text-wrap: balance —— 它是 white-space 简写的一部分，
+	   会把解算出来的 nowrap 重置成 normal，签名就会莫名折行。 */
 	.bill__zone--signature .bill__text {
 		font-family: var(--font-serif-em);
-		font-size: 3.2cqw;
 		font-style: italic;
-		transform: rotate(-2deg);
+		text-align: center;
+		transform: rotate(-1.5deg) scaleX(var(--inscsx, 1));
+	}
+
+	/* 像主名 FRANKLIN：真钞把它印在底部底纹带上，是浅灰白斜体、
+	   与深色花纹压低对比的一层。用 data-bill-zone 定位，避免影响其他 rule 铭文。
+	   字重用 500：Cormorant 只加载了 700 正体 + 500 斜体两张字面，
+	   写 700 斜体会让浏览器做伪斜。 */
+	.bill__zone[data-bill-zone="Z21"] {
+		color: #e9e6dd;
+	}
+
+	.bill__zone[data-bill-zone="Z21"] .bill__text {
+		font-style: italic;
+		font-weight: 500;
+		letter-spacing: 0.08em;
+	}
+
+	/* 报头铭文三行：真钐的雕版字是**宽字面**（字宽 ≈ 0.75 em），Playfair 只有 0.59，
+	   逐行横向拉宽（扁平化）后再整体居中，三行才是一块统一的宽字面。
+	   用 transform 而不是 letter-spacing：拉宽的是字形本身，字距也跟着成比例，
+	   而且不改变布局宽度，不会把行撑出区块。 */
+	.bill__zone[data-bill-zone="Z23"] .bill__line {
+		transform: scaleX(1.45);
+		transform-origin: center center;
+	}
+
+	/* 逐区块墨色。美元票面只用两种油墨：黑色凹印（人像、边框、绝大部分铭文）
+	   与绿色胶印（序列号、印章）；本站在此基础上再给顶部两条压深色花纹的铭文
+	   改成浅灰白 + 黑描影，保证在花纹上仍可读。 */
+	/* FEDERAL RESERVE NOTE / THE UNITED STATES 上的黑字：凹印黑 */
+	.bill__zone[data-bill-zone="Z4"] {
+		color: #151515;
+	}
+
+	/* 序列号（上、下两处）：绿色胶印油墨，取色接近边框图里实测的墨绿 */
+	.bill__zone[data-bill-zone="Z3"],
+	.bill__zone[data-bill-zone="Z15"] {
+		color: #2e5a3a;
+	}
+
+	/* 法定货币铭文两行压在羽毛笔的着色区上：字只有 0.9 mm 高，深墨字直接落在
+	   棕色雕版上会糊成一团。纸色描边试过会反过来糊掉笔画，所以改成提高墨色对比度，
+	   并把字重提到 800（大字号下无感，小字号下靠描边变粗才立得住）。 */
+	.bill__zone[data-bill-zone="Z16"] .bill__text {
+		font-weight: 800;
+		color: #0a2c6b;
+	}
+
+	/* 顶部两条横贯铭文：浅灰白 + 黑描影 */
+	.bill__zone[data-bill-zone="Z10"],
+	.bill__zone[data-bill-zone="Z23"] {
+		color: #e9e6dd;
+	}
+
+	.bill__zone[data-bill-zone="Z10"] .bill__text,
+	.bill__zone[data-bill-zone="Z23"] .bill__text {
+		/* 真钐字不是“正下方投影”，而是往右下方 45° 的一层**斜影**（凹印字侧的影线）。
+		   用多级细步进（0.02em 一档，共 6 档）堆成实心斜影：步距大了会出现台阶锯齿。
+		   尺寸用 em，随字号/响应式缩放仍成比例；不加模糊，保持凹印的硬边。 */
+		text-shadow:
+			0.02em 0.02em 0 rgb(6 28 72 / 0.95),
+			0.04em 0.04em 0 rgb(6 28 72 / 0.92),
+			0.06em 0.06em 0 rgb(6 28 72 / 0.88),
+			0.08em 0.08em 0 rgb(6 28 72 / 0.8),
+			0.1em 0.1em 0 rgb(6 28 72 / 0.7),
+			0.12em 0.12em 0 rgb(6 28 72 / 0.55);
 	}
 
 	.bill__portrait {
+		position: relative;
 		width: 100%;
 		height: 100%;
 		display: grid;
 		place-items: center;
 	}
 
+	/* 凹版网点：让头像从“照片”变成“雕刻印刷” */
+	.bill__portrait::after {
+		content: "";
+		position: absolute;
+		inset: 6% 8%;
+		background-image: radial-gradient(circle, rgb(0 48 110 / 0.55) 0.5px, transparent 0.6px);
+		background-size: 3px 3px;
+		mix-blend-mode: multiply;
+		opacity: 0.32;
+		pointer-events: none;
+	}
+
 	.bill__portrait img {
-		width: 78%;
+		width: 88%;
 		height: auto;
 		aspect-ratio: 1;
 		object-fit: cover;
@@ -318,18 +807,17 @@ const styleVars = {
 		color: rgb(0 48 110 / 0.72);
 	}
 
-	.bill__marker {
-		display: grid;
-		justify-items: center;
-		gap: 1cqw;
-	}
-
-	.bill__bell {
-		width: 5.2cqw;
-		height: 5.2cqw;
-		border: 1px solid rgb(0 48 110 / 0.55);
-		border-radius: 50% 50% 46% 46%;
-		box-shadow: inset 0 0 0 2px var(--bill-paper), inset 0 0 0 3px rgb(0 48 110 / 0.3);
+	/* 变色墨水瓶：座标与尺寸由区块几何决定（实测 90.3–104.4 / 43.9–57.9 mm），
+	   所以纹样直接铺满整个区块，不再自己算尺寸。 */
+	.bill__inkwell {
+		display: block;
+		width: 100%;
+		height: 100%;
+		background-image: var(--bill-inkwell);
+		background-repeat: no-repeat;
+		background-position: center;
+		background-size: contain;
+		pointer-events: none;
 	}
 
 	.bill__marker-caption {
@@ -339,54 +827,169 @@ const styleVars = {
 		color: rgb(0 48 110 / 0.6);
 	}
 
-	/* 报头：对应票面右上 “THE UNITED STATES OF AMERICA” 的位置，
-	   这里是全页唯一的 h1（真实可见文字，不是隐藏占位） */
-	.bill__masthead {
+	/* 整票边框图：铺满票面最底层。比例 2.37 vs 票面 2.353，横向差 0.7%，
+	   fill 拉伸在可接受范围（这是全站唯一允许用 fill 的图） */
+	.bill__frame-art {
 		position: absolute;
-		left: 46%;
-		top: 2.5%;
-		width: 42%;
-		height: 15%;
-		display: grid;
-		place-items: center;
-		align-content: center;
-		gap: 0.6cqw;
-		text-align: center;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: fill;
+		mix-blend-mode: multiply;
 		pointer-events: none;
-		z-index: 2;
+		z-index: 0;
 	}
 
-	.bill__kicker {
-		font-family: var(--font-mono);
-		font-size: 1.55cqw;
-		letter-spacing: 0.34em;
-		color: rgb(0 48 110 / 0.55);
+	/* 纯装饰区块（无 href）：不响应鼠标，避免遮挡下层可点区块 */
+	.bill__zone--deco {
+		pointer-events: none;
 	}
 
-	.bill__title {
+	/* 组件图区块：图片铺满区块盒，object-fit/混合模式由 artVars 内联给出。
+	   区块本身是绝对定位的百分比盒，img 100% 填充即可，无需 width/height 属性防 CLS。 */
+	.bill__art {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.bill__art img {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	/* portraitShape: "oval" —— 椭圆遮罩，消除肖像区的矩形硬边（真钞肖像都是椭圆框） */
+	.bill__zone--oval .bill__art,
+	.bill__zone--oval .bill__portrait {
+		border-radius: 50%;
+		overflow: hidden;
+	}
+
+	.bill__zone--oval .bill__portrait::after {
+		border-radius: 50%;
+	}
+
+	.bill__series {
+		position: absolute;
+		/* 与文字层同级，避免被组件图盖住 */
+		z-index: 3;
+		/* 真钞 SERIES 区块在右下区域（实测 106.5–116.0 / 50.1–56.5 mm），两行堆叠 */
+		left: 69.5%;
+		top: 76%;
 		margin: 0;
+		font-family: var(--font-mono);
+		font-size: 1.15cqw;
+		letter-spacing: 0.3em;
+		line-height: 1.35;
+		white-space: pre-line;
+		color: rgb(0 48 110 / 0.55);
+		pointer-events: none;
+	}
+
+	/* 票面下方的中文 h1 与导语 */
+	.bill__title {
+		max-width: var(--max-width-prose);
+		margin: var(--space-md) auto 0;
 		font-family: var(--font-serif-body);
-		font-size: 2.35cqw;
+		font-size: var(--text-2xl);
 		font-weight: 600;
-		line-height: 1.28;
-		letter-spacing: 0.06em;
-		color: rgb(0 48 110 / 0.92);
+		line-height: 1.3;
+		letter-spacing: -0.01em;
+		text-align: center;
+		color: var(--color-text);
+	}
+
+	.bill__lede {
+		max-width: var(--max-width-prose);
+		margin: var(--space-xs) auto 0;
+		font-family: var(--font-serif-body);
+		font-size: var(--text-md);
+		line-height: 1.75;
+		text-align: center;
+		color: var(--color-text-muted);
+		/* 后台填的导语里允许手动换行：这里必须保留 \n，否则一段话会被折成一行 */
+		white-space: pre-line;
 	}
 
 	/* ── 窄屏：同一批链接改纵向列表 ── */
 	.bill__obligation {
 		max-width: var(--max-width-prose);
-		margin: var(--space-sm) auto 0;
+		margin: var(--space-md) auto 0;
 		font-family: var(--font-serif-body);
 		font-size: var(--text-sm);
 		line-height: 1.6;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
 		text-align: center;
-		color: var(--color-text-muted);
+		color: rgb(0 48 110 / 0.55);
 	}
 
 	.bill-list {
 		display: none;
+	}
+
+	/* 校准网格（?grid=1） */
+	.bill__grid {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 20;
+	}
+
+	.bill__grid-v,
+	.bill__grid-h {
+		position: absolute;
+		background: rgb(200 0 0 / 0.45);
+	}
+
+	.bill__grid-v {
+		top: 0;
+		bottom: 0;
+		width: 1px;
+	}
+
+	.bill__grid-h {
+		left: 0;
+		right: 0;
+		height: 1px;
+		background: rgb(0 90 200 / 0.4);
+	}
+
+	.bill__grid-v b,
+	.bill__grid-h b {
+		position: absolute;
+		padding: 0 2px;
+		font-family: var(--font-mono);
+		font-size: 8px;
+		font-weight: 700;
+		color: #b00;
+		background: rgb(255 255 255 / 0.75);
+	}
+
+	.bill__grid-v b {
+		top: 0;
+		left: 1px;
+	}
+
+	.bill__grid-h b {
+		left: 0;
+		top: 1px;
+		color: #05a;
+	}
+
+	/* 坐标图例 */
+	.bill__legend {
+		margin: var(--space-sm) auto 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+		gap: 2px 12px;
+		max-width: var(--max-width);
+		font-family: var(--font-mono);
+		font-size: 11px;
+		color: var(--color-text-muted);
 	}
 
 	@media (max-width: 768px) {

@@ -161,3 +161,31 @@ TypeScript 7（Go 原生重写）**不提供编程 API**，而 `@astrojs/check`�
 
 1. **修改 `overrides` 后必须删掉 `package-lock.json` 重新 `npm install`**。npm 不会重写锁文件里已存在的嵌套条目，会出现 `invalid: "^x.y.z" from node_modules/...` 但安装结果不变的假象。
 2. `@remy/webmention@1.5.0` 仍会带出 `cheerio@0.22 → lodash.pick`（原型污染，**上游无修复版本**）。它只被 `scripts/send-webmentions.mjs` 调用的 `wm` CLI 使用，属于发布期一次性进程，故暂按"已知可接受风险"保留；若后续要彻底消除，需要把该脚本改为直接用 `fetch` 实现 Webmention 端点发现与投递。
+
+## 9. 首页票面换图（组件图）
+
+票面每个区块可以挂一张图，挂上就用图片渲染，没挂就走原来的文字/图形解算。
+**删掉 `art` 字段就是回滚**，不用改渲染代码。
+
+### 9.1 换一张图
+
+1. 把图放进 `public/bill/`（已带 alpha 的 PNG/WebP）
+2. 先按 alpha 裁掉透明留白，再缩到 2× 显示尺寸（目标表见
+   `docs/bill-image-components-plan.md` §5.3），否则 `contain` 后会显得很小
+3. 后台 `/admin/bill` → 区块表 → 填「图」，选 `fit`：
+   - `contain`：完整显示，不裁不拉伸（徽记、墨水瓶、羽毛笔）
+   - `cover`：铺满盒子、裁掉多余部分（带大片透明留白的手写签名）
+   - `fill`：拉伸（仅整票边框这类差 1% 以内的场景）
+4. 保存后回首页核对位置
+
+### 9.2 退回文字
+
+把该区块的「图」清空保存即可，原文字渲染会自动恢复——
+区块的毫米几何、字号、字距一直保留在 `bill-config.ts` 里，没被删掉。
+
+### 9.3 注意事项
+
+- `art.src` 只允许 `/bill/` 前缀，归一化时会校验；写外链或 `javascript:` 会被丢弃
+- 换图后不用跑迁移，只写 `site_appearance_settings.home_bill_json` 一列
+- 图片不走 R2/D1 那套媒体流程（见 `docs/media-optimization.md`）
+- 新增图片记得在 `public/_headers` 的 `/bill/*` 规则内，否则每次导航都会回源校验

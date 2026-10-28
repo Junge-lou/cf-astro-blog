@@ -63,13 +63,19 @@ describe("页面过渡与跨页状态保护", () => {
 	});
 
 	test("首页与搜索页会共享搜索入口过渡，而归档页不会介入这条链路", async () => {
-		const [homePageSource, archivePageSource, searchPageSource] = await Promise.all([
-			readFile("src/pages/index.astro", "utf8"),
-			readFile("src/pages/blog/index.astro", "utf8"),
-			readFile("src/pages/search.astro", "utf8"),
-		]);
+		const [homePageSource, billSheetSource, archivePageSource, searchPageSource] =
+			await Promise.all([
+				readFile("src/pages/index.astro", "utf8"),
+				readFile("src/components/bill/BillSheet.astro", "utf8"),
+				readFile("src/pages/blog/index.astro", "utf8"),
+				readFile("src/pages/search.astro", "utf8"),
+			]);
 
-		assert.match(homePageSource, /transition:name="search-entry"/u);
+		/*
+		 * 首页的搜索入口现在由票面区块承担（Z10 → /search），
+		 * 所以这条链路的首页一端在 BillSheet.astro 里。
+		 */
+		assert.match(billSheetSource, /transition:name="search-entry"/u);
 		assert.match(searchPageSource, /transition:name="search-entry"/u);
 		assert.ok(!archivePageSource.includes('transition:name="search-entry"'));
 		assert.ok(!homePageSource.includes('transition:name="top-page-hero"'));

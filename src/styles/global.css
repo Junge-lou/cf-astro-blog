@@ -28,8 +28,26 @@
  */
 @import "@fontsource-variable/lora/wght.css";
 @import "@fontsource-variable/lora/wght-italic.css";
+/*
+ * Cormorant Garamond 需要**正体**与**斜体**两张字面，缺一张浏览器就会拿另一张顶，
+ * 并且合成粗体：
+ *   票面铭文（FEDERAL RESERVE NOTE / ONE HUNDRED DOLLARS / 报头）是 700 正体；
+ *   签名职衔（Secretary of the Treasury…）是 500 斜体。
+ * 之前只引入了 500-italic，于是所有「700 正体」其实都渲染成 500 斜体 + 合成粗体，
+ * 三种写法量出来的行宽完全一致（1047.9px），直到按字体面清单才查出。
+ */
 @import "@fontsource/cormorant-garamond/500-italic.css";
+@import "@fontsource/cormorant-garamond/700.css";
 @import "@fontsource/space-grotesk/700.css";
+/*
+ * Playfair Display：票面铭文（FEDERAL RESERVE NOTE / ONE HUNDRED DOLLARS /
+ * THE UNITED STATES OF AMERICA）专用。美元票面的字母是凹版雕刻的
+ * engraver's roman（高对比 Didone），Cormorant 属伽拉蒙体系、对比度只有
+ * 2:1 左右，怎么调阴影都不像。Playfair 是免费字里对比度与大写紧凑度最接近
+ * 的一档（实测对比 ~4.5:1）。
+ */
+@import "@fontsource-variable/playfair-display/wght.css";
+@import "@fontsource-variable/playfair-display/wght-italic.css";
 
 :root {
 	/*
@@ -51,7 +69,9 @@
 	--color-text: #12243a;
 	--color-text-secondary: #2c3d55;
 	--color-text-muted: #5a6a80;
-	--color-text-placeholder: #7a8798;
+	/* 占位符比 muted 再淡一级，但仍需在纸色底（#f2efe3）上达到 4.5:1。
+	   #7a8798 只有 3.2:1，浅色背景下发灰难辨识——type 刻度测试会守住这条。 */
+	--color-text-placeholder: #5f6d84;
 	--color-border: rgb(0 48 110 / 0.22);
 	/*
 	 * 钴蓝（Cobalt Blue，C.I. 颜料蓝 28）：全站唯一色源。
@@ -99,6 +119,13 @@
 		"Lora Variable", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
 	--font-serif-em:
 		"Cormorant Garamond", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+	/*
+	 * 票面铭文专用：凹版雕刻字形（engraver's roman）。
+	 * 与 --font-serif-em 分开是为了不影响签名职衔（那些是手写斜体）。
+	 */
+	--font-engraved:
+		"Playfair Display Variable", "Playfair Display", "Songti SC", "Source Han Serif SC",
+		"Noto Serif CJK SC", SimSun, serif;
 	--font-strong: "Space Grotesk", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 	--font-mono: "SF Mono", "JetBrains Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
 	/*
@@ -780,7 +807,6 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
  * 纸片体系下不再有这两个量，规则整体移除。数据库字段与后台滑块保留，
  * Phase 4 再决定映射方式。
  */
-
 
 .glass-panel > * {
 	position: relative;

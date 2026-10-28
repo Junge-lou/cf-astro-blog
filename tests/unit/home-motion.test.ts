@@ -16,9 +16,12 @@ describe("首页灵动交互保护", () => {
 	test("首页 Hero 为单栏玻璃面板，旧的双栏 / 信号卡结构不再回流", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 
-		// 当前结构
-		assert.match(homePageSource, /class="home-hero-copy glass-panel"/u);
-		assert.match(homePageSource, /class="hero-body"/u);
+		/*
+		 * 当前结构：Hero 由票面组件承担（票面本身就是首屏主视觉），
+		 * 原来的 home-hero-copy / hero-body 玻璃面板已随改版删除。
+		 */
+		assert.match(homePageSource, /<BillSheet/u);
+		assert.match(homePageSource, /portraitSrc=/u);
 
 		// 1.7 删除的双栏 Hero / 侧栏信号卡：模板里已无引用，样式也不该再出现，
 		// 否则就是没人使用的死 CSS。这里只匹配**选择器**（带前导点），
@@ -63,9 +66,10 @@ describe("首页灵动交互保护", () => {
 	});
 
 	test("首页首屏简介支持保留换行展示", async () => {
-		const homePageSource = await readFile("src/pages/index.astro", "utf8");
+		const billSheetSource = await readFile("src/components/bill/BillSheet.astro", "utf8");
 
-		assert.match(homePageSource, /\.home-hero-copy \.page-intro/u);
-		assert.match(homePageSource, /white-space:\s*pre-line/u);
+		// 首屏文案（h1 + 导语）现在由票面组件渲染
+		assert.match(billSheetSource, /\.bill__lede/u);
+		assert.match(billSheetSource, /white-space:\s*pre-line/u);
 	});
 });

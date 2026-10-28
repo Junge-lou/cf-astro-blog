@@ -225,6 +225,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	aiPublicApiKey: text("ai_public_api_key").notNull().default(""),
 	aiPublicModel: text("ai_public_model").notNull().default("deepseek-v4-flash"),
 	mcpEnabled: integer("mcp_enabled", { mode: "boolean" }).notNull().default(true),
+	homeBillJson: text("home_bill_json"),
 	updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
 });
 

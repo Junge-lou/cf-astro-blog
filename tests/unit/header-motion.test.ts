@@ -20,20 +20,19 @@ describe("导航收缩动画保护", () => {
 		assert.ok(headerSource.includes("padding var(--nav-motion-main)"));
 		assert.match(globalStylesSource, /--nav-shell-max-width:/u);
 		assert.match(globalStylesSource, /--nav-shell-condensed-scale:/u);
-		assert.match(globalStylesSource, /--nav-shell-blur:\s*var\(--hero-card-blur,\s*18px\)/u);
 		/*
-		 * 导航外壳表面由「钴蓝染色渐变 + 半透明底」两层组成。
-		 * 染色层（--glass-tint-soft）后来才加，所以这里分两段断言：
-		 * 既锁住原有的 rgba 底色计算，也锁住染色层没有被漏掉。
+		 * 导航外壳已从「磨玻璃」改为「纸面」：票面改版后 nav 不再模糊，
+		 * 底色也换成近乎不透明的纸色，钴蓝染色层一并去掉。
+		 * 变量名保留只是为了让 Header.astro 的消费点不用改。
 		 */
+		assert.match(globalStylesSource, /--nav-shell-blur:\s*0px/u);
 		assert.match(
 			globalStylesSource,
-			/--nav-shell-open-surface:\s*var\(--glass-tint-soft\),\s*rgba\(/u,
+			/--nav-shell-open-surface:\s*rgb\(var\(--card-surface-rgb\) \/ 0\.97\)/u,
 		);
-		assert.ok(
-			globalStylesSource.includes(
-				"rgba(var(--card-surface-rgb), calc(var(--hero-card-opacity, 14) / 100))",
-			),
+		assert.match(
+			globalStylesSource,
+			/--nav-shell-condensed-surface:\s*rgb\(var\(--card-surface-rgb\) \/ 0\.94\)/u,
 		);
 	});
 });

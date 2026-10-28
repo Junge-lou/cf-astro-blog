@@ -1,14 +1,15 @@
 ---
 import { env } from "cloudflare:workers";
 import { and, asc, count, desc, eq } from "drizzle-orm";
+import BillSheet from "@/components/bill/BillSheet.astro";
 import PostCard from "@/components/PostCard.astro";
 import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
+import { type BillSettings, DEFAULT_BILL_SETTINGS, getBillSettings } from "@/lib/bill-settings";
 import { getDb } from "@/lib/db";
 import { estimateArticleReadStats, formatDate } from "@/lib/format";
 import { getPublicPostVisibilityCondition } from "@/lib/public-content";
 import {
-	buildHeroActionLinks,
 	DEFAULT_SITE_APPEARANCE,
 	getSiteAppearance,
 	resolveSiteDescriptionFromAppearance,
@@ -33,6 +34,8 @@ let pinnedPosts: HomePostCardRow[] = [];
 let recentPosts: HomePostCardRow[] = [];
 let categories: { id: number; name: string; slug: string }[] = [];
 let homepageAppearance = DEFAULT_SITE_APPEARANCE;
+// 票面几何/文案/字高由后台维护；读失败时退到代码里的默认票面
+let billSettings: BillSettings = DEFAULT_BILL_SETTINGS;
 // 首页"已发布 N 篇"必须等于归档页的总数，因此单独 count：
 // 用 pinned.length + recent.length 只能得到"首页展示了几张"。
 let totalPostCount = 0;
@@ -68,6 +71,7 @@ function toHomePostCardRow(row: {
 try {
 	const db = getDb(env.DB);
 	homepageAppearance = await getSiteAppearance(db);
+	billSettings = await getBillSettings(db);
 
 	categories = await db
 		.select({
@@ -134,7 +138,6 @@ const latestUpdateAt = latestPost?.publishedAt || null;
 const latestUpdate = latestUpdateAt ? formatDate(latestUpdateAt) : "等待第一篇正式发布的文章";
 const recentSectionSubheading =
 	pinnedPosts.length > 0 ? "" : "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
-const heroActions = buildHeroActionLinks(homepageAppearance);
 const homepageMetaDescription = resolveSiteDescriptionFromAppearance(
 	homepageAppearance,
 	siteConfig.description,
@@ -146,51 +149,17 @@ function isInternalHref(href: string) {
 ---
 
 <Base title={siteConfig.name} description={homepageMetaDescription}>
-	<section class="home-hero-copy glass-panel">
-		<div class="hero-body">
-			<span class="section-kicker">{homepageAppearance.heroKicker}</span>
-			<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
-			<p class="page-intro">{homepageAppearance.heroIntro}</p>
-			<div class="hero-divider" aria-hidden="true"></div>
-			<div class="hero-actions">
-				{
-					heroActions.map((action, index) => (
-						index === 1 ? (
-							<span class="hero-search-bridge" transition:name="search-entry">
-								<a
-									href={action.href}
-									class:list={["button", { "button-secondary": index > 0 }]}
-									target={isInternalHref(action.href) ? undefined : "_blank"}
-									rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-								>
-									{action.label}
-									<kbd class="hero-kbd">Ctrl K</kbd>
-								</a>
-							</span>
-						) : (
-							<a
-								href={action.href}
-								class:list={["button", { "button-secondary": index > 0 }]}
-								target={isInternalHref(action.href) ? undefined : "_blank"}
-								rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-							>
-								{action.label}
-							</a>
-						)
-					))
-				}
-			</div>
-			<div class="hero-stats">
-				<span>📝 已发布 <strong>{totalPostCount}</strong> 篇文章</span>
-				{latestUpdateAt && (
-					<time class="local-time-pending" datetime={latestUpdateAt} data-local-time="date">
-						最后更新于 {latestUpdate}
-					</time>
-				)}
-			</div>
-		</div>
-	</section>
-
+	<BillSheet
+		siteName={siteConfig.name}
+		portraitSrc="/brand-avatar.webp"
+		title={homepageAppearance.heroTitle}
+		intro={homepageAppearance.heroIntro}
+		totalPosts={totalPostCount}
+		latestHref={recentPosts[0] ? `/blog/${recentPosts[0].slug}` : "/blog"}
+		config={billSettings.config}
+		zones={billSettings.zones}
+		textMm={billSettings.textMm}
+	/>
 	{
 		categories.length > 0 && (
 			<nav class="tags-nav">
@@ -236,10 +205,21 @@ function isInternalHref(href: string) {
 	<section class="section-head">
 		<div>
 			<h2 class="section-heading">最近更新</h2>
+			<p class="section-subheading">
+				{recentSectionSubheading}
+			</p>
 		</div>
-		<p class="section-subheading">
-			{recentSectionSubheading}
-		</p>
+		{
+			/* 服务端先给一份可读文案；带 datetime 时再交给 local-time.js
+			   按访客本地时区重绘，脚本失效也不会变成空白。 */
+			latestUpdateAt ? (
+				<time class="section-meta" datetime={latestUpdateAt} data-local-time="date">
+					{latestUpdate}
+				</time>
+			) : (
+				<p class="section-meta">{latestUpdate}</p>
+			)
+		}
 	</section>
 
 	{recentPosts.length > 0 ? (
@@ -270,149 +250,10 @@ function isInternalHref(href: string) {
 </Base>
 
 <style>
-/* 首页样式 —— 只保留 Hero 单栏 + 分类 + 置顶卡 + 最近更新 这四块真正存在的结构。
- * 曾经的「Hero 双栏 / 侧栏信号卡」那套样式（home-hero-main、home-hero-side、
- * hero-main-media、hero-signal-*、hero-metric、hero-atmosphere/aura/beam/grid…）
- * 在模板改单栏后已经全部失去引用，于 1.7 一并删除。 */
-	.home-hero-copy.glass-panel {
-		--glass-panel-blur: var(--hero-card-blur, 18px);
-		position: relative;
-		display: grid;
-		gap: clamp(0.8rem, 1.5vw, 1.2rem);
-		max-width: var(--max-width);
-		width: 100%;
-		margin: 0 auto;
-		padding: clamp(1rem, 2vw, 1.8rem) clamp(1.2rem, 2.5vw, 2.2rem);
-		overflow: hidden;
-	}
-
-	.home-hero-copy.glass-panel::before {
-		content: "";
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		z-index: 1;
-		background:
-			radial-gradient(ellipse at 50% 0%, rgb(var(--color-accent-rgb) / 0.04), transparent 60%),
-			radial-gradient(ellipse at 80% 100%, rgba(var(--card-sheen-rgb), 0.03), transparent 50%);
-	}
-
-	.home-hero-copy.glass-panel > * {
-		position: relative;
-		z-index: 2;
-	}
-
-	.hero-body {
-		display: grid;
-		gap: 0.85rem;
-		align-content: start;
-		min-width: 0;
-	}
-
-	.home-hero-copy .page-title {
-		font-size: var(--text-4xl);
-		line-height: 1.12;
-		letter-spacing: -0.02em;
-	}
-
-	.home-hero-copy .page-intro {
-		white-space: pre-line;
-	}
-
-	.hero-actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.8rem;
-		margin-top: 0.4rem;
-	}
-
-	.hero-search-bridge {
-		display: inline-flex;
-	}
-
-	.hero-kbd {
-		display: inline-flex;
-		align-items: center;
-		margin-left: 0.4rem;
-		padding: 0.1em 0.4em;
-		border-radius: 6px;
-		border: 1px solid rgba(var(--card-sheen-rgb), 0.24);
-		background: rgba(var(--card-sheen-rgb), 0.1);
-		font-size: var(--text-sm);
-		font-weight: 500;
-		letter-spacing: 0.04em;
-		line-height: 1.4;
-		opacity: 0.7;
-	}
-
-	.hero-actions .button-secondary {
-		border: none;
-		background: rgba(var(--card-sheen-rgb), 0.13);
-	}
-
-	.hero-actions .button-secondary:hover {
-		background: rgba(var(--card-sheen-rgb), 0.19);
-	}
-
-	/* 入场错峰：只作用于 Hero 正文的直接子元素 */
-	.hero-body > * {
-		animation: home-float-in 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-
-	.hero-body > :nth-child(1) {
-		animation-delay: 40ms;
-	}
-
-	.hero-body > :nth-child(2) {
-		animation-delay: 120ms;
-	}
-
-	.hero-body > :nth-child(3) {
-		animation-delay: 190ms;
-	}
-
-	.hero-body > :nth-child(4) {
-		animation-delay: 260ms;
-	}
-
-	.hero-body > :nth-child(5) {
-		animation-delay: 330ms;
-	}
-
-	.hero-body > :nth-child(6) {
-		animation-delay: 400ms;
-	}
-
-	.hero-divider {
-		width: 4rem;
-		height: 3px;
-		border-radius: 2px;
-		background: linear-gradient(
-			90deg,
-			var(--color-accent),
-			rgb(var(--color-accent-rgb) / 0.2)
-		);
-		margin-top: 0.2rem;
-	}
-
-	.hero-stats {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		font-size: var(--text-sm);
-		color: var(--color-text-muted);
-		margin-top: 0.2rem;
-	}
-
-	.hero-stats strong {
-		color: var(--color-text-secondary);
-		font-weight: 650;
-	}
-
-	.hero-stats time {
-		color: var(--color-text-muted);
-	}
-
+/* 首页样式 —— 只保留票面 + 分类 + 置顶卡 + 最近更新 这四块真正存在的结构。
+ * 曾经的「Hero 双栏 / 侧栏信号卡」以及后来那版「单栏玻璃 Hero」
+ * （home-hero-copy、hero-body、hero-actions、hero-kbd、hero-divider、hero-stats…）
+ * 在 Hero 换成票面组件后已全部失去引用，于本次一并删除。 */
 	.section-head {
 		display: flex;
 		align-items: end;
@@ -422,6 +263,17 @@ function isInternalHref(href: string) {
 
 	.section-head .section-kicker {
 		margin-bottom: 0.8rem;
+	}
+
+	/* 最近更新于…：右侧时间戳，等宽数字保证不同日期不会把行宽顶来顶去 */
+	.section-meta {
+		flex: none;
+		margin: 0;
+		white-space: nowrap;
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		font-variant-numeric: tabular-nums;
+		color: var(--color-text-secondary);
 	}
 
 	.tags-nav {
@@ -468,6 +320,13 @@ function isInternalHref(href: string) {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 0;
+	}
+
+	/* 卡片入场：错峰延迟由下面的 nth-child 规则提供，
+	   这里只声明一次动画本身（之前只留了延迟、没有 animation 声明，那批延迟全是死代码） */
+	.home-list :global(.post-list-item),
+	.post-compact-grid :global(.post-compact) {
+		animation: home-float-in 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
 	.home-list :global(.post-list-item:nth-child(1)) {
@@ -526,7 +385,7 @@ function isInternalHref(href: string) {
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.hero-body > * {
+		.bill__zone {
 			animation: none;
 			transition: none;
 			transform: none;

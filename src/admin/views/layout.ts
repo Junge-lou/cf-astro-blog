@@ -7,6 +7,7 @@ interface AdminLayoutOptions {
 type AdminNavKey =
 	| "dashboard"
 	| "appearance"
+	| "bill"
 	| "posts"
 	| "shuoshuo"
 	| "friends"
@@ -16,6 +17,7 @@ type AdminNavKey =
 const navItems: Array<{ key: AdminNavKey; label: string; href: string }> = [
 	{ key: "dashboard", label: "控制台", href: "/api/admin" },
 	{ key: "appearance", label: "外观", href: "/api/admin/appearance" },
+	{ key: "bill", label: "首页票面", href: "/api/admin/bill" },
 	{ key: "posts", label: "文章", href: "/api/admin/posts" },
 	{ key: "shuoshuo", label: "说说", href: "/api/admin/shuoshuo" },
 	{ key: "friends", label: "友链", href: "/api/admin/friends" },
@@ -1560,6 +1562,9 @@ export const adminSharedStyles = `
 `;
 
 function resolveActiveNav(title: string): AdminNavKey {
+	// 必须先判「票面」：它的页面标题是「首页票面」，
+	// 若放在「外观」之后也不会误判，但放在「文章」之前可避免将来标题含「文章」时串味。
+	if (title.includes("票面")) return "bill";
 	if (title.includes("外观")) return "appearance";
 	if (title.includes("友链")) return "friends";
 	if (title.includes("文章") || title.includes("编辑") || title.includes("新建")) {

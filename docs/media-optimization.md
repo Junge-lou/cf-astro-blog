@@ -58,6 +58,16 @@ Cloudflare Workers 上，Worker 运行时无法执行 `sharp`/`libvips`，因此
 > 判定以 `resolveSpec()` 中的顺序为准：`appearance/background/` 必须优先于封面规则，
 > 否则背景图会被误压成封面规格。修改规格时请同步更新 `scripts/optimize-media.mjs`。
 
+### 首页票面组件图不走这套流程
+
+`public/bill/` 下的组件图（肖像、徽记、大面额、签名、墨水瓶、边框等）是**布局资源**，
+不是用户内容：
+
+- 它们随代码一起部署，由 assets 层直接返回，不进 R2、不进 D1、不写 `media_files`
+- 因此 `scripts/optimize-media.mjs` 与 `sqlread` 那一套对它们无效，不要往里丢
+- 尺寸与体积目标见 `docs/bill-image-components-plan.md` §5.3；
+  缓存头要手动写在 `public/_headers` 的 `/bill/*` 规则里
+
 ## 使用步骤
 
 ### 1. 生成优化产物
@@ -229,4 +239,3 @@ node scripts/optimize-media.mjs --fetch --apply --mirror --only=<key 子串>
     原样复制到 `dist/client/` **被公开访问**（实测 200）。属于死配置，已删除。
 - 媒体（`/media/*`）、页面缓存与内容版本号失效仍然以 `src/middleware.ts` 与
   `src/lib/media.ts` 为准；`_headers` 只覆盖由资源层直接下发的静态文件。
-

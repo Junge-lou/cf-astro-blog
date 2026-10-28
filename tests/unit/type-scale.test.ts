@@ -165,9 +165,17 @@ describe("字号黄金比例刻度", () => {
 		 */
 		const SELF_CONTAINED_PAGES = new Set(["src/pages/blog/[slug].astro"]);
 
+		/**
+		 * 票面组件是另一个例外：它的字号不是「排版层级」，而是从实物票面量出来的
+		 * 毫米值，再用 cqw 换算，让整张票面按容器等比缩放。
+		 * 改成 var(--text-*) 会让票面在不同宽度下彻底错位。
+		 */
+		const MILLIMETRE_SCALED = new Set(["src/components/bill/BillSheet.astro"]);
+
 		for (const file of files) {
 			const source = await readFile(file, "utf8");
 			const isSelfContained = SELF_CONTAINED_PAGES.has(normalizePath(file));
+			const isMillimetreScaled = MILLIMETRE_SCALED.has(normalizePath(file));
 
 			for (const { line, value } of extractFontSizes(source, file)) {
 				const isToken = value.startsWith("var(--text-");
@@ -176,7 +184,7 @@ describe("字号黄金比例刻度", () => {
 				// html 的根字号是刻度锚点，必须保持字面量
 				const isRootAnchor = normalizePath(file) === GLOBAL_CSS && value === "1rem";
 
-				if (isSelfContained) {
+				if (isSelfContained || isMillimetreScaled) {
 					continue;
 				}
 

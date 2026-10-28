@@ -58,6 +58,9 @@
 /admin.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+/admin-bill.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /analytics.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
@@ -99,6 +102,15 @@
 
 /theme.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# ── 票面组件图 ──────────────────────────────────────────────────────────
+
+# 文件名不带内容哈希，不用 immutable；一周直连 + 一个月异步回源
+
+# tests/unit/static-headers.test.ts 只校验 public/*.js，本规则靠人工守住
+
+/bill/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
 
 # ── 站点图标 ────────────────────────────────────────────────────────────
 
