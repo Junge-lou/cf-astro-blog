@@ -21,18 +21,14 @@ describe("导航收缩动画保护", () => {
 		assert.match(globalStylesSource, /--nav-shell-max-width:/u);
 		assert.match(globalStylesSource, /--nav-shell-condensed-scale:/u);
 		/*
-		 * 导航外壳已从「磨玻璃」改为「纸面」：票面改版后 nav 不再模糊，
-		 * 底色也换成近乎不透明的纸色，钴蓝染色层一并去掉。
-		 * 变量名保留只是为了让 Header.astro 的消费点不用改。
+		 * 导航外壳是磨玻璃：模糊跟随后台「首页卡片模糊」，表面是钴蓝染色 + 卡片基色。
+		 * 首页票面是唯一保留纸纹的表面，与导航无关。
 		 */
-		assert.match(globalStylesSource, /--nav-shell-blur:\s*0px/u);
+		assert.match(globalStylesSource, /--nav-shell-blur:\s*var\(--hero-card-blur,\s*18px\)/u);
+		assert.match(globalStylesSource, /--nav-shell-open-surface:[^;]*var\(--glass-tint-soft\)/u);
 		assert.match(
 			globalStylesSource,
-			/--nav-shell-open-surface:\s*rgb\(var\(--card-surface-rgb\) \/ 0\.97\)/u,
-		);
-		assert.match(
-			globalStylesSource,
-			/--nav-shell-condensed-surface:\s*rgb\(var\(--card-surface-rgb\) \/ 0\.94\)/u,
+			/--nav-shell-condensed-surface:[^;]*var\(--glass-tint-soft\)/u,
 		);
 	});
 });

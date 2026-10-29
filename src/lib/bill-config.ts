@@ -76,6 +76,11 @@ export interface BillZone {
 export interface BillSheetConfig {
 	aspectRatio: number;
 	paperColor: string;
+	/**
+	 * 纸纹强度 0–100。票面是首页唯一保留纸质纹理的区域，
+	 * 0 = 光滑纸面，100 = 明显的纤维噪点。
+	 */
+	paperGrain: number;
 	inkColor: string;
 	frameWeight: number;
 	guillocheDensity: number;
@@ -258,6 +263,7 @@ export const NOTE_MM = { width: 156, height: 66.3 } as const;
 export const DEFAULT_BILL_SHEET_CONFIG: BillSheetConfig = {
 	aspectRatio: 156 / 66.3,
 	paperColor: "#f2efe3",
+	paperGrain: 38,
 	inkColor: "#0047ab",
 	frameWeight: 1,
 	guillocheDensity: 3,

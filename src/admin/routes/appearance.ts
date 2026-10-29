@@ -466,7 +466,7 @@ function renderAppearancePage(options: {
 		</style>
 		${alertHtml}
 		<h1>站点外观</h1>
-		<p class="appearance-copy">这里统一控制前台背景、顶部状态栏、导航索引链接、首页首屏和文章页侧栏信息。</p>
+		<p class="appearance-copy">这里统一控制前台背景、顶部状态栏、导航索引链接、首页首屏文案与玻璃参数。</p>
 		<form method="post" action="/api/admin/appearance" class="appearance-grid appearance-form-grid" data-appearance-form="true">
 			<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
 			<div class="appearance-stack">
@@ -625,6 +625,7 @@ function renderAppearancePage(options: {
 				<section class="appearance-panel">
 					<h2>背景与卡片视觉参数</h2>
 					<p class="appearance-note">透明度 0% 表示完全不透明，100% 表示完全透明；缩放 0% 表示原始比例；横向/纵向焦点 0% 表示画面居中。</p>
+					<p class="appearance-note">全站表面默认是钴蓝磨玻璃，这里的透明度与模糊控制导航、卡片和面板的玻璃层。首页票面是唯一的纸质区域，纸张色与纸纹强度请到 <a href="/api/admin/bill">首页票面</a> 单独调整。</p>
 					<div class="appearance-controls">
 						<div class="appearance-range">
 							<div class="appearance-range-meta">

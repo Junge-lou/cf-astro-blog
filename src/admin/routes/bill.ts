@@ -108,6 +108,7 @@ bill.post("/", async (c) => {
 		config: {
 			...current.config,
 			paperColor: field(body, "paperColor") || current.config.paperColor,
+			paperGrain: Number(field(body, "paperGrain")),
 			inkColor: field(body, "inkColor") || current.config.inkColor,
 			frameWeight: Number(field(body, "frameWeight")),
 			guillocheDensity: Number(field(body, "guillocheDensity")),
@@ -130,7 +131,8 @@ bill.post("/", async (c) => {
 		) ||
 		Object.values(textMm).some((value) => !Number.isFinite(value)) ||
 		!Number.isFinite(next.config.frameWeight) ||
-		!Number.isFinite(next.config.guillocheDensity);
+		!Number.isFinite(next.config.guillocheDensity) ||
+		!Number.isFinite(next.config.paperGrain);
 
 	await saveBillSettings(getDb(c.env.DB), next);
 

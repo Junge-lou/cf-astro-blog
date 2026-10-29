@@ -9,6 +9,15 @@ const billEditorStyles = `
 		align-items: start;
 	}
 
+	/* 纸纹强度：range 不必继承 form-input 的输入框外观，只保留滑轨与强调色 */
+	.bill-form input[type="range"] {
+		width: 100%;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		accent-color: var(--accent);
+	}
+
 	.bill-preview-frame {
 		position: relative;
 		width: 100%;
@@ -298,6 +307,11 @@ export function renderBillPage(options: {
 								value="${settings.config.guillocheDensity}" min="1" max="5" step="1" />
 						</div>
 						<div class="form-group">
+							<label for="paperGrain">纸纹强度</label>
+							<input id="paperGrain" type="range" class="form-input" name="paperGrain"
+								value="${settings.config.paperGrain}" min="0" max="100" step="1" />
+						</div>
+						<div class="form-group">
 							<label for="cornerOrnament">花边</label>
 							<select id="cornerOrnament" class="form-input" name="cornerOrnament">
 								<option value="1"${settings.config.cornerOrnament ? " selected" : ""}>角花 + 卷草</option>
@@ -312,6 +326,7 @@ export function renderBillPage(options: {
 					</div>
 					<p class="form-help">
 						票面宽高比固定为 156 : 66.3（美元实物比例），不提供修改——改了会让所有毫米换算失准。
+						纸纹是首页票面唯一保留的纸质特征：全站其他表面都是磨玻璃，不要在那边找纸质开关。
 					</p>
 				</section>
 			</div>

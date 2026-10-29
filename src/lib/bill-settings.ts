@@ -184,6 +184,7 @@ export function normalizeBillSettingsInput(raw: unknown): BillSettings {
 		paperColor: COLOR_PATTERN.test(String(rawConfig.paperColor ?? ""))
 			? String(rawConfig.paperColor)
 			: DEFAULT_BILL_SHEET_CONFIG.paperColor,
+		paperGrain: clamp(rawConfig.paperGrain, 0, 100, DEFAULT_BILL_SHEET_CONFIG.paperGrain),
 		inkColor: COLOR_PATTERN.test(String(rawConfig.inkColor ?? ""))
 			? String(rawConfig.inkColor)
 			: DEFAULT_BILL_SHEET_CONFIG.inkColor,

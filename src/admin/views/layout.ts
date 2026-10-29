@@ -30,14 +30,14 @@ export const adminSharedStyles = `
 
 		:root {
 			color-scheme: light;
-			--bg: #e4eefd;
+			--bg: #dbe6f7;
 			--bg-secondary: rgb(var(--glass-surface-rgb) / 0.56);
 			--bg-tertiary: rgb(var(--glass-surface-rgb) / 0.34);
 			--surface-elevated: rgb(var(--glass-surface-rgb) / 0.7);
 			--text: #101828;
 			--text-secondary: #3a4357;
-			--text-muted: #5c6578;
-			--border: rgb(0 71 171 / 0.15);
+			--text-muted: #4b5563;
+			--border: rgb(0 71 171 / 0.12);
 			--border-strong: rgb(var(--glass-surface-rgb) / 0.5);
 			--accent: #0047ab;
 			--accent-rgb: 0 71 171;
@@ -67,9 +67,9 @@ export const adminSharedStyles = `
 			--transition-slow: 420ms cubic-bezier(0.22, 1, 0.36, 1);
 			--shell-width: min(1440px, calc(100vw - 2rem));
 			--sidebar-width: minmax(120px, 150px);
-			--card-surface-rgb: 228, 238, 253;
-			--card-sheen-rgb: 236, 244, 255;
-			--glass-surface-rgb: 228, 238, 253;
+			--card-surface-rgb: 255, 255, 255;
+			--card-sheen-rgb: 245, 250, 255;
+			--glass-surface-rgb: 255, 255, 255;
 		}
 
 		@media (prefers-color-scheme: dark) {
@@ -99,9 +99,9 @@ export const adminSharedStyles = `
 				--shadow-strong:
 					0 28px 68px -34px rgba(0, 0, 0, 0.5),
 					0 16px 28px -20px rgba(0, 0, 0, 0.36);
-				--card-surface-rgb: 20, 34, 60;
+				--card-surface-rgb: 26, 40, 66;
 				--card-sheen-rgb: 126, 170, 255;
-				--glass-surface-rgb: 20, 34, 60;
+				--glass-surface-rgb: 26, 40, 66;
 			}
 			:root:not([data-theme="light"]) body {
 				background:
@@ -141,9 +141,9 @@ export const adminSharedStyles = `
 			--shadow-strong:
 				0 28px 68px -34px rgba(0, 0, 0, 0.5),
 				0 16px 28px -20px rgba(0, 0, 0, 0.36);
-			--card-surface-rgb: 20, 34, 60;
+			--card-surface-rgb: 26, 40, 66;
 			--card-sheen-rgb: 126, 170, 255;
-			--glass-surface-rgb: 20, 34, 60;
+			--glass-surface-rgb: 26, 40, 66;
 		}
 
 		[data-theme="dark"] body {

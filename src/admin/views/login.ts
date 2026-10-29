@@ -41,23 +41,23 @@ export function loginPage(options: LoginPageOptions = {}): string {
 	<script src="/theme.js"></script>
 	<style>
 		:root {
-			--color-bg: #e4eefd;
+			--color-bg: #dbe6f7;
 			--color-text: #101828;
 			--color-text-secondary: #3a4357;
-			--color-text-muted: #5c6578;
+			--color-text-muted: #4b5563;
 			--color-border: rgb(0 71 171 / 0.14);
 			--color-accent: #0047ab;
 			--color-accent-hover: #003a8c;
 			--color-accent-rgb: 0 71 171;
-			--card-surface-rgb: 228, 238, 253;
-			--card-sheen-rgb: 236, 244, 255;
-			--glass-surface-rgb: 228, 238, 253;
+			--card-surface-rgb: 255, 255, 255;
+			--card-sheen-rgb: 245, 250, 255;
+			--glass-surface-rgb: 255, 255, 255;
 			--glass-tint-rgb: 0 71 171;
 			--glass-edge: rgb(var(--color-accent-rgb) / 0.18);
 			--shadow-card:
 				0 18px 40px -30px rgb(0 31 82 / 0.2),
 				0 6px 18px -12px rgb(0 31 82 / 0.12);
-			--radius-panel: 34px;
+			--radius-panel: 24px;
 			--radius-pill: 999px;
 			--font-sans:
 				"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB",

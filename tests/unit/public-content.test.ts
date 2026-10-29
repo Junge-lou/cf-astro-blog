@@ -237,7 +237,7 @@ describe("源码回归保护", () => {
 
 		assert.ok(searchSource.includes("search-input::placeholder"));
 		assert.ok(searchSource.includes("var(--color-text-placeholder)"));
-		assert.ok(globalStyleSource.includes("--color-text-placeholder: #5f6d84;"));
+		assert.ok(globalStyleSource.includes("--color-text-placeholder: #4b556a;"));
 		assert.ok(globalStyleSource.includes("--color-text-placeholder: #b6c4dc;"));
 		assert.match(
 			globalStyleSource,

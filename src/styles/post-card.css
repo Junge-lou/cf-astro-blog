@@ -2,7 +2,6 @@
 	--glass-panel-opacity: calc(var(--post-card-opacity, 14) / 100);
 	--glass-panel-blur: var(--post-card-blur, 18px);
 	--post-card-blur-effective: min(calc(var(--post-card-blur, 18px) * 1.6), 76px);
-	--post-card-surface-alpha: min(calc(var(--post-card-opacity, 14) / 100), 0.28);
 	position: relative;
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
