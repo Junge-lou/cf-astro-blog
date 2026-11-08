@@ -378,17 +378,28 @@ describe("源码回归保护", () => {
 		);
 		// 西文字体在前、系统 CJK 族在后。用正则而不是 `includes("--font-serif-body: X")`：
 		// 格式化工具会把长字体栈折到下一行，按"同一行字符串"断言会无谓地失败。
+		// 正文/标题：Times New Roman + 系统宋体（CJK 不下载网络字体）。
 		assert.match(
 			globalStyleSource,
-			/--font-serif-body:\s*"Lora Variable",\s*"Songti SC",[\s\S]*?serif;/u,
+			/--font-serif-body:\s*"Times New Roman",\s*"Songti SC",[\s\S]*?serif;/u,
 		);
 		assert.match(
 			globalStyleSource,
-			/--font-serif-em:\s*"Cormorant Garamond",\s*"Songti SC",[\s\S]*?serif;/u,
+			/--font-serif-em:\s*"Times New Roman",\s*"Songti SC",[\s\S]*?serif;/u,
 		);
 		assert.match(
 			globalStyleSource,
 			/--font-strong:\s*"Space Grotesk",\s*"PingFang SC",[\s\S]*?sans-serif;/u,
+		);
+		// 票面字体与正文解耦：BillSheet 只读 --font-bill-* 两个锁死的令牌，
+		// 所以调整正文不会连带改掉面额数字 / 法定铭文 / 签名职衔。
+		assert.match(
+			globalStyleSource,
+			/--font-bill-body:\s*"Lora Variable",\s*"Songti SC",[\s\S]*?serif;/u,
+		);
+		assert.match(
+			globalStyleSource,
+			/--font-bill-signature:\s*"Cormorant Garamond",\s*"Songti SC",[\s\S]*?serif;/u,
 		);
 		// 任何字体栈里都不应再出现 CJK 网络字体族名
 		assert.doesNotMatch(globalStyleSource, /"LXGW WenKai"/u);

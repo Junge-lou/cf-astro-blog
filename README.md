@@ -104,7 +104,7 @@
 | **会话/KV** | Cloudflare Workers KV |
 | **部署** | Cloudflare Workers（静态资源走 assets 层，不是 Pages） |
 | **样式** | 原生 CSS（无框架依赖） |
-| **字体** | Lora、Cormorant Garamond、思源宋体、Space Grotesk、霞鹜文楷 |
+| **字体** | 正文/标题：Times New Roman + 系统宋体；票面：Lora、Cormorant Garamond、Playfair Display、Space Grotesk |
 | **数学** | KaTeX |
 | **搜索** | D1 服务端检索（SSR） |
 | **检查** | Biome（lint + format） |

@@ -110,17 +110,30 @@
 		"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
 		-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	/*
-	 * 西文字体在前、系统 CJK 族在后：西文走 Lora / Cormorant / Space Grotesk，
-	 * 中文回退到平台自带的衬线族（macOS 宋体、Windows SimSun、Linux Noto Serif CJK）。
+	 * 正文与标题：西文 Times New Roman，中文走系统宋体
+	 * （macOS Songti SC、Windows SimSun、Linux 思源宋体/Noto Serif CJK）。
 	 * 显式列出这几个名字是为了跨平台可预测；最后的通用族 `serif` 仍作兜底。
+	 *
+	 * 注意：票面（BillSheet）**不读这两个令牌**，它用下面的 --font-bill-*，
+	 * 所以调整正文不会连带改掉票面。
 	 */
 	--font-serif-body:
-		"Lora Variable", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+		"Times New Roman", "Songti SC", "SimSun", "Source Han Serif SC", "Noto Serif CJK SC", serif;
 	--font-serif-em:
+		"Times New Roman", "Songti SC", "SimSun", "Source Han Serif SC", "Noto Serif CJK SC", serif;
+	/*
+	 * 票面专用字体（只在 src/components/bill/BillSheet.astro 内使用）：
+	 *   --font-bill-body      面额数字、竖排法定铭文、印章字 —— Lora
+	 *   --font-bill-signature 签名职衔 —— Cormorant Garamond 500 斜体
+	 * 这两个令牌是**锁死**的：换正文/标题字体时不要动它们。
+	 */
+	--font-bill-body:
+		"Lora Variable", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
+	--font-bill-signature:
 		"Cormorant Garamond", "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", SimSun, serif;
 	/*
 	 * 票面铭文专用：凹版雕刻字形（engraver's roman）。
-	 * 与 --font-serif-em 分开是为了不影响签名职衔（那些是手写斜体）。
+	 * 与 --font-bill-signature 分开是为了不影响签名职衔（那些是手写斜体）。
 	 */
 	--font-engraved:
 		"Playfair Display Variable", "Playfair Display", "Songti SC", "Source Han Serif SC",
@@ -839,12 +852,14 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 
 .page-intro {
 	max-width: 44rem;
+	font-family: var(--font-serif-body);
 	font-size: var(--text-lg);
 	line-height: 1.75;
 	color: var(--color-text-secondary);
 }
 
 .section-heading {
+	font-family: var(--font-serif-body);
 	font-size: var(--text-2xl);
 	line-height: 1.1;
 	letter-spacing: -0.03em;
@@ -1125,8 +1140,10 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	letter-spacing: 0.02em;
 }
 
+/* 行内强调跟随正文字面：正文已是 Times New Roman / 宋体，
+   再切 --font-strong（Space Grotesk）会让英文加粗突然变无衬线。 */
 .prose strong {
-	font-family: var(--font-strong);
+	font-family: var(--font-serif-body);
 	font-weight: 700;
 }
 

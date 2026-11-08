@@ -23,6 +23,25 @@
 
 相邻两档的比值恒定，而"隔两档正好是 φ"这条性质让任何一次跨级搭配都天然有黄金比例关系。
 
+## 字体族：正文与票面分开
+
+| 用途 | 令牌 | 字体栈 |
+| --- | --- | --- |
+| 正文 / 标题 / 卡片标题 | `--font-serif-body` | `Times New Roman` → `Songti SC` → `SimSun` → 思源宋体 → `serif` |
+| 正文斜体 | `--font-serif-em` | 同上（Times New Roman 自带真斜体） |
+| 票面数字 / 法定铭文 / 印章 | `--font-bill-body` | `Lora Variable` + 系统宋体 |
+| 票面签名职衔 | `--font-bill-signature` | `Cormorant Garamond` 500 斜体 |
+| 票面巨号铭文 | `--font-engraved` | `Playfair Display` 700 |
+| UI（导航/按钮/胶囊/TOC） | `--font-sans` / `--font-strong` | 系统无衬线 / Space Grotesk |
+
+要点：
+
+- CJK 一律系统字体，不下载网络字体（原因见 `src/styles/global.css` 顶部注释）。
+- **票面字体锁在 `--font-bill-*`**：`BillSheet.astro` 内部不读 `--font-serif-body`，
+  所以调整正文不会改到票面；`tests/unit/public-content.test.ts` 对两组令牌都有断言。
+- 行内 `strong` 跟随正文族（Times New Roman 700 / 宋体粗体），不再切 Space Grotesk，
+  避免英文加粗突然变无衬线。
+
 ## 七档刻度
 
 `1rem = 16px`（继承浏览器默认字号，用户改字号时整套等比缩放）。
@@ -61,7 +80,7 @@
 
 `--text-2xl` 的下界就是 `--text-xl`，所以在 390px 这类窄屏上，"区块标题"和"大卡标题"
 会都停在 25.89px。这是 7 档刻度在移动端的固有限制——要彻底分开必须增加档位，
-那会破坏"7 档"这个约束。目前靠字重与字体族（块标题无衬线加粗、卡标题衬线）区分层级。
+那会破坏"7 档"这个约束。目前靠字重与字号区分层级（块标题与卡标题同族，均为正文襯线体）。
 
 ## 例外（仅两类，测试已放行）
 

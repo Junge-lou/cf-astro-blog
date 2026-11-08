@@ -13,9 +13,9 @@
  *   4. 把命中到的 face 的文件体积求和。
  *
  * 字体栈按 `src/styles/global.css` 的真实赋值建模：
- *   body / .prose p → var(--font-serif-body)   @400
- *   .prose strong   → var(--font-strong)       @700
- *   .prose em       → var(--font-serif-em)
+ *   body / .prose p → var(--font-serif-body)   @400  （Times New Roman / 系统宋体）
+ *   .prose strong   → var(--font-serif-body)   @700
+ *   .prose em       → var(--font-serif-em)    （Times New Roman 斜体）
  *
  * 已知局限（会让你看到的数字**偏保守/偏大**，不会偏小）：
  *   - 不做 CSS 选择器匹配，只按上面的三条规则给文本归类；
@@ -34,15 +34,15 @@ const CLIENT_FONT_DIR = join(ROOT, "dist", "client", "_astro");
 
 /** 与 src/styles/global.css /Header.astro 的真实赋值保持一致。 */
 const TEXT_KINDS = {
-	// CJK 一律走系统字体（见 global.css），因此这里只列**网络字体**家族：
-	// 西文命中 Lora / Cormorant / Space Grotesk；中文没有任何 face 覆盖它，
-	// 会被记入 misses 并回退到系统字体（不产生下载）——这正是期望结果。
-	body: { stack: ["Lora Variable"], weight: 400 },
-	// .prose strong —— 全站唯一使用 var(--font-strong) 的选择器
-	strong: { stack: ["Space Grotesk"], weight: 700 },
-	// 其它 <strong>/<b> 继承 body 的 --font-serif-body，但字重是 700
-	serifBold: { stack: ["Lora Variable"], weight: 700 },
-	em: { stack: ["Cormorant Garamond"], weight: 400 },
+	// 正文与标题已是 Times New Roman + 系统宋体（见 global.css --font-serif-*），
+	// 不属于网络字体，因此字体栈为空：所有码点都会计入 misses，下载量为 0——
+	// 这正是期望结果。票面的 Lora / Cormorant / Playfair 不在本脚本的抽样范围内。
+	body: { stack: [], weight: 400 },
+	// .prose strong 跟随正文字面（Times New Roman 700），同样无网络字体
+	strong: { stack: [], weight: 700 },
+	// 其它 <strong>/<b> 继承 body 的 --font-serif-body，字重是 700
+	serifBold: { stack: [], weight: 700 },
+	em: { stack: [], weight: 400 },
 };
 
 /** 解析 `U+0-FF, U+131, U+152-153` 形式的 unicode-range。 */

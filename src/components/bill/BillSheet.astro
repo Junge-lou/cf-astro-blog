@@ -627,9 +627,10 @@ const styleVars = {
 
 	/* 面额数字：用衬线体 + 等宽数字。
 	   原来的 Space Grotesk 是几何无衬线，“0” 的细对角线看着像现代 App，
-	   而真钞巨号是重笔画的雕版字。Lora 700 的笔画重力更接近。 */
+	   而真钞巨号是重笔画的雕版字。Lora 700 的笔画重力更接近。
+	   字体走 --font-bill-body（锁死的 Lora），不随正文改字体而变。 */
 	.bill__zone--denomination .bill__text {
-		font-family: var(--font-serif-body);
+		font-family: var(--font-bill-body);
 		font-variant-numeric: lining-nums tabular-nums;
 		font-feature-settings: "lnum" 1, "tnum" 1;
 		font-weight: 700;
@@ -677,7 +678,7 @@ const styleVars = {
 	/* 竖排法定货币铭文：真钞在左侧印章下方 */
 	.bill__zone--legal .bill__text {
 		writing-mode: vertical-rl;
-		font-family: var(--font-serif-body);
+		font-family: var(--font-bill-body);
 		line-height: var(--insclh, 1.1);
 		letter-spacing: var(--instrk, 0.06em);
 		text-transform: uppercase;
@@ -696,7 +697,7 @@ const styleVars = {
 	/* 注意：这里不能写 text-wrap: balance —— 它是 white-space 简写的一部分，
 	   会把解算出来的 nowrap 重置成 normal，签名就会莫名折行。 */
 	.bill__zone--signature .bill__text {
-		font-family: var(--font-serif-em);
+		font-family: var(--font-bill-signature);
 		font-style: italic;
 		text-align: center;
 		transform: rotate(-1.5deg) scaleX(var(--inscsx, 1));
@@ -819,7 +820,7 @@ const styleVars = {
 	}
 
 	.bill__seal-core {
-		font-family: var(--font-serif-body);
+		font-family: var(--font-bill-body);
 		font-size: 5cqw;
 		letter-spacing: 0.08em;
 		color: rgb(0 48 110 / 0.72);
@@ -930,11 +931,12 @@ const styleVars = {
 		white-space: pre-line;
 	}
 
-	/* ── 窄屏：同一批链接改纵向列表 ── */
+	/* 票面下方的"法定货币"说明行：属于票面的视觉延伸，锁 --font-bill-body，
+	   不随正文换字体。 */
 	.bill__obligation {
 		max-width: var(--max-width-prose);
 		margin: var(--space-md) auto 0;
-		font-family: var(--font-serif-body);
+		font-family: var(--font-bill-body);
 		font-size: var(--text-sm);
 		line-height: 1.6;
 		letter-spacing: 0.18em;
