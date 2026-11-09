@@ -239,7 +239,7 @@ const hasToc = tocEntries.length > 0;
 			});
 
 			comments?.addEventListener("click", () => {
-				const target = document.querySelector(".article-comments-card");
+				const target = document.querySelector(".article-responses, [data-comments-panel]");
 				if (target) {
 					target.scrollIntoView({ behavior: scrollOpts, block: "start" });
 				}

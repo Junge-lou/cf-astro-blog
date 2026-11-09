@@ -13,7 +13,7 @@ const momoSlugId = `blog/${slug}`;
 ---
 
 <section
-	class="comments-panel is-open"
+	class="comments-section"
 	data-comments-panel
 	data-comments-ready={isMomoReady ? "true" : "false"}
 	data-comments-provider="momo"
@@ -21,172 +21,109 @@ const momoSlugId = `blog/${slug}`;
 	data-comments-api-url={commentsConfig.apiUrl}
 	data-comments-title={title}
 	data-comments-slug-id={momoSlugId}
+	aria-labelledby="comments-section-title"
 >
-	<button
-		class="comments-toggle"
-		type="button"
-		aria-expanded="true"
-		aria-controls="comments-panel-body"
-		data-comments-toggle
-	>
-		<span class="comments-toggle-copy">
-			<strong>评论区</strong>
-			<small>欢迎留言交流</small>
-		</span>
-		<span class="comments-toggle-icon" aria-hidden="true">+</span>
-	</button>
-
-	<div
-		id="comments-panel-body"
-		class="comments-body"
-		data-comments-body
-	>
-		{isMomoReady ? (
-			<div class="comments-surface">
-				<div class="comments-note">
-					<p>评论会通过 momo 评论组件加载</p>
-				</div>
-				<div class="comments-host" data-comments-host></div>
-			</div>
-		) : (
-			<div class="comments-empty-state">
-				<p>评论组件已经接好了</p>
-				<p>请配置正确的评论参数后再使用评论功能</p>
-			</div>
-		)}
+	<div class="comments-head">
+		<h3 class="comments-title" id="comments-section-title">评论</h3>
+		<span class="comments-hint">欢迎留言交流</span>
 	</div>
+
+	{isMomoReady ? (
+		<div class="comments-host" data-comments-host>
+			<div class="comments-skeleton" aria-hidden="true">
+				<span class="comments-skeleton-line"></span>
+				<span class="comments-skeleton-line"></span>
+				<span class="comments-skeleton-line comments-skeleton-line-short"></span>
+			</div>
+		</div>
+	) : (
+		<p class="comments-empty">评论暂未开放。</p>
+	)}
 </section>
 
 <script is:inline src="/comments.js"></script>
 
 <style>
-	.comments-panel {
+	/*
+	 * 评论区不再自带边框/背景/圆角，也不再折叠：它是「回应」卡片里的内容块，
+	 * 外层 .article-responses 已经是唯一的玻璃面板（避免卡片套卡片）。
+	 */
+	.comments-section {
 		display: grid;
-		gap: 0;
-		overflow: hidden;
-		border-radius: var(--radius-inner);
-		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
-		background: rgba(var(--card-sheen-rgb), 0.04);
+		gap: 0.85rem;
 	}
 
-	.comments-toggle {
+	.comments-head {
 		display: flex;
-		align-items: center;
+		align-items: baseline;
 		justify-content: space-between;
-		gap: var(--space-md);
-		width: 100%;
-		padding: 1.05rem 1.2rem;
-		border: none;
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
-		text-align: left;
-		border-bottom: 1px solid transparent;
-		transition:
-			background-color var(--transition),
-			border-color var(--transition);
+		gap: 0.6rem;
 	}
 
-	.comments-toggle:hover,
-	.comments-toggle:focus-visible {
-		background: rgba(var(--card-sheen-rgb), 0.05);
-		outline: none;
-	}
-
-	.comments-toggle-copy {
-		display: grid;
-		gap: 0.2rem;
-	}
-
-	.comments-toggle-copy strong {
+	.comments-title {
+		margin: 0;
+		font-family: var(--font-strong);
 		font-size: var(--text-md);
+		font-weight: 600;
 		color: var(--color-text);
 	}
 
-	.comments-toggle-copy small {
+	.comments-hint {
 		font-size: var(--text-sm);
 		color: var(--color-text-muted);
-		line-height: 1.65;
-	}
-
-	.comments-toggle-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 2rem;
-		height: 2rem;
-		border-radius: 999px;
-		background: rgba(var(--card-sheen-rgb), 0.12);
-		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
-		font-size: var(--text-lg);
-		color: var(--color-accent-hover);
-		transition:
-			transform var(--transition),
-			background-color var(--transition),
-			border-color var(--transition);
-	}
-
-	.comments-panel.is-open .comments-toggle-icon {
-		transform: rotate(45deg);
-	}
-
-	.comments-panel.is-open .comments-toggle {
-		border-bottom-color: rgba(var(--card-sheen-rgb), 0.1);
-	}
-
-	.comments-body {
-		padding: 0 1.2rem 1.2rem;
-	}
-
-	.comments-surface,
-	.comments-empty-state {
-		display: grid;
-		gap: 0.9rem;
-		padding: 1rem;
-		border-radius: var(--radius-inner);
-		background: rgba(var(--card-sheen-rgb), 0.06);
-		border: 1px solid rgba(var(--card-sheen-rgb), 0.12);
-	}
-
-	.comments-note,
-	.comments-empty-state {
-		font-size: var(--text-md);
-		color: var(--color-text-muted);
-		line-height: 1.75;
 	}
 
 	.comments-host {
-		min-height: 8rem;
+		min-height: 5rem;
+		color: var(--color-text);
 	}
 
-	.comments-panel.is-open .comments-toggle:hover .comments-toggle-icon {
-		background: var(--color-accent-soft);
-		border-color: rgb(var(--color-accent-rgb) / 0.16);
+	.comments-empty {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+		line-height: 1.7;
 	}
 
-	:global(html.article-opaque-mode) .comments-panel {
-		background: rgba(var(--card-surface-rgb), 0.92);
-		border-color: rgba(var(--card-sheen-rgb), 0.14);
+	/* 组件脚本与样式注入完成前的占位，避免首屏高度跳变 */
+	.comments-skeleton {
+		display: grid;
+		gap: 0.55rem;
+		padding-block: 0.35rem;
 	}
 
-	:global(html.article-opaque-mode) .comments-surface,
-	:global(html.article-opaque-mode) .comments-empty-state {
-		background: rgba(var(--card-surface-rgb), 0.96);
-		border-color: rgba(var(--card-sheen-rgb), 0.16);
+	.comments-skeleton-line {
+		height: 0.75rem;
+		border-radius: 999px;
+		background: rgba(var(--card-sheen-rgb), 0.14);
+		animation: comments-skeleton-pulse 1.6s ease-in-out infinite;
 	}
 
-	:global(html.article-opaque-mode) .comments-toggle {
-		background: rgba(var(--card-surface-rgb), 0.94);
+	.comments-skeleton-line-short {
+		width: 62%;
 	}
 
-	:global(html.article-opaque-mode) .comments-toggle-icon {
-		background: rgba(var(--card-sheen-rgb), 0.1);
+	:global(.comments-error) {
+		margin: 0;
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+		line-height: 1.7;
 	}
 
-	@media (max-width: 640px) {
-		.comments-toggle,
-		.comments-body {
-			padding-inline: 1rem;
+	@keyframes comments-skeleton-pulse {
+		0%,
+		100% {
+			opacity: 0.5;
+		}
+
+		50% {
+			opacity: 1;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.comments-skeleton-line {
+			animation: none;
 		}
 	}
 </style>

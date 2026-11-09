@@ -161,18 +161,20 @@ const hasToc = tocEntries.length > 0;
 				</div>
 			</header>
 			<div class="article-body glass-panel e-content">
-					<div class="prose article-prose">
-						<slot />
-					</div>
-				</div>
-				<div class="article-webmention-card glass-panel">
-					<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} />
-				</div>
-				<div class="article-comments-card glass-panel">
-					<CommentsPanel title={title} slug={slug} />
+				<div class="prose article-prose">
+					<slot />
 				</div>
 			</div>
-		</article>
+			<section class="article-responses glass-panel" aria-labelledby="article-responses-title">
+				<div class="article-responses-head">
+					<h2 class="article-responses-title" id="article-responses-title">回应</h2>
+				</div>
+				<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} compact />
+				<div class="article-responses-divider" aria-hidden="true"></div>
+				<CommentsPanel title={title} slug={slug} />
+			</section>
+		</div>
+	</article>
 	<FabMenu tocEntries={tocEntries} />
 	<script is:inline src="/code-block-enhance.js"></script>
 	<script is:inline src="/diagram-render.js"></script>
@@ -367,7 +369,7 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	.article-body,
-	.article-webmention-card {
+	.article-responses {
 		padding: clamp(1.4rem, 1rem + 2vw, 2.5rem);
 	}
 
@@ -490,11 +492,10 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	/* 文章主列各面板统一为阅读列宽并居中（754px），
-	 * 使 hero / 正文 / 评论区左右边缘对齐，形成协调的纵向阅读节奏 */
+	 * 使 hero / 正文 / 回应 的左右边缘对齐，形成连贯的纵向阅读节奏 */
 	.article-hero,
 	.article-body,
-	.article-webmention-card,
-	.article-comments-card {
+	.article-responses {
 		margin-inline: auto;
 		width: 100%;
 		max-width: var(--max-width-prose);
@@ -504,17 +505,30 @@ const hasToc = tocEntries.length > 0;
 		margin-inline: auto;
 	}
 
-	/* 评论卡片内 CommentsPanel 融入外层 glass-panel，去掉自带的边框、背景和圆角 */
-	:global(.article-comments-card .comments-panel),
-	:global(.article-webmention-card .wm-section) {
-		border: none;
-		background: transparent;
-		border-radius: 0;
-		overflow: visible;
+	/* ───────── 回应（Webmention + 评论，同在一张玻璃面板内） ───────── */
+	.article-responses-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.6rem;
+		padding-bottom: 0.65rem;
+		margin-bottom: 1.1rem;
+		border-bottom: 1px solid rgba(var(--card-sheen-rgb), 0.12);
 	}
-	:global(html.article-opaque-mode .article-comments-card .comments-panel),
-	:global(html.article-opaque-mode .article-webmention-card .wm-section) {
-		background: transparent;
+
+	.article-responses-title {
+		margin: 0;
+		font-family: var(--font-strong);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		color: var(--color-text-muted);
+	}
+
+	.article-responses-divider {
+		height: 1px;
+		margin: 1.15rem 0;
+		background: rgba(var(--card-sheen-rgb), 0.12);
 	}
 
 	@media (max-width: 1024px) {

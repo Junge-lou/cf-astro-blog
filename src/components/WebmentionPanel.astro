@@ -1,19 +1,22 @@
 ---
 interface Props {
 	targetUrl: string;
+	/** 「回应」侧栏里的紧凑变体：小标题、脚注更短、表单垂直排列 */
+	compact?: boolean;
 }
 
-const { targetUrl } = Astro.props;
+const { targetUrl, compact = false } = Astro.props;
+const Heading = compact ? "h3" : "h2";
 ---
 
 <div
-	class="wm-section"
+	class:list={["wm-section", { "wm-section-compact": compact }]}
 	data-webmention-panel
 	data-webmention-target={targetUrl}
 >
-	<h2 class="wm-title" data-wm-title>
+	<Heading class:list={["wm-title", { "wm-title-compact": compact }]} data-wm-title>
 		🔗 Webmentions (<span class="wm-count" data-wm-count>…</span>)
-	</h2>
+	</Heading>
 	<div class="wm-list" data-wm-list>
 		<div class="wm-loading">加载中…</div>
 	</div>
@@ -21,8 +24,14 @@ const { targetUrl } = Astro.props;
 		<span>暂无 Webmentions</span>
 	</div>
 	<p class="wm-hint" data-wm-hint>
-		本站支持 <a href="https://www.w3.org/TR/webmention/" target="_blank" rel="noopener noreferrer">Webmention</a>。
-		如果你 <button type="button" class="wm-quote-btn" data-wm-quote>引用这篇文章</button>，可以通过下方表单通知我，互动会显示在这里。
+		{compact ? (
+			<span>支持 Webmention；引用本文后通知我，互动会显示在这里。</span>
+		) : (
+			<>
+				本站支持 <a href="https://www.w3.org/TR/webmention/" target="_blank" rel="noopener noreferrer">Webmention</a>。
+				如果你 <button type="button" class="wm-quote-btn" data-wm-quote>引用这篇文章</button>，可以通过下方表单通知我，互动会显示在这里。
+			</>
+		)}
 	</p>
 	<form class="wm-form" data-wm-form action="https://webmention.io/ffaff.fun/webmention" method="POST" target="_blank">
 		<input type="hidden" name="target" value={targetUrl} />
@@ -341,6 +350,29 @@ const { targetUrl } = Astro.props;
 	}
 
 	.wm-count { font-weight: 400; color: var(--color-text-muted); }
+
+	/* ── 「回应」卡片内的子块标题：与评论区标题同级、左对齐 ── */
+	.wm-title-compact {
+		margin-bottom: 0.7rem;
+		font-family: var(--font-strong);
+		font-size: var(--text-md);
+		font-weight: 600;
+		text-align: left;
+		color: var(--color-text);
+	}
+
+	.wm-section-compact .wm-card {
+		padding: 0.7rem 0.8rem;
+	}
+
+	.wm-section-compact .wm-form {
+		margin-top: 0.75rem;
+		padding: 0.7rem 0.8rem;
+	}
+
+	.wm-section-compact .wm-hint {
+		margin-top: 0.7rem;
+	}
 
 	/* ── 卡片列表 ── */
 	.wm-list {
