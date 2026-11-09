@@ -1,5 +1,5 @@
 ---
-import { WEBMENTION_API, WEBMENTION_ENDPOINT, WEBMENTION_SITE } from "@/lib/webmention";
+import { buildMentionsUrl, WEBMENTION_ENDPOINT, WEBMENTION_SITE } from "@/lib/webmention";
 
 interface Props {
 	targetUrl: string;
@@ -15,7 +15,7 @@ const Heading = compact ? "h3" : "h2";
 	class:list={["wm-section", { "wm-section-compact": compact }]}
 	data-webmention-panel
 	data-webmention-target={targetUrl}
-	data-webmention-api={WEBMENTION_API}
+	data-webmention-api-url={buildMentionsUrl(targetUrl)}
 	data-webmention-endpoint={WEBMENTION_ENDPOINT}
 	data-webmention-site={WEBMENTION_SITE}
 >
@@ -66,10 +66,10 @@ const Heading = compact ? "h3" : "h2";
 			var emptyEl = panel.querySelector("[data-wm-empty]");
 			var countEl = panel.querySelector("[data-wm-count]");
 			var targetUrl = panel.dataset.webmentionTarget;
-			var apiBase = panel.dataset.webmentionApi;
+			var apiUrl = panel.dataset.webmentionApiUrl;
 			var endpoint = panel.dataset.webmentionEndpoint;
 			var siteHost = panel.dataset.webmentionSite;
-			if (!list || !targetUrl || !apiBase) return;
+			if (!list || !targetUrl || !apiUrl) return;
 			if (panel.dataset.wmLoaded === "true") return;
 			panel.dataset.wmLoaded = "true";
 
@@ -77,14 +77,6 @@ const Heading = compact ? "h3" : "h2";
 			// 于是 webmention.io 一挂，这两个按钮就一起变成死键。
 			bindQuoteButton(panel, targetUrl);
 			if (endpoint) bindSendForm(panel, endpoint);
-
-			// webmention.io 会为同一篇文章记住各种别名（带/不带尾斜杠、旧地址、
-			// fragment），所以查规范 URL 即可；再补一个尾斜杠变体兼容历史来源。
-			var apiUrl =
-				apiBase +
-				"?target=" + encodeURIComponent(targetUrl) +
-				(targetUrl.slice(-1) === "/" ? "" : "&target=" + encodeURIComponent(targetUrl + "/")) +
-				"&per-page=" + WM_PAGE_SIZE;
 
 			fetchWithTimeout(apiUrl)
 				.then(function (r) {
@@ -239,7 +231,6 @@ const Heading = compact ? "h3" : "h2";
 		});
 	}
 
-	var WM_PAGE_SIZE = 100;
 	// 8 秒足够慢网，又不至于让「加载中…」一直挂着。
 	var WM_TIMEOUT_MS = 8000;
 
