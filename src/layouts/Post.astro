@@ -164,10 +164,7 @@ const hasToc = tocEntries.length > 0;
 					<slot />
 				</div>
 			</div>
-			<section class="article-responses glass-panel" aria-labelledby="article-responses-title">
-				<div class="article-responses-head">
-					<h2 class="article-responses-title" id="article-responses-title">回应</h2>
-				</div>
+			<section class="article-responses glass-panel" aria-label="回应">
 				<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} compact />
 			</section>
 		</div>
@@ -500,26 +497,6 @@ const hasToc = tocEntries.length > 0;
 
 	.article-prose {
 		margin-inline: auto;
-	}
-
-	/* ───────── 回应（Webmention） ───────── */
-	.article-responses-head {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 0.6rem;
-		padding-bottom: 0.65rem;
-		margin-bottom: 1.1rem;
-		border-bottom: 1px solid rgba(var(--card-sheen-rgb), 0.12);
-	}
-
-	.article-responses-title {
-		margin: 0;
-		font-family: var(--font-strong);
-		font-size: var(--text-sm);
-		font-weight: 700;
-		letter-spacing: 0.14em;
-		color: var(--color-text-muted);
 	}
 
 	@media (max-width: 1024px) {
