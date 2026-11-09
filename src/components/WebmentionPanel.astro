@@ -1,4 +1,6 @@
 ---
+import { WEBMENTION_API, WEBMENTION_ENDPOINT, WEBMENTION_SITE } from "@/lib/webmention";
+
 interface Props {
 	targetUrl: string;
 	/** 「回应」侧栏里的紧凑变体：小标题、脚注更短、表单垂直排列 */
@@ -13,11 +15,14 @@ const Heading = compact ? "h3" : "h2";
 	class:list={["wm-section", { "wm-section-compact": compact }]}
 	data-webmention-panel
 	data-webmention-target={targetUrl}
+	data-webmention-api={WEBMENTION_API}
+	data-webmention-endpoint={WEBMENTION_ENDPOINT}
+	data-webmention-site={WEBMENTION_SITE}
 >
 	<Heading class:list={["wm-title", { "wm-title-compact": compact }]} data-wm-title>
 		🔗 Webmentions (<span class="wm-count" data-wm-count>…</span>)
 	</Heading>
-	<div class="wm-list" data-wm-list>
+	<div class="wm-list" data-wm-list aria-live="polite">
 		<div class="wm-loading">加载中…</div>
 	</div>
 	<div class="wm-empty" data-wm-empty style="display:none">
@@ -33,13 +38,21 @@ const Heading = compact ? "h3" : "h2";
 			</>
 		)}
 	</p>
-	<form class="wm-form" data-wm-form action="https://webmention.io/ffaff.fun/webmention" method="POST" target="_blank">
+	<form class="wm-form" data-wm-form action={WEBMENTION_ENDPOINT} method="POST">
 		<input type="hidden" name="target" value={targetUrl} />
-		<label class="wm-form-label">发送 Webmention</label>
+		<label class="wm-form-label" for="wm-source">发送 Webmention</label>
 		<div class="wm-form-row">
-			<input type="url" name="source" class="wm-input" placeholder="https://example.com/your-post" required />
+			<input
+				id="wm-source"
+				type="url"
+				name="source"
+				class="wm-input"
+				placeholder="https://example.com/your-post"
+				required
+			/>
 			<button type="submit" class="wm-submit">发送</button>
 		</div>
+		<p class="wm-status" data-wm-status role="status" aria-live="polite"></p>
 	</form>
 </div>
 
@@ -53,34 +66,42 @@ const Heading = compact ? "h3" : "h2";
 			var emptyEl = panel.querySelector("[data-wm-empty]");
 			var countEl = panel.querySelector("[data-wm-count]");
 			var targetUrl = panel.dataset.webmentionTarget;
-			if (!list || !targetUrl) return;
+			var apiBase = panel.dataset.webmentionApi;
+			var endpoint = panel.dataset.webmentionEndpoint;
+			var siteHost = panel.dataset.webmentionSite;
+			if (!list || !targetUrl || !apiBase) return;
 			if (panel.dataset.wmLoaded === "true") return;
 			panel.dataset.wmLoaded = "true";
 
-			var targetVariants = buildTargetVariants(targetUrl);
-			var queryParts = targetVariants.map(function (t) {
-				return "target[]=" + encodeURIComponent(t);
-			});
-			var queryString = queryParts.join("&");
+			// 引用按钮与发送表单在这里绑定。此前它们写在 fetch 的 .then() 里，
+			// 于是 webmention.io 一挂，这两个按钮就一起变成死键。
+			bindQuoteButton(panel, targetUrl);
+			if (endpoint) bindSendForm(panel, endpoint);
 
-			fetch("https://webmention.io/api/mentions.jf2?" + queryString + "&per-page=100")
-				.then(function (r) { return r.json(); })
+			// webmention.io 会为同一篇文章记住各种别名（带/不带尾斜杠、旧地址、
+			// fragment），所以查规范 URL 即可；再补一个尾斜杠变体兼容历史来源。
+			var apiUrl =
+				apiBase +
+				"?target=" + encodeURIComponent(targetUrl) +
+				(targetUrl.slice(-1) === "/" ? "" : "&target=" + encodeURIComponent(targetUrl + "/")) +
+				"&per-page=" + WM_PAGE_SIZE;
+
+			fetchWithTimeout(apiUrl)
+				.then(function (r) {
+					if (!r.ok) throw new Error("HTTP " + r.status);
+					return r.json();
+				})
 				.then(function (data) {
 					var mentions = [];
 					if (data && data.children) {
 						data.children.forEach(function (child) {
+							// 公开的 target 查询不会返回私有 mention，这里保留一道防御性过滤，
+							// 以免将来改成 token 查询时误展示。
 							if (child["wm-private"] === true) return;
-
-							var wmTarget = child["wm-target"] || "";
-							try {
-								var targetUrlObj = new URL(wmTarget);
-								var pageUrlObj = new URL(targetUrl);
-								if (targetUrlObj.pathname !== pageUrlObj.pathname) return;
-							} catch (e) { return; }
 
 							var contentHtml = child.content ? (child.content.html || "") : "";
 							var contentText = child.content ? (child.content.text || "") : "";
-							var contextSnippet = extractContext(contentHtml, contentText, targetUrl);
+							var contextSnippet = extractContext(contentHtml, contentText, siteHost);
 							var wmSource = child["wm-source"] || child.url || "";
 							var wmProperty = child["wm-property"] || "mention-of";
 
@@ -97,8 +118,6 @@ const Heading = compact ? "h3" : "h2";
 								content: contextSnippet || contentText,
 								published: child.published || child["wm-received"] || null,
 								source: wmSource,
-								// For reply threading: who they replied to
-								inReplyTo: child["in-reply-to"] || null,
 							});
 						});
 					}
@@ -114,8 +133,13 @@ const Heading = compact ? "h3" : "h2";
 						else groups.mentions.push(m);
 					});
 
-					var total = mentions.length;
-					if (countEl) countEl.textContent = total;
+					// `per-page` 最多 1000，`total` 是匹配总数；只拿 children.length 当总数会在
+					// 超过单页上限后低报，而且不给任何提示。
+					var paging = data && data.paging ? data.paging : null;
+					var total =
+						paging && typeof paging.total === "number" ? paging.total : mentions.length;
+					var shown = mentions.length;
+					if (countEl) countEl.textContent = String(total);
 
 					var html = "";
 
@@ -134,6 +158,7 @@ const Heading = compact ? "h3" : "h2";
 						if (groups.bookmarks.length) summaryParts.push('<span class="wm-summary-item">🔖 ' + groups.bookmarks.length + ' 人收藏</span>');
 						if (groups.rsvps.length) summaryParts.push('<span class="wm-summary-item">📅 ' + groups.rsvps.length + ' 人回应</span>');
 						if (groups.mentions.length) summaryParts.push('<span class="wm-summary-item">💭 ' + groups.mentions.length + ' 次提及</span>');
+						if (total > shown) summaryParts.push('<span class="wm-summary-item">仅显示最近 ' + shown + ' 条</span>');
 						if (summaryParts.length) {
 							html += '<div class="wm-summary">' + summaryParts.join("") + '</div>';
 						}
@@ -158,8 +183,8 @@ const Heading = compact ? "h3" : "h2";
 									? '<img src="' + escAttr(m.authorPhoto) + '" alt="' + escAttr(m.authorName) + '" class="wm-facepile-avatar" loading="lazy" decoding="async" referrerpolicy="no-referrer" />'
 									: '<span class="wm-facepile-avatar wm-facepile-fallback">' + escHtml(m.authorName.slice(0, 1).toUpperCase()) + '</span>';
 								var typeIcon = m.type === "like-of" ? "❤️" : m.type === "repost-of" ? "🔄" : m.type === "bookmark-of" ? "🔖" : m.type === "rsvp" ? getRsvpEmoji(m.rsvp) : "💭";
-								var title = escAttr(m.authorName + " " + getTypeLabel(m.type));
-								html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-facepile-item" title="' + title + '" style="z-index:' + (uniqueFacepile.length - i) + '">';
+								var title = escAttr(m.authorName + " " + getTypeLabel(m.type, m.rsvp));
+								html += '<a href="' + escAttr(link) + '" target="_blank" rel="nofollow ugc noopener noreferrer" class="wm-facepile-item" title="' + title + '" aria-label="' + title + '" style="z-index:' + (uniqueFacepile.length - i) + '">';
 								html += photoHtml;
 								html += '<span class="wm-facepile-icon">' + typeIcon + '</span>';
 								html += '</a>';
@@ -170,7 +195,7 @@ const Heading = compact ? "h3" : "h2";
 						// ── Cards: replies + generic mentions ──
 						var cardMentions = groups.replies.concat(groups.mentions);
 						cardMentions.forEach(function (m) {
-							var typeLabel = getTypeLabel(m.type);
+							var typeLabel = getTypeLabel(m.type, m.rsvp);
 							var name = escHtml(m.authorName);
 							var domain = getDomain(m.source || m.url || "");
 							var avatarHtml = m.authorPhoto
@@ -183,78 +208,217 @@ const Heading = compact ? "h3" : "h2";
 
 							html += '<div class="wm-card">';
 							html += '<div class="wm-card-head">';
-							// avatar links to author's site if available, otherwise to source
-							html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-avatar-link">' + avatarHtml + '</a>';
+							// 头像链到作者站点。旁边的作者名已经提供了可访问名称，所以头像链接
+							// 对读屏隐藏并移出 Tab 序列，避免同一个目标被念两遍、停两次。
+							html += '<a href="' + escAttr(link) + '" target="_blank" rel="nofollow ugc noopener noreferrer" class="wm-avatar-link" aria-hidden="true" tabindex="-1">' + avatarHtml + '</a>';
 							html += '<span class="wm-card-meta">';
-							html += '<a href="' + escAttr(link) + '" target="_blank" rel="noopener noreferrer" class="wm-author-link"><span class="wm-author">' + name + '</span></a>';
+							html += '<a href="' + escAttr(link) + '" target="_blank" rel="nofollow ugc noopener noreferrer" class="wm-author-link"><span class="wm-author">' + name + '</span></a>';
 							if (domain || time) html += '<span class="wm-meta"> · ' + [domain, time].filter(Boolean).join(" · ") + '</span>';
 							html += '</span>';
 							html += '<span class="wm-badge">' + typeLabel + '</span>';
 							html += '</div>';
 							if (text) html += '<div class="wm-content">' + text + '</div>';
-							if (fullDate) html += '<a href="' + escAttr(m.url || m.source || "#") + '" target="_blank" rel="noopener noreferrer" class="wm-time-link"><time class="wm-time" datetime="' + escAttr(m.published || "") + '" title="' + escAttr(fullDate) + '">' + escHtml(fullDate) + '</time></a>';
+							if (fullDate) html += '<a href="' + escAttr(m.url || m.source || "#") + '" target="_blank" rel="nofollow ugc noopener noreferrer" class="wm-time-link"><time class="wm-time" datetime="' + escAttr(m.published || "") + '" title="' + escAttr(fullDate) + '">' + escHtml(fullDate) + '</time></a>';
 							html += '</div>';
 						});
 					}
 
 					list.innerHTML = html;
-
-					// Quote button
-					var quoteBtn = panel.querySelector("[data-wm-quote]");
-					if (quoteBtn) {
-						quoteBtn.addEventListener("click", function () {
-							var title = document.title.replace(/ · .*$/, "").replace(/ \\| .*$/, "");
-							var citation = "[" + title + "](" + targetUrl + ")";
-							if (navigator.clipboard) {
-								navigator.clipboard.writeText(citation).then(function () {
-									quoteBtn.textContent = "✓ 已复制";
-									setTimeout(function () { quoteBtn.textContent = "引用这篇文章"; }, 2000);
-								}).catch(function () {
-									var ta = document.createElement("textarea");
-									ta.value = citation;
-									ta.style.position = "fixed"; ta.style.opacity = "0";
-									document.body.appendChild(ta);
-									ta.select();
-									document.execCommand("copy");
-									document.body.removeChild(ta);
-									quoteBtn.textContent = "✓ 已复制";
-									setTimeout(function () { quoteBtn.textContent = "引用这篇文章"; }, 2000);
-								});
-							}
-						});
-					}
 				})
 				.catch(function () {
+					// 必须与「真的没有人提及」区分开：把失败渲染成「暂无 Webmentions」
+					// 会让站长误以为文章没人引用。
 					list.style.display = "none";
-					if (emptyEl) { emptyEl.style.display = ""; emptyEl.querySelector("span").textContent = "加载失败，请刷新页面重试"; }
+					if (countEl) countEl.textContent = "—";
+					if (emptyEl) {
+						emptyEl.style.display = "";
+						var label = emptyEl.querySelector("span");
+						if (label) label.textContent = "Webmention 加载失败，稍后刷新重试";
+					}
 				});
 		});
 	}
 
-	function buildTargetVariants(url) {
-		var variants = [];
-		try {
-			var u = new URL(url);
-			variants.push(u.origin + u.pathname + u.search);
-			if (location.hash) variants.push(u.origin + u.pathname + u.search + location.hash);
-		} catch (e) { variants.push(url); }
-		return variants;
+	var WM_PAGE_SIZE = 100;
+	// 8 秒足够慢网，又不至于让「加载中…」一直挂着。
+	var WM_TIMEOUT_MS = 8000;
+
+	function fetchWithTimeout(url) {
+		if (typeof AbortController !== "function") return fetch(url);
+		var controller = new AbortController();
+		var timer = setTimeout(function () { controller.abort(); }, WM_TIMEOUT_MS);
+		return fetch(url, { signal: controller.signal }).then(
+			function (response) {
+				clearTimeout(timer);
+				return response;
+			},
+			function (error) {
+				clearTimeout(timer);
+				throw error;
+			},
+		);
 	}
 
-	function extractContext(html, text, targetUrl) {
+	function setStatus(el, text, state) {
+		if (!el) return;
+		el.textContent = text;
+		el.dataset.state = state || "";
+	}
+
+	// 官方在 source/target 对上做 30 秒限流，队列满时返回 503；不把这几种状态
+	// 翻译出来，读者就只能在开发者工具里猜了。
+	function describeFailure(status) {
+		if (status === 429) return "提交太频繁了（同一来源 30 秒内只能发一次），稍后再试。";
+		if (status === 503) return "对方队列满了，稍后再试。";
+		if (status === 400) return "对方不认这个地址，请填你引用本页那篇文章的网址。";
+		return "提交失败（HTTP " + status + "），稍后再试。";
+	}
+
+	function readResult(response) {
+		return { ok: response.ok, status: response.status };
+	}
+
+	function postWebmention(endpoint, source, target) {
+		var body = new URLSearchParams();
+		body.set("source", source);
+		body.set("target", target);
+
+		var request = {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: body.toString(),
+		};
+
+		if (typeof AbortController !== "function") {
+			return fetch(endpoint, request).then(readResult);
+		}
+
+		var controller = new AbortController();
+		var timer = setTimeout(function () { controller.abort(); }, WM_TIMEOUT_MS);
+		request.signal = controller.signal;
+		return fetch(endpoint, request).then(
+			function (response) {
+				clearTimeout(timer);
+				return readResult(response);
+			},
+			function (error) {
+				clearTimeout(timer);
+				throw error;
+			},
+		);
+	}
+
+	/**
+	 * 发送 Webmention。
+	 *
+	 * 原生表单提交在 CSP 下需要额外放行 `form-action`，且提交会抡走用户
+	 * （target=_blank 时是开一个新标签页看裸 JSON）。这里改成 fetch，
+	 * 把 201 / 429 / 503 就地变成一行中文提示；表单本身保留，作为无 JS 时的兜底。
+	 */
+	function bindSendForm(panel, endpoint) {
+		var form = panel.querySelector("[data-wm-form]");
+		var statusEl = panel.querySelector("[data-wm-status]");
+		if (!form || form.dataset.wmBound === "true") return;
+		form.dataset.wmBound = "true";
+
+		form.addEventListener("submit", function (event) {
+			var sourceInput = form.querySelector('input[name="source"]');
+			var targetInput = form.querySelector('input[name="target"]');
+			var source = sourceInput ? String(sourceInput.value).trim() : "";
+			var target = targetInput ? String(targetInput.value) : "";
+			// 空值/非法 URL 交给浏览器原生校验提示，不要抢它的活。
+			if (!source) return;
+
+			event.preventDefault();
+			var button = form.querySelector(".wm-submit");
+			if (button) button.disabled = true;
+			setStatus(statusEl, "正在提交…", "pending");
+
+			postWebmention(endpoint, source, target)
+				.then(function (result) {
+					if (result.ok) {
+						setStatus(statusEl, "已提交。对方验证通过后会显示在这里。", "ok");
+						form.reset();
+					} else {
+						setStatus(statusEl, describeFailure(result.status), "error");
+					}
+				})
+				.catch(function () {
+					setStatus(statusEl, "网络异常，没能提交；稍后再试。", "error");
+				})
+				.then(function () {
+					if (button) button.disabled = false;
+				});
+		});
+	}
+
+	function bindQuoteButton(panel, targetUrl) {
+		var button = panel.querySelector("[data-wm-quote]");
+		if (!button || button.dataset.wmBound === "true") return;
+		button.dataset.wmBound = "true";
+
+		button.addEventListener("click", function () {
+			var rawTitle = document.title.replace(/ · .*$/, "").replace(/ \| .*$/, "");
+			var citation = "[" + rawTitle + "](" + targetUrl + ")";
+			copyText(citation).then(function (copied) {
+				button.textContent = copied ? "✓ 已复制" : "复制失败，请手动复制";
+				setTimeout(function () { button.textContent = "引用这篇文章"; }, 2000);
+			});
+		});
+	}
+
+	/**
+	 * 复制文本。优先异步剪贴板 API，没有权限或不支持时退回选中 + execCommand。
+	 * 旧版把兜底写在 promise 的 catch 里，于是「浏览器没有 navigator.clipboard」
+	 * 时按钮点了完全没反应。
+	 */
+	function copyText(text) {
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			return navigator.clipboard.writeText(text).then(
+				function () { return true; },
+				function () { return legacyCopy(text); },
+			);
+		}
+		return Promise.resolve(legacyCopy(text));
+	}
+
+	function legacyCopy(text) {
+		try {
+			var area = document.createElement("textarea");
+			area.value = text;
+			area.setAttribute("readonly", "");
+			area.style.position = "fixed";
+			area.style.top = "-1000px";
+			document.body.appendChild(area);
+			area.select();
+			var ok = document.execCommand("copy");
+			document.body.removeChild(area);
+			return ok;
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function extractContext(html, text, siteHost) {
 		if (!html && !text) return "";
 		if (html) {
-			var div = document.createElement("div");
-			div.innerHTML = html;
-			var links = div.querySelectorAll("a");
-			var pageHost = location.hostname;
+			// 用 DOMParser 而不是 div.innerHTML：解析结果是**惰性文档**，
+			// 图片不会发起请求、脚本不会执行。远端 HTML 只用于定位「链接回本站」
+			// 的那个锚点，不需要它变成真正的 DOM 节点。
+			var doc = null;
+			try {
+				doc = new DOMParser().parseFromString(html, "text/html");
+			} catch (e) {
+				doc = null;
+			}
+			var links = doc ? doc.querySelectorAll("a") : [];
 			for (var i = 0; i < links.length; i++) {
 				var href = links[i].getAttribute("href") || "";
 				try {
 					var linkHost = new URL(href, location.origin).hostname;
-					if (linkHost === pageHost || linkHost === "ffaff.fun") {
+					if (linkHost === siteHost) {
 						var linkText = links[i].textContent.trim();
-						var fullText = div.textContent || "";
+						var fullText = doc.textContent || "";
 						var idx = fullText.indexOf(linkText);
 						if (idx !== -1) {
 							var ctxLen = 100;
@@ -300,14 +464,28 @@ const Heading = compact ? "h3" : "h2";
 		return "📅";
 	}
 
-	function escHtml(text) {
-		var div = document.createElement("div");
-		div.appendChild(document.createTextNode(text));
-		return div.innerHTML;
+	/**
+	 * 统一的转义函数。
+	 *
+	 * `escHtml` / `escAttr` 两个名字保留是因为调用点很多，但实现只有一个：
+	 * 旧版 `escHtml` 用 `div.innerHTML` 反推转义串且**不转引号**，一旦某个值被
+	 * 插进属性就破防。文本节点多转义几个字符没有副作用。
+	 */
+	function escapeHtml(value) {
+		return String(value === null || value === undefined ? "" : value)
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
 	}
 
-	function escAttr(text) {
-		return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	function escHtml(value) {
+		return escapeHtml(value);
+	}
+
+	function escAttr(value) {
+		return escapeHtml(value);
 	}
 
 	function fmtRelative(dateStr) {
@@ -392,6 +570,21 @@ const Heading = compact ? "h3" : "h2";
 	.wm-loading {
 		display: block;
 	}
+
+	/* 提交结果就地反馈：不再弹新标签页看裸 JSON */
+	.wm-status {
+		margin: 0.5rem 0 0;
+		font-size: var(--text-sm);
+		line-height: 1.5;
+		color: var(--color-text-muted);
+	}
+
+	.wm-status:empty {
+		display: none;
+	}
+
+	.wm-status[data-state="ok"] { color: var(--color-accent-hover); }
+	.wm-status[data-state="error"] { color: #b42318; }
 
 	/* ── 提及卡片 ── */
 	.wm-card {

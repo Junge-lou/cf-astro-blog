@@ -1559,6 +1559,7 @@ export const adminSharedStyles = `
 				grid-template-columns: 1fr;
 			}
 		}
+
 `;
 
 function resolveActiveNav(title: string): AdminNavKey {

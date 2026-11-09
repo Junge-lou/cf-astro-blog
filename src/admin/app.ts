@@ -5,7 +5,6 @@ import { analyticsRoutes } from "./routes/analytics";
 import { appearanceRoutes } from "./routes/appearance";
 import { authRoutes } from "./routes/auth";
 import { billRoutes } from "./routes/bill";
-import { commentsProxyRoutes } from "./routes/comments-proxy";
 import { dashboardRoutes } from "./routes/dashboard";
 import { friendLinksRoutes } from "./routes/friend-links";
 import { friendsRoutes } from "./routes/friends";
@@ -41,10 +40,9 @@ function applySecurityHeaders(pathname: string, response: Response) {
 				"frame-ancestors 'none'",
 				"object-src 'none'",
 				"form-action 'self'",
-				// ✅ 视频：新增 video-src 支持 MP4 直链 + B站/腾讯视频
-				"video-src 'self' https: data:",
-
-				// ✅ 媒体（音频）
+				// 视频与音频统一由 media-src 管辖（CSP 里**没有** video-src 这个指令，
+				// 写上去浏览器会直接丢弃整条并打印 "Unrecognized directive"）。
+				// 这里放行 https: 是为了 MP4 直链与 B 站/腾讯视频的 iframe 源。
 				"media-src 'self' https: data:",
 				"script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
 				"style-src 'self' 'unsafe-inline'",
@@ -96,7 +94,6 @@ app.route("/admin/friends", friendsRoutes);
 app.route("/admin/media", mediaRoutes);
 app.route("/admin/analytics", analyticsRoutes);
 app.route("/friend-links", friendLinksRoutes);
-app.route("/comments", commentsProxyRoutes);
 
 app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
 

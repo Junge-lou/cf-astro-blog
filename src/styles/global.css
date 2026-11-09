@@ -408,12 +408,9 @@ body::after {
 /*
  * 元素级重置统一收进 @layer base。
  * ───────────────────────────────
- * 第三方组件（momo 评论）把样式注入在 @layer base / utilities 里，而未分层的规则
- * 永远优先于任何 @layer，于是本站的 `img { height: auto }`、`a { color: inherit }`
- * 会盖掉组件的工具类：头像被拉变形、评论里的链接失去配色，只能逐个打补丁。
- * 收层之后层次清晰：本站组件样式（未分层）最高 → 组件 utilities → base。
- * 注意：本文件是 <head> 里的链接样式，@layer base 先于运行时注入的组件样式声明，
- * 因此组件自己的 base 会覆盖这里同名的属性，符合预期。
+ * 未分层的规则永远优先于任何 @layer。把 `img { height: auto }`、
+ * `a { color: inherit }` 这类全局重置收进 base 层，本站组件样式（未分层）才能
+ * 稳定覆盖它们，而不必为每处特例单独提高选择器权重。
  */
 @layer base {
 	a {
@@ -470,37 +467,6 @@ body::after {
 	pre code {
 		background: none;
 		padding: 0;
-	}
-}
-
-/*
- * momo 评论组件适配（深色）。
- * ────────────────────────────
- * 组件自带的深色规则被编译成 `:global([data-theme=dark]) .comment-container`
- * （Svelte 作用域语法），作为 CSS 是无效选择器会被整条丢弃，深色文字仍取 #000。
- * 这里用组件对外暴露的 --momo-* 变量补齐。
- */
-.comments-host div[class*="border-l-2"] {
-	border-left-color: rgba(var(--card-sheen-rgb), 0.18);
-}
-
-.comments-host [class*="text-gray-500"] {
-	color: var(--color-text-muted);
-}
-
-[data-theme="dark"] .comments-host {
-	--momo-text-color: #e9f0fb;
-	--momo-link-color: #8fc4f5;
-	--momo-button-border-color: rgb(126 170 255 / 0.28);
-	--momo-button-hover-bg-color: rgb(126 170 255 / 0.14);
-}
-
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme="light"]) .comments-host {
-		--momo-text-color: #e9f0fb;
-		--momo-link-color: #8fc4f5;
-		--momo-button-border-color: rgb(126 170 255 / 0.28);
-		--momo-button-hover-bg-color: rgb(126 170 255 / 0.14);
 	}
 }
 

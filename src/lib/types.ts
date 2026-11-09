@@ -1,31 +1,24 @@
-export interface CommentConfig {
-	lang: string;
-	apiUrl: string;
-}
-
 export interface SiteConfig {
 	name: string;
 	url: string;
 	description: string;
 	author: string;
 	language: string;
-	comments: CommentConfig;
 }
 
+/**
+ * 站点静态信息。
+ *
+ * 互动只走 Webmention（`WebmentionPanel.astro` + webmention.io 收、
+ * `scripts/send-webmentions.mjs` 发）。本站不内置评论区，因此也没有
+ * "评论服务地址 / 语言 / 提供商"这类开关。
+ */
 export const siteConfig: SiteConfig = {
 	name: "Kiwi 的博客",
 	url: "https://ffaff.fun",
 	description: "记录 生活",
 	author: "KIWI",
 	language: "zh-CN",
-	comments: {
-		lang: "zh-CN",
-		// 使用同源代理避免跨域 CORS 问题：
-		// momo 评论组件以 apiUrl 为基准发起 fetch(`${apiUrl}/api/comments?…`)，
-		// Astro catch‑all 路由 /api/[...route] 将其转发至 Hono 应用，
-		// 后者再反向代理到 comments.ffaff.fun 实际 API 服务器。
-		apiUrl: "https://ffaff.fun",
-	},
 };
 
 export interface PaginationParams {

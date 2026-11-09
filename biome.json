@@ -53,7 +53,7 @@
 			}
 		},
 		{
-			"includes": ["**/momo-comment.min.js", "**/claude.css"],
+			"includes": ["**/claude.css"],
 			"linter": {
 				"enabled": false
 			},

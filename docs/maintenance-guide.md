@@ -101,7 +101,7 @@ npx wrangler d1 execute blog --remote --command "ANALYZE"
 - 站点：`SITE_URL`
 - Turnstile（可选）：`TURNSTILE_SITE_KEY`、`TURNSTILE_SECRET_KEY`
 
-完整变量清单（AI、MCP、评论等）见 [`README.md`](../README.md) 的 §5.3 配置清单。
+完整变量清单（AI、MCP 等）见 [`README.md`](../README.md) 的 §5.3 配置清单。
 
 资源绑定名必须保持一致：
 

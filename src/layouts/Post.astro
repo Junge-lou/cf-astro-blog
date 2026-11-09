@@ -1,5 +1,4 @@
 ---
-import CommentsPanel from "@/components/CommentsPanel.astro";
 import FabMenu from "@/components/FabMenu.astro";
 import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
@@ -170,8 +169,6 @@ const hasToc = tocEntries.length > 0;
 					<h2 class="article-responses-title" id="article-responses-title">回应</h2>
 				</div>
 				<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} compact />
-				<div class="article-responses-divider" aria-hidden="true"></div>
-				<CommentsPanel title={title} slug={slug} />
 			</section>
 		</div>
 	</article>
@@ -505,7 +502,7 @@ const hasToc = tocEntries.length > 0;
 		margin-inline: auto;
 	}
 
-	/* ───────── 回应（Webmention + 评论，同在一张玻璃面板内） ───────── */
+	/* ───────── 回应（Webmention） ───────── */
 	.article-responses-head {
 		display: flex;
 		align-items: baseline;
@@ -523,12 +520,6 @@ const hasToc = tocEntries.length > 0;
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		color: var(--color-text-muted);
-	}
-
-	.article-responses-divider {
-		height: 1px;
-		margin: 1.15rem 0;
-		background: rgba(var(--card-sheen-rgb), 0.12);
 	}
 
 	@media (max-width: 1024px) {

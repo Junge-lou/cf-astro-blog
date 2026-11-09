@@ -90,17 +90,20 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 				"base-uri 'self'",
 				`frame-ancestors ${frameAncestors}`,
 				"object-src 'none'",
-				"form-action 'self'",
-				// ✅ 视频：新增 video-src 支持 MP4 直链 + B站/腾讯视频
-				"video-src 'self' https: data:",
-
-				// ✅ 媒体（音频）
+				// `form-action` 限制的是**表单提交的目标**。Webmention 面板的「发送」
+				// 表单直接 POST 到 webmention.io（无 JS 时的兜底路径）；只写 'self'
+				// 会让它被静默拦掉，控制台报
+				// "Refused to send form data ... form-action 'self'"。
+				"form-action 'self' https://webmention.io",
+				// 视频与音频统一由 media-src 管辖（CSP 里**没有** video-src 这个指令，
+				// 写上去浏览器会丢弃整条并在控制台报 "Unrecognized directive"，
+				// 结果 <video> 反而回落到 default-src 'self'，外链视频全被拦住）。
 				"media-src 'self' https: data:",
 				`script-src ${scriptSources.join(" ")}`,
 				"style-src 'self' 'unsafe-inline'",
 				`img-src ${buildContentImgSrc({ allowAnyHttps: true })}`,
 				"font-src 'self' data: https:",
-				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://comments.ffaff.fun https://webmention.io",
+				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://webmention.io",
 				"frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com https://webmention.io",
 			].join("; "),
 		);

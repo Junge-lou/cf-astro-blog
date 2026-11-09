@@ -43,11 +43,11 @@
 - **头像代理**：安全代理外部头像，防止隐私泄露与 SSRF
 - **友链展示**：审核通过后在前台展示
 
-### 💬 评论与互动
+### 💬 互动
 
-- **Momo 评论系统**：轻量级评论组件
-- **Webmention**：支持接收与审核外部提及
-- **Webmention 代理**：后端代理发送 Webmention 通知
+- **Webmention**：接收外部站点的引用与回应，渲染在文章页「回应」区块
+- **自动外发**：发文后由 GitHub Actions 扫描正文外链并投递 Webmention
+- 不内置评论区、无第三方评论服务、读者邮箱不入库
 
 ### 📊 数据与分析
 
@@ -343,31 +343,65 @@ openssl rand -hex 32
 
 ---
 
-### 5.5 配置评论系统（Momo）
+### 5.5 互动（Webmention）
 
-项目使用 [Momo](https://github.com/Motues/Momo-Backend) 作为评论系统，需独立部署评论服务。
+本站**没有内置评论区**，互动只走 [Webmention](https://www.w3.org/TR/webmention/)：
+别人在各自站点引用你的文章，通知推过来后，互动会显示在文章页的「回应」区块。
 
-#### 5.5.1 部署 Momo 评论后端
+#### 5.5.1 接收
 
-Momo 是一个轻量级评论系统，后端同样部署在 Cloudflare Workers + D1 上。请参考 [Momo 官方文档](https://github.com/Motues/Momo-Backend/blob/main/worker/README.md) `从 Release 下载代码`，完成以下步骤：
+前端 `src/components/WebmentionPanel.astro` 直接读 webmention.io 的 JF2 接口
+（`https://webmention.io/api/mentions.jf2`），收件地址由 `BaseHead.astro` 里的
+`<link rel="webmention">` 声明，因此**不需要任何额外部署**。面板是纯客户端渲染，
+接口挂掉只会让区块空着，不影响文章本身。
 
-1. 创建独立的 D1 数据库（与博客数据库分开）
-2. 部署 Momo Worker 到 `comments.你的域名.com`（或其他子域名）
-3. 在 Momo 后台配置站点 origin 白名单
+#### 5.5.2 发送
 
-#### 5.5.2 配置评论代理
+`scripts/send-webmentions.mjs` 从 D1 读文章正文、渲染成临时 RSS，再用
+`@remy/webmention` 扫描外链并逐个投递。由 GitHub Actions 触发：
 
-项目通过 `/api/comments` 反向代理转发到 Momo 评论服务，避免跨域问题。
+- `push` 到 `main`：部署完成后补发全部已发布文章；
+- 后台发文触发的 `repository_dispatch`：只补发这一篇（`--slug=xxx`），不构建不部署。
 
-编辑 `src/admin/routes/comments-proxy.ts` 中的 `COMMENTS_ORIGIN`：
+手动执行：
 
-```ts
-const COMMENTS_ORIGIN = "https://comments.你的域名.com";
+```bash
+node scripts/send-webmentions.mjs --remote                  # 全部已发布文章
+node scripts/send-webmentions.mjs --remote --slug=文章slug   # 单篇
 ```
 
-#### 5.5.3 配置前端评论组件
+投递失败只打日志、不影响发文；对方站点未实现 Webmention 端点时直接跳过。
 
-前端评论组件 `public/momo-comment.min.js` 在页面中加载。确保组件中配置正确的后端地址。
+#### 5.5.3 CSP
+
+`src/middleware.ts` 的 `connect-src` 与 `frame-src` 必须放行 `https://webmention.io`，
+且 `form-action` 需要允许它（无 JS 时的表单兜底会直接 POST 过去），
+否则面板会静默空白或按钮点了没反应。
+
+#### 5.5.4 审核（在 webmention.io 后台，不在本站）
+
+本站**没有** Webmention 后台页面。审核开关在 webmention.io：登录后进入该站点的
+设置页，看 **Moderation → Hold new webmentions for review**：
+
+| 选项 | 含义 |
+| --- | --- |
+| publish at once | 验证通过立刻公开（默认）。任何人都能往你的页面写昵称、头像和链接 |
+| hold first-time senders | 陌生来源域第一次要审，批准过一次后该域放行 |
+| hold everything | 每条都要手动放行 |
+
+**推荐 `hold first-time senders`**：全放开等于把页面交给陌生人；全锁死则很可能忘了
+去审，导致「回应」区块永远是空的——这比不装 Webmention 还糟。
+
+被 hold 的条目**不在 API、也不在 web hook 里**，所以文章页看不到，需要在
+webmention.io 的 review 页面放行。在后台删除某条时会同时屏蔽它的 source URL，
+可在 Settings → Blocklists 里解除。
+
+同一个页面上另外两项建议保持默认：
+
+- **Archive avatars（保持勾选）**：头像副本由 webmention.io 托管，读者浏览器不会
+  直连作者站点，且作者换头像后旧提及不会裂图。
+- **Web hook**：留空即可。若以后想让「有人提及我」发邮件通知，这里是唯一的回调
+  接入点（本站目前没有这个端点）。
 
 ---
 
@@ -508,7 +542,7 @@ npm run deploy
 - [ ] Sitemap 可访问（`https://你的域名/sitemap.xml`）
 - [ ] 友链申请页正常（`https://你的域名/friends`）
 - [ ] GitHub Actions 自动部署正常（若已配置）
-- [ ] 评论系统正常加载（若已部署 Momo）
+- [ ] 文章页「回应」区块正常渲染（Webmention 面板可加载）
 
 ---
 
@@ -561,7 +595,6 @@ npm run dev
 - **分类/标签**：分类管理（支持父子层级）
 - **媒体库**：上传图片到 R2，获取引用路径
 - **友链审核**：审核友链申请
-- **Webmention**：管理外部提及
 - **站点外观**：自定义背景、Hero、导航、卡片样式
 - **说说**：发布短内容
 - **AI 端点**：管理 AI 模型端点配置
@@ -631,7 +664,8 @@ cf-astro-blog/
 7. **自定义域名**需在 Cloudflare Dashboard → Workers & Pages → 你的 Worker → **Custom Domains** 中绑定，
    并更新 `SITE_URL`（`wrangler.jsonc` 的 `vars`）与 `astro.config.mjs` 中的 `site`。
 8. **GitHub OAuth 登录与密码登录互不排斥**：配置了 OAuth 后登录页会显示 GitHub 登录按钮，同时保留密码登录表单。
-9. **Momo 评论系统是独立服务**，需单独部署。本项目仅包含前端组件与反向代理。如不需要评论功能，可移除评论相关组件。
+9. **站点不内置评论区**，互动只走 Webmention（接收读 webmention.io，发送由 Actions 跑脚本）。
+   不想外发 Webmention 时，删掉工作流里的投递步骤即可，文章页与其他功能不受影响。
 10. **GitHub Actions 自动部署**需要在仓库 Secrets 中配置 `CLOUDFLARE_API_TOKEN`，否则工作流会跳过部署步骤。
 
 ---
@@ -681,11 +715,21 @@ cf-astro-blog/
 
 检查 GitHub 仓库 → Settings → Secrets and variables → Actions 中是否已添加 `CLOUDFLARE_API_TOKEN`。确保 Token 具有 **Edit Cloudflare Workers** 权限。
 
-### Q: 评论系统不加载
+### Q: 文章页「回应」区块是空的 / 一直在转圈
 
-1. 确认 Momo 评论后端已独立部署且可访问
-2. 确认 `comments-proxy.ts` 中的 `COMMENTS_ORIGIN` 指向正确的 Momo 服务地址
-3. 检查浏览器控制台是否有 CORS 错误
+1. 浏览器控制台看 CSP 报错：`connect-src` 必须放行 `https://webmention.io`
+2. 直接访问
+   `https://webmention.io/api/mentions.jf2?target=https://你的域名/blog/文章slug&per-page=100`，
+   返回 `{"type":"feed","children":[]}` 说明网络正常，只是还没人提及这篇文章
+3. 确认文章页 `<head>` 里有 `<link rel="webmention" href="https://webmention.io/你的域名/webmention">`
+
+### Q: 发文后对方没收到 Webmention
+
+1. 确认 `AUTO_DEPLOY_WEBHOOK_URL` / `AUTO_DEPLOY_WEBHOOK_SECRET` 已配置；
+   未配置时只跳过投递，不影响发文
+2. 到 GitHub Actions 看 `auto-deploy-from-admin` 最近一次 `repository_dispatch` 运行日志
+3. 手动跑 `node scripts/send-webmentions.mjs --remote --slug=文章slug` 看具体报错；
+   对方站点未实现 Webmention 端点时，脚本会跳过而不会失败
 
 ### Q: 本地 `npm run dev` 报 D1 相关错误
 
