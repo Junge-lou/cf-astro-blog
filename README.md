@@ -348,6 +348,8 @@ openssl rand -hex 32
 本站**没有内置评论区**，互动只走 [Webmention](https://www.w3.org/TR/webmention/)：
 别人在各自站点引用你的文章，通知推过来后，互动会显示在文章页的「回应」区块。
 
+> 协议依据、查询参数细节、CSP 与踩坑记录见 [`docs/webmention.md`](docs/webmention.md)。
+
 #### 5.5.1 接收
 
 前端 `src/components/WebmentionPanel.astro` 直接读 webmention.io 的 JF2 接口
@@ -719,8 +721,9 @@ cf-astro-blog/
 
 1. 浏览器控制台看 CSP 报错：`connect-src` 必须放行 `https://webmention.io`
 2. 直接访问
-   `https://webmention.io/api/mentions.jf2?target=https://你的域名/blog/文章slug&per-page=100`，
+   `https://webmention.io/api/mentions.jf2?target[]=https://你的域名/blog/文章slug&per-page=100`，
    返回 `{"type":"feed","children":[]}` 说明网络正常，只是还没人提及这篇文章
+   （多个目标必须写成 `target[]=` 重复；写成 `target=A&target=B` 时服务端只认最后一个）
 3. 确认文章页 `<head>` 里有 `<link rel="webmention" href="https://webmention.io/你的域名/webmention">`
 
 ### Q: 发文后对方没收到 Webmention
