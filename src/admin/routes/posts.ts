@@ -9,6 +9,11 @@ import { bumpContentCacheVersion } from "@/lib/content-version";
 import { getDb } from "@/lib/db";
 import { isOpenAICompatibleEndpointReady } from "@/lib/openai-compatible";
 import {
+	normalizeInteraction,
+	normalizeInteractionTarget,
+	normalizeRsvp,
+} from "@/lib/post-interaction";
+import {
 	buildUrlSlug,
 	escapeHtml,
 	parseOptionalPositiveInt,
@@ -82,6 +87,9 @@ interface ParsedPostInput {
 	metaDescription: string | null;
 	metaKeywords: string | null;
 	canonicalUrl: string | null;
+	interaction: string | null;
+	interactionTarget: string | null;
+	interactionRsvp: string | null;
 	categoryId: number | null;
 	newCategoryName: string | null;
 	tagIds: number[];
@@ -224,6 +232,37 @@ function parsePostInput(
 		return { error: "规范链接地址不合法" } as const;
 	}
 
+	// Webmention 互动声明：三个字段必须自洽。半截声明（有类型没目标、
+	// RSVP 没取值）会让接收方当成普通提及，是最难排查的失败方式，
+	// 所以这里直接拒绝保存。详见 @/lib/post-interaction 与 docs/webmention-interactions.md。
+	const interactionRaw = String(body.interaction ?? "").trim();
+	const interaction = interactionRaw ? normalizeInteraction(interactionRaw) : null;
+	if (interactionRaw && !interaction) {
+		return { error: "Webmention 互动类型不合法" } as const;
+	}
+
+	const interactionTargetRaw = String(body.interactionTarget ?? "").trim();
+	const interactionTarget = interactionTargetRaw
+		? normalizeInteractionTarget(interactionTargetRaw)
+		: null;
+	if (interactionTargetRaw && !interactionTarget) {
+		return { error: "互动目标必须是 http/https 绝对地址" } as const;
+	}
+
+	if (interaction && !interactionTarget) {
+		return { error: "声明了互动类型就必须填写目标地址" } as const;
+	}
+
+	const interactionRsvpRaw = String(body.interactionRsvp ?? "").trim();
+	const interactionRsvp = interactionRsvpRaw ? normalizeRsvp(interactionRsvpRaw) : null;
+	if (interactionRsvpRaw && !interactionRsvp) {
+		return { error: "RSVP 取值不合法" } as const;
+	}
+
+	if (interaction === "rsvp" && !interactionRsvp) {
+		return { error: "RSVP 需要选择参加状态" } as const;
+	}
+
 	const featuredImageKeyRaw = String(body.featuredImageKey ?? "").trim();
 	const featuredImageKey = featuredImageKeyRaw ? sanitizeMediaKey(featuredImageKeyRaw) : null;
 	if (featuredImageKeyRaw && !featuredImageKey) {
@@ -331,6 +370,9 @@ function parsePostInput(
 			metaDescription: sanitizePlainText(body.metaDescription, 160) || null,
 			metaKeywords: sanitizePlainText(body.metaKeywords, 200) || null,
 			canonicalUrl,
+			interaction,
+			interactionTarget: interaction ? interactionTarget : null,
+			interactionRsvp: interaction === "rsvp" ? interactionRsvp : null,
 			categoryId,
 			newCategoryName,
 			tagIds: parseTagIds(body.tagIds),
@@ -682,6 +724,9 @@ posts.post("/", async (c) => {
 			metaDescription: postInput.metaDescription,
 			metaKeywords: postInput.metaKeywords,
 			canonicalUrl: postInput.canonicalUrl,
+			interaction: postInput.interaction,
+			interactionTarget: postInput.interactionTarget,
+			interactionRsvp: postInput.interactionRsvp,
 			categoryId,
 			authorName: postInput.authorName,
 			source: "admin",
@@ -910,6 +955,9 @@ posts.post("/:id", async (c) => {
 			metaDescription: postInput.metaDescription,
 			metaKeywords: postInput.metaKeywords,
 			canonicalUrl: postInput.canonicalUrl,
+			interaction: postInput.interaction,
+			interactionTarget: postInput.interactionTarget,
+			interactionRsvp: postInput.interactionRsvp,
 			categoryId,
 			authorName: postInput.authorName,
 			updatedAt: now,

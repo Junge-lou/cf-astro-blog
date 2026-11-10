@@ -11,7 +11,7 @@
 ### 1.1 来自 W3C 规范（`Webmention`, W3C Recommendation 2017-01-12）
 
 | 条款 | 内容 | 在本仓库的体现 |
-|---|---|---|
+| --- | --- | --- |
 | §3.1.2 | 发送方先对 target 做端点发现：`Link` 响应头 `rel="webmention"` → `<link>` → `<a>`，按此顺序回退 | `BaseHead.astro` 输出 `<link rel="webmention">` |
 | §3.1.3 | 以 `application/x-www-form-urlencoded` POST `source` 与 `target`；**任何 2xx 都必须视为成功**（常见 201 / 202） | `postWebmention()` 用 `response.ok` 判断，不只认 201 |
 | §3.1.4 | source 更新后**应当**重发，且必须重新发现 target 的端点 | `send-webmentions.mjs` 单篇模式不过滤 `status` |
@@ -52,7 +52,7 @@
 ## 2. 角色分工
 
 | 环节 | 由谁完成 | 本站是否有代码 |
-|---|---|---|
+| --- | --- | --- |
 | 端点发现（对方找到我们的收件地址） | 对方 | 只提供 `<link rel="webmention">` |
 | 收件、抓取 source、验证链接存在 | webmention.io | 无 |
 | 审核（扣留 / 批准 / 拒绝） | webmention.io 后台 | 无 |
@@ -105,7 +105,7 @@ URL 由服务端算好写进 `data-webmention-api-url`，浏览器端不再拼�
 按 `wm-property` 分组：
 
 | `wm-property` | 呈现 |
-|---|---|
+| --- | --- |
 | `like-of` / `repost-of` / `bookmark-of` / `rsvp` | 头像墙（按作者去重），RSVP 带 ✅/❌/🤔/⭐ |
 | `in-reply-to` | 卡片：头像、作者、域名、相对时间、正文摘录 |
 | 其他（`mention-of` 或空） | 卡片，标记为「提及」 |
@@ -137,7 +137,7 @@ source=<读者文章>&target=<被引用页面>
 - 有 JS 时改为 `fetch`，把结果就地变成一行中文：
 
 | 情况 | 提示 |
-|---|---|
+| --- | --- |
 | 2xx | 已提交。对方验证通过后会显示在这里。 |
 | 429 | 提交太频繁了（同一来源 30 秒内只能发一次），稍后再试。 |
 | 503 | 对方队列满了，稍后再试。 |
@@ -174,7 +174,7 @@ CLI 的 `--limit` 截断的是「已解析出的端点总数」，所以文章�
 ```
 
 | 触发方式 | 行为 |
-|---|---|
+| --- | --- |
 | `repository_dispatch`（发文/改文/删文） | 只跑 Webmention，不构建、不部署 |
 | `push` / 手动 `workflow_dispatch` | 质量门禁 → 构建部署 → 再补发最近 5 篇 |
 
@@ -185,7 +185,7 @@ CLI 的 `--limit` 截断的是「已解析出的端点总数」，所以文章�
 ## 5. 文件对照
 
 | 文件 | 职责 |
-|---|---|
+| --- | --- |
 | `src/lib/webmention.ts` | 端点常量 + `buildMentionsUrl()`，唯一来源 |
 | `src/components/WebmentionPanel.astro` | 读取 + 渲染 + 发送表单（含全部内联 JS） |
 | `src/components/BaseHead.astro` | `rel="webmention"` / `rel="pingback"` |
@@ -223,7 +223,7 @@ CLI 的 `--limit` 截断的是「已解析出的端点总数」，所以文章�
 ## 8. 排错清单
 
 | 现象 | 先查什么 |
-|---|---|
+| --- | --- |
 | 面板显示 0，但确实有人引用 | 查询串是不是 `target[]=`；target 是否与 `<link rel="canonical">` 一致 |
 | 面板显示「加载失败」 | 浏览器控制台是否被 CSP `connect-src` 拦；接口是否 5xx |
 | 提交按钮点了没反应 | 控制台是否有 `Refused to send form data`（`form-action`）；网络面板是否真的发出请求 |

@@ -349,6 +349,7 @@ openssl rand -hex 32
 别人在各自站点引用你的文章，通知推过来后，互动会显示在文章页的「回应」区块。
 
 > 协议依据、查询参数细节、CSP 与踩坑记录见 [`docs/webmention.md`](docs/webmention.md)。
+> 手动测试步骤（含可直接复制的测试文章、负例与排错表）见 [`docs/webmention-manual-test.md`](docs/webmention-manual-test.md)。
 
 #### 5.5.1 接收
 

@@ -2,6 +2,7 @@
 import FabMenu from "@/components/FabMenu.astro";
 import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
+import { buildInteractionMarkup, rsvpLabel } from "@/lib/post-interaction";
 import type { MarkdownTocItem } from "@/lib/security";
 import Base from "./Base.astro";
 // KaTeX 只服务正文里的数学公式，因此只在文章详情页（本布局的唯一使用者）
@@ -30,6 +31,10 @@ interface Props {
 		positionY: number;
 	};
 	toc?: MarkdownTocItem[];
+	/** Webmention 互动声明（渲染成官方 mf2 标记，见 @/lib/post-interaction） */
+	interaction?: string | null;
+	interactionTarget?: string | null;
+	interactionRsvp?: string | null;
 }
 
 const {
@@ -46,7 +51,16 @@ const {
 	estimatedReadingMinutes,
 	backgroundOverride,
 	toc,
+	interaction,
+	interactionTarget,
+	interactionRsvp,
 } = Astro.props;
+
+const interactionMarkup = buildInteractionMarkup({
+	interaction,
+	interactionTarget,
+	interactionRsvp,
+});
 
 const formattedDate = publishedAt ? formatDate(publishedAt) : null;
 const safeCjkCharCount =
@@ -158,6 +172,31 @@ const hasToc = tocEntries.length > 0;
 					{authorName && <span class="pill p-author">{authorName}</span>}
 					{categoryName && <span class="pill p-category">{categoryName}</span>}
 				</div>
+				{/*
+				 * Webmention 互动声明。这行是 mf2 属性的唯一载体：接收方抓取本页后
+				 * 靠 u-like-of / u-in-reply-to / p-rsvp 判断是「喜欢 / 回复 / 转发」而不是普通提及。
+				 * 必须留在 article.h-entry 内、e-content 外，否则解析器不会把它当条目属性。
+				 */}
+				{interactionMarkup && (
+					<p class="article-interaction">
+						<span class="article-interaction-emoji" aria-hidden="true">
+							{interactionMarkup.emoji}
+						</span>
+						<span class="article-interaction-verb">{interactionMarkup.verb}</span>
+						<a
+							class:list={[interactionMarkup.propertyClass, "article-interaction-link"]}
+							href={interactionMarkup.href}
+							rel="nofollow ugc noopener noreferrer"
+						>
+							{interactionMarkup.linkText}
+						</a>
+						{interactionMarkup.rsvp && (
+							<data class="p-rsvp article-interaction-rsvp" value={interactionMarkup.rsvp}>
+								{rsvpLabel(interactionMarkup.rsvp)}
+							</data>
+						)}
+					</p>
+				)}
 			</header>
 			<div class="article-body glass-panel e-content">
 				<div class="prose article-prose">
@@ -483,6 +522,39 @@ const hasToc = tocEntries.length > 0;
 		font-size: var(--text-md);
 		line-height: 1.9;
 		color: var(--color-text-secondary);
+	}
+
+	/* Webmention 互动声明：「❤️ 喜欢了 这篇文章」
+	 * 视觉上是一行元信息，机器看来是 h-entry 的属性载体（u-like-of 等）。 */
+	.article-interaction {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-top: 0.75rem;
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+	}
+
+	.article-interaction-emoji {
+		font-size: 0.95em;
+	}
+
+	.article-interaction-link {
+		color: var(--color-accent);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	.article-interaction-link:hover {
+		text-decoration-thickness: 2px;
+	}
+
+	.article-interaction-rsvp {
+		padding: 0.05rem 0.45rem;
+		border: 1px solid rgba(var(--card-sheen-rgb), 0.28);
+		border-radius: 999px;
+		font-size: 0.85em;
 	}
 
 	/* 文章主列各面板统一为阅读列宽并居中（754px），

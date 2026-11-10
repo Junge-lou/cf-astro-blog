@@ -90,6 +90,9 @@ let post: {
 	backgroundPositionX: number;
 	backgroundPositionY: number;
 	categoryName: string | null;
+	interaction: string | null;
+	interactionTarget: string | null;
+	interactionRsvp: string | null;
 } | null = null;
 
 try {
@@ -115,6 +118,9 @@ try {
 			backgroundPositionX: blogPosts.backgroundPositionX,
 			backgroundPositionY: blogPosts.backgroundPositionY,
 			categoryName: blogCategories.name,
+			interaction: blogPosts.interaction,
+			interactionTarget: blogPosts.interactionTarget,
+			interactionRsvp: blogPosts.interactionRsvp,
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
@@ -213,6 +219,9 @@ const postBackgroundOverride = postBackgroundImageKey
 	estimatedReadingMinutes={readingStats.estimatedReadingMinutes}
 	backgroundOverride={postBackgroundOverride}
 	toc={toc}
+	interaction={post.interaction}
+	interactionTarget={post.interactionTarget}
+	interactionRsvp={post.interactionRsvp}
 >
 	<Fragment set:html={htmlContent} />
 </Post>

@@ -2,6 +2,11 @@ import { execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join } from "node:path";
 import matter from "gray-matter";
+import {
+	normalizeInteraction,
+	normalizeInteractionTarget,
+	normalizeRsvp,
+} from "../src/lib/post-interaction.ts";
 
 const POSTS_DIR = join(process.cwd(), "content", "posts");
 const SLUG_SEGMENT_RE = /[^\p{Letter}\p{Number}]+/gu;
@@ -212,6 +217,38 @@ function collectPosts() {
 			? data.backgroundMode.trim()
 			: "global";
 
+		// Webmention 互动声明：三个字段必须自洽。半截声明（有类型没目标、RSVP 没取值）
+		// 会让接收方当成普通提及，是最难排查的失败方式，所以直接跳过这个文件。
+		const interaction = normalizeInteraction(data.interaction);
+		if (data.interaction && !interaction) {
+			console.error(
+				`[跳过] ${file}: interaction「${data.interaction}」不合法，可选 like/repost/bookmark/reply/rsvp`,
+			);
+			continue;
+		}
+
+		const interactionTarget = normalizeInteractionTarget(data.interactionTarget);
+		if (data.interactionTarget && !interactionTarget) {
+			console.error(`[跳过] ${file}: interactionTarget 必须是 http/https 绝对地址`);
+			continue;
+		}
+
+		if (interaction && !interactionTarget) {
+			console.error(`[跳过] ${file}: 声明了 interaction 就必须填写 interactionTarget`);
+			continue;
+		}
+
+		const interactionRsvp = normalizeRsvp(data.interactionRsvp);
+		if (data.interactionRsvp && !interactionRsvp) {
+			console.error(`[跳过] ${file}: interactionRsvp 只能是 yes/no/maybe/interested`);
+			continue;
+		}
+
+		if (interaction === "rsvp" && !interactionRsvp) {
+			console.error(`[跳过] ${file}: interaction=rsvp 需要 interactionRsvp`);
+			continue;
+		}
+
 		posts.push({
 			file,
 			fileMtimeMs: statSync(filePath).mtimeMs,
@@ -229,6 +266,9 @@ function collectPosts() {
 			metaDescription: data.metaDescription?.trim().slice(0, 160) || null,
 			metaKeywords: data.metaKeywords?.trim().slice(0, 200) || null,
 			canonicalUrl: data.canonicalUrl?.trim() || null,
+			interaction,
+			interactionTarget: interaction ? interactionTarget : null,
+			interactionRsvp: interaction === "rsvp" ? interactionRsvp : null,
 			featuredImageKey: data.featuredImageKey?.trim() || null,
 			featuredImageAlt: data.featuredImageAlt?.trim().slice(0, 200) || null,
 			backgroundMode,
@@ -441,6 +481,9 @@ function sync() {
 					`meta_description = ${sqlString(post.metaDescription)},`,
 					`meta_keywords = ${sqlString(post.metaKeywords)},`,
 					`canonical_url = ${sqlString(post.canonicalUrl)},`,
+					`interaction = ${sqlString(post.interaction)},`,
+					`interaction_target = ${sqlString(post.interactionTarget)},`,
+					`interaction_rsvp = ${sqlString(post.interactionRsvp)},`,
 					`category_id = ${categoryId !== null ? categoryId : "NULL"},`,
 					`author_name = ${sqlString(post.authorName)},`,
 					`source = 'file',`,
@@ -462,9 +505,9 @@ function sync() {
 			runD1(
 				[
 					"INSERT INTO blog_posts",
-					"(title, slug, content, excerpt, status, publish_at, published_at, featured_image_key, featured_image_alt, background_mode, background_image_key, background_opacity, background_blur, background_scale, background_position_x, background_position_y, is_pinned, pinned_order, meta_title, meta_description, meta_keywords, canonical_url, category_id, author_name, source, created_at, updated_at)",
+					"(title, slug, content, excerpt, status, publish_at, published_at, featured_image_key, featured_image_alt, background_mode, background_image_key, background_opacity, background_blur, background_scale, background_position_x, background_position_y, is_pinned, pinned_order, meta_title, meta_description, meta_keywords, canonical_url, interaction, interaction_target, interaction_rsvp, category_id, author_name, source, created_at, updated_at)",
 					"VALUES",
-					`(${sqlString(post.title)}, ${sqlString(post.slug)}, ${sqlString(post.content)}, ${sqlString(post.excerpt)}, ${sqlString(post.status)}, ${sqlString(post.publishAt)}, ${sqlString(post.publishedAt)}, ${sqlString(post.featuredImageKey)}, ${sqlString(post.featuredImageAlt)}, ${sqlString(post.backgroundMode)}, ${sqlString(post.backgroundImageKey)}, ${post.backgroundOpacity}, ${post.backgroundBlur}, ${post.backgroundScale}, ${post.backgroundPositionX}, ${post.backgroundPositionY}, ${post.isPinned}, ${post.pinnedOrder}, ${sqlString(post.metaTitle)}, ${sqlString(post.metaDescription)}, ${sqlString(post.metaKeywords)}, ${sqlString(post.canonicalUrl)}, ${categoryId !== null ? categoryId : "NULL"}, ${sqlString(post.authorName)}, 'file', ${sqlString(now)}, ${sqlString(now)})`,
+					`(${sqlString(post.title)}, ${sqlString(post.slug)}, ${sqlString(post.content)}, ${sqlString(post.excerpt)}, ${sqlString(post.status)}, ${sqlString(post.publishAt)}, ${sqlString(post.publishedAt)}, ${sqlString(post.featuredImageKey)}, ${sqlString(post.featuredImageAlt)}, ${sqlString(post.backgroundMode)}, ${sqlString(post.backgroundImageKey)}, ${post.backgroundOpacity}, ${post.backgroundBlur}, ${post.backgroundScale}, ${post.backgroundPositionX}, ${post.backgroundPositionY}, ${post.isPinned}, ${post.pinnedOrder}, ${sqlString(post.metaTitle)}, ${sqlString(post.metaDescription)}, ${sqlString(post.metaKeywords)}, ${sqlString(post.canonicalUrl)}, ${sqlString(post.interaction)}, ${sqlString(post.interactionTarget)}, ${sqlString(post.interactionRsvp)}, ${categoryId !== null ? categoryId : "NULL"}, ${sqlString(post.authorName)}, 'file', ${sqlString(now)}, ${sqlString(now)})`,
 				].join(" "),
 				mode,
 			);

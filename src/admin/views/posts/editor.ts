@@ -485,6 +485,38 @@ export function postEditorPage(data: EditorData): string {
 						</div>
 					</details>
 
+					<details>
+						<summary>Webmention 互动（可选）</summary>
+						<div class="form-group">
+							<label for="interaction">互动类型</label>
+							<select id="interaction" name="interaction" class="form-input">
+								<option value="" ${!post?.interaction ? "selected" : ""}>不声明（普通提及）</option>
+								<option value="like" ${post?.interaction === "like" ? "selected" : ""}>❤️ 喜欢（like-of）</option>
+								<option value="repost" ${post?.interaction === "repost" ? "selected" : ""}>🔄 转发（repost-of）</option>
+								<option value="bookmark" ${post?.interaction === "bookmark" ? "selected" : ""}>🔖 收藏（bookmark-of）</option>
+								<option value="reply" ${post?.interaction === "reply" ? "selected" : ""}>💬 回复（in-reply-to）</option>
+								<option value="rsvp" ${post?.interaction === "rsvp" ? "selected" : ""}>📅 RSVP（in-reply-to + p-rsvp）</option>
+							</select>
+							<p class="form-help">声明后，文章页会输出对应的 microformats2 标记，接收方据此把这条显示成「喜欢 / 回复 / 转发 / 收藏 / RSVP」，而不是一条普通提及。</p>
+						</div>
+						<div class="form-group">
+							<label for="interactionTarget">互动目标地址</label>
+							<input type="url" id="interactionTarget" name="interactionTarget" class="form-input" value="${escapeAttribute(post?.interactionTarget || "")}" maxlength="512" placeholder="https://example.com/some-article" />
+							<p class="form-help">必填，且必须是 http/https 绝对地址。正文里也要有一个指向它的普通链接，否则发送脚本扫不到目标。</p>
+						</div>
+						<div class="form-group">
+							<label for="interactionRsvp">RSVP 状态</label>
+							<select id="interactionRsvp" name="interactionRsvp" class="form-input">
+								<option value="" ${!post?.interactionRsvp ? "selected" : ""}>未设置</option>
+								<option value="yes" ${post?.interactionRsvp === "yes" ? "selected" : ""}>参加</option>
+								<option value="no" ${post?.interactionRsvp === "no" ? "selected" : ""}>不参加</option>
+								<option value="maybe" ${post?.interactionRsvp === "maybe" ? "selected" : ""}>可能参加</option>
+								<option value="interested" ${post?.interactionRsvp === "interested" ? "selected" : ""}>感兴趣</option>
+							</select>
+							<p class="form-help">仅「RSVP」类型需要；其它类型会被忽略。</p>
+						</div>
+					</details>
+
 					<div class="form-group">
 						<label>标签</label>
 						<input type="hidden" id="tagIds" name="tagIds" value="${escapeAttribute(selectedTagIds.join(","))}" />

@@ -57,6 +57,11 @@ export const blogPosts = sqliteTable(
 		metaDescription: text("meta_description"),
 		metaKeywords: text("meta_keywords"),
 		canonicalUrl: text("canonical_url"),
+		// Webmention 互动类型（like/repost/bookmark/reply/rsvp）。存的是声明，
+		// 渲染成的是官方 microformats2 标记，见 src/lib/post-interaction.ts。
+		interaction: text("interaction"),
+		interactionTarget: text("interaction_target"),
+		interactionRsvp: text("interaction_rsvp"),
 		categoryId: integer("category_id").references(() => blogCategories.id),
 		authorName: text("author_name").default("Admin"),
 		source: text("source").notNull().default("admin"),
