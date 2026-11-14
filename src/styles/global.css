@@ -607,25 +607,37 @@ body.site-shell-has-background-image .site-background::after {
 	--bg-focus-y: 50;
 	--bg-blur: 24px;
 	--bg-scale: 1.12;
+	/*
+	 * 焦点位移预算。元素宽高都是 116% 视口（inset: -8%），所以每侧出血
+	 * = (1.16 × scale − 1) / 2 个视口，换算成「元素自身宽/高」的比例就是
+	 * (50 × scale − 43.1)%。位移超过这个预算，图边就会离开视口、露出硬边缺口。
+	 * 再乘 0.94 留亚像素余量，并扣掉高斯模糊吃掉的边缘（约 1.5 × blur）。
+	 * 旧实现用固定系数、极值达元素尺寸的 22.5%，是预算的 1.3–1.7 倍，
+	 * 默认 scale 112 下滑到 ±29 就会露底。
+	 */
+	--bg-focus-travel: max(0%, calc((var(--bg-scale) * 50% - 43.1%) * 0.94 - var(--bg-blur) * 1.5));
 	position: absolute;
 	inset: -8%;
 	width: 116%;
 	height: 116%;
+	/* 必须显式解除 @layer base 里 `img { max-width: 100% }` 的夹取：
+	   否则 116% 宽被压回 100%，横向出血消失，焦点一右滑就露底。 */
+	max-width: none;
 	object-fit: cover;
 	object-position: center center;
 	opacity: var(--bg-opacity, 0.72);
 	filter: blur(var(--bg-blur)) saturate(1.2);
 	transform-origin: center center;
 	transform: translate3d(
-			calc((50 - var(--bg-focus-x)) * 0.45%),
-			calc((50 - var(--bg-focus-y)) * 0.45%),
+			calc((50 - var(--bg-focus-x)) * 0.02 * var(--bg-focus-travel)),
+			calc((50 - var(--bg-focus-y)) * 0.02 * var(--bg-focus-travel)),
 			0
 		)
 		scale(var(--bg-scale));
 	transition:
 		transform var(--nav-motion-surface),
 		filter var(--nav-motion-surface);
-	will-change: transform, filter, object-position;
+	will-change: transform, filter;
 }
 
 .site-main {

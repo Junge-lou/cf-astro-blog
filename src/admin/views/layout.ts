@@ -1140,6 +1140,39 @@ export const adminSharedStyles = `
 			object-fit: cover;
 		}
 
+		/*
+		 * 背景图预览：与前台 .site-background-image 同一套焦点公式。
+		 * 预览框就是图元素自身（100%），所以视口尺度下的 116% 出血等价于
+		 * 把 scale 乘 1.16，位移预算也随之变成 (scale × 58% − 50%)。
+		 * 变量由 public/admin.js 的 applyBackgroundFocusPreview() 写入。
+		 */
+		.bg-focus-preview {
+			--bg-focus-x: 50;
+			--bg-focus-y: 50;
+			--bg-blur: 0px;
+			--bg-scale: 1;
+			--bg-opacity: 1;
+			--bg-focus-travel: max(
+				0%,
+				calc((var(--bg-scale) * 58% - 50%) * 0.94 - var(--bg-blur) * 1.5)
+			);
+			object-fit: cover;
+			object-position: center center;
+			opacity: var(--bg-opacity);
+			filter: blur(var(--bg-blur));
+			transform-origin: center center;
+			transform: translate3d(
+					calc((50 - var(--bg-focus-x)) * 0.02 * var(--bg-focus-travel)),
+					calc((50 - var(--bg-focus-y)) * 0.02 * var(--bg-focus-travel)),
+					0
+				)
+				scale(calc(var(--bg-scale) * 1.16));
+			transition:
+				transform 200ms ease,
+				filter 200ms ease,
+				opacity 200ms ease;
+		}
+
 		.cover-actions {
 			display: flex;
 			flex-wrap: wrap;

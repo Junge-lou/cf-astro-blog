@@ -1,9 +1,7 @@
 import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { getDb } from "@/lib/db";
 import { timingSafeEqualText, verifyPassword } from "@/lib/password";
 import { sanitizePlainText } from "@/lib/security";
-import { buildBackgroundImageUrl, getSiteAppearance } from "@/lib/site-appearance";
 import {
 	type AdminAppEnv,
 	assertCsrfToken,
@@ -17,7 +15,7 @@ import {
 	requireAuth,
 } from "../middleware/auth";
 import { clearAttempts, rateLimit, recordFailedAttempt } from "../middleware/rate-limit";
-import { loginPage } from "../views/login";
+import { renderLoginPage } from "../views/login";
 
 const auth = new Hono<AdminAppEnv>();
 const OAUTH_STATE_COOKIE = "admin_oauth_state";
@@ -214,23 +212,13 @@ auth.get("/login", async (c) => {
 
 	const config = getGitHubOAuthConfig(c.env);
 	const passwordEnabled = isPasswordLoginEnabled(c.env);
-
-	let backgroundImageUrl: string | null = null;
-	try {
-		const appearance = await getSiteAppearance(getDb(c.env.DB));
-		backgroundImageUrl = buildBackgroundImageUrl(appearance.backgroundImageKey);
-	} catch {
-		// DB 未绑定或查询失败时退化为无背景图
-	}
-
 	const csrfToken = passwordEnabled ? await generateLoginCsrfToken(c.env) : undefined;
 
 	return c.html(
-		loginPage({
+		await renderLoginPage(c.env, {
 			oauthEnabled: Boolean(config),
 			passwordEnabled,
 			csrfToken,
-			backgroundImageUrl,
 		}),
 	);
 });
@@ -245,7 +233,7 @@ auth.post("/login", async (c) => {
 			return c.text("当前后台仅支持 GitHub OAuth 登录", 405);
 		}
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "后台登录尚未配置，请联系站点管理员",
 				oauthEnabled: false,
 				passwordEnabled: false,
@@ -272,7 +260,7 @@ auth.post("/login", async (c) => {
 			if (lockExpiry.getTime() > Date.now()) {
 				const remainingSeconds = Math.ceil((lockExpiry.getTime() - Date.now()) / 1000);
 				return c.html(
-					loginPage({
+					await renderLoginPage(c.env, {
 						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,
 						oauthEnabled: Boolean(config),
 						passwordEnabled,
@@ -294,7 +282,7 @@ auth.post("/login", async (c) => {
 	if (!csrfToken || !(await consumeLoginCsrfToken(c.env, csrfToken))) {
 		await recordFailedAttempt(c.env, ip);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "表单已过期，请刷新页面后重试",
 				oauthEnabled: Boolean(config),
 				passwordEnabled,
@@ -306,7 +294,7 @@ auth.post("/login", async (c) => {
 	if (!username || !password) {
 		await recordFailedAttempt(c.env, ip);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "请输入用户名和密码",
 				oauthEnabled: Boolean(config),
 				passwordEnabled,
@@ -325,7 +313,7 @@ auth.post("/login", async (c) => {
 	if (!adminUsername || !timingSafeEqualText(username, adminUsername)) {
 		await recordFailedAttempt(c.env, ip);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "用户名或密码错误",
 				oauthEnabled: Boolean(config),
 				passwordEnabled,
@@ -339,7 +327,7 @@ auth.post("/login", async (c) => {
 	if (!passwordHash) {
 		await recordFailedAttempt(c.env, ip);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "后台密码未配置，请联系站点管理员",
 				oauthEnabled: Boolean(config),
 				passwordEnabled: false,
@@ -358,7 +346,7 @@ auth.post("/login", async (c) => {
 	if (!passwordValid) {
 		await recordFailedAttempt(c.env, ip);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "用户名或密码错误",
 				oauthEnabled: Boolean(config),
 				passwordEnabled,
@@ -376,7 +364,7 @@ auth.post("/login", async (c) => {
 		console.error("admin_token_create_failed", error);
 		await destroySession(c.env, session.id);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "后台会话配置异常，请联系站点管理员检查 JWT_SECRET",
 				oauthEnabled: Boolean(config),
 				passwordEnabled,
@@ -399,7 +387,7 @@ auth.get("/github", async (c) => {
 
 	if (!config) {
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "后台尚未完成 GitHub OAuth 配置",
 				oauthEnabled: false,
 			}),
@@ -439,7 +427,7 @@ auth.get("/github/callback", async (c) => {
 
 	if (!config) {
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "后台尚未完成 GitHub OAuth 配置",
 				oauthEnabled: false,
 			}),
@@ -450,7 +438,7 @@ auth.get("/github/callback", async (c) => {
 	if (oauthError) {
 		await recordOAuthFailure(c);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "GitHub 授权被取消或未完成",
 				oauthEnabled: true,
 			}),
@@ -467,7 +455,7 @@ auth.get("/github/callback", async (c) => {
 	) {
 		await recordOAuthFailure(c);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "GitHub OAuth 状态校验失败",
 				oauthEnabled: true,
 			}),
@@ -480,7 +468,7 @@ auth.get("/github/callback", async (c) => {
 	if (!accessToken) {
 		await recordOAuthFailure(c);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "GitHub 访问令牌交换失败",
 				oauthEnabled: true,
 			}),
@@ -493,7 +481,7 @@ auth.get("/github/callback", async (c) => {
 	if (!profile?.login) {
 		await recordOAuthFailure(c);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "无法获取 GitHub 账号信息",
 				oauthEnabled: true,
 			}),
@@ -504,7 +492,7 @@ auth.get("/github/callback", async (c) => {
 	if (!timingSafeEqualText(profile.login, config.adminLogin)) {
 		await recordOAuthFailure(c);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: `当前 GitHub 账号 ${profile.login} 没有后台权限`,
 				oauthEnabled: true,
 			}),
@@ -521,7 +509,7 @@ auth.get("/github/callback", async (c) => {
 		await destroySession(c.env, session.id);
 		await recordOAuthFailure(c);
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "后台会话配置异常，请联系站点管理员检查 JWT_SECRET",
 				oauthEnabled: true,
 			}),

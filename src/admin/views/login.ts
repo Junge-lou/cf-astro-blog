@@ -1,4 +1,6 @@
+import { getDb } from "@/lib/db";
 import { escapeAttribute, escapeHtml } from "@/lib/security";
+import { buildBackgroundImageUrl, getSiteAppearance } from "@/lib/site-appearance";
 
 interface LoginPageOptions {
 	error?: string;
@@ -6,6 +8,24 @@ interface LoginPageOptions {
 	passwordEnabled?: boolean;
 	csrfToken?: string;
 	backgroundImageUrl?: string | null;
+	backgroundOpacity?: number;
+	backgroundBlur?: number;
+	backgroundScale?: number;
+	backgroundPositionX?: number;
+	backgroundPositionY?: number;
+}
+
+function clampBackgroundValue(
+	value: number | undefined,
+	min: number,
+	max: number,
+	fallback: number,
+): number {
+	if (typeof value !== "number" || !Number.isFinite(value)) {
+		return fallback;
+	}
+
+	return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 export function loginPage(options: LoginPageOptions = {}): string {
@@ -15,10 +35,27 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		passwordEnabled = false,
 		csrfToken,
 		backgroundImageUrl,
+		backgroundOpacity,
+		backgroundBlur,
+		backgroundScale,
+		backgroundPositionX,
+		backgroundPositionY,
 	} = options;
 	const hasBackgroundImage = Boolean(backgroundImageUrl);
 	const escapedBackgroundImageUrl = backgroundImageUrl ? escapeAttribute(backgroundImageUrl) : "";
 	const escapedCsrfToken = csrfToken ? escapeAttribute(csrfToken) : "";
+	// 与 Base.astro 输出同一组变量：0–100 的焦点值是**无单位数字**，
+	// 供 CSS 里的 calc((50 - var(--bg-focus-x)) × …) 直接参与运算。
+	const backgroundVariables = hasBackgroundImage
+		? [
+				`--bg-focus-x: ${clampBackgroundValue(backgroundPositionX, 0, 100, 50)}`,
+				`--bg-focus-y: ${clampBackgroundValue(backgroundPositionY, 0, 100, 50)}`,
+				`--bg-blur: ${clampBackgroundValue(backgroundBlur, 0, 60, 0)}px`,
+				`--bg-scale: ${clampBackgroundValue(backgroundScale, 100, 180, 112) / 100}`,
+				`--bg-opacity: ${clampBackgroundValue(backgroundOpacity, 0, 100, 50) / 100}`,
+			].join("; ")
+		: "";
+	const escapedBackgroundVariables = escapeAttribute(backgroundVariables);
 
 	// Build the login description text
 	const loginHint = (() => {
@@ -203,7 +240,10 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			gap: 1.5rem;
 		}
 
-		/* ---- 背景图层（与首页 .site-background 逻辑一致）---- */
+		/* ---- 背景图层 ----
+		   与首页 .site-background-image 完全同一套几何：116% 出血 + scale + 焦点位移。
+		   变量由 loginPage() 按站点外观输出（无单位 0–100），不要再改回
+		   object-position——它需要「长度/百分比」，拿到无单位数字会让整条声明失效。 */
 		.bg-image-layer {
 			position: fixed;
 			inset: 0;
@@ -213,16 +253,30 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		}
 
 		.bg-image-layer img {
+			--bg-focus-x: 50;
+			--bg-focus-y: 50;
+			--bg-blur: 0px;
+			--bg-scale: 1.12;
+			--bg-focus-travel: max(
+				0%,
+				calc((var(--bg-scale) * 50% - 43.1%) * 0.94 - var(--bg-blur) * 1.5)
+			);
 			position: absolute;
-			inset: 0;
-			width: 100%;
-			height: 100%;
+			inset: -8%;
+			width: 116%;
+			height: 116%;
+			max-width: none;
 			object-fit: cover;
-			object-position: var(--bg-focus-x, 50%) var(--bg-focus-y, 50%);
-			filter: blur(var(--bg-blur, 24px));
-			transform: scale(var(--bg-scale, 1.12));
-			opacity: var(--bg-opacity, 0.72);
-			transform-origin: center;
+			object-position: center center;
+			opacity: var(--bg-opacity, 0.5);
+			filter: blur(var(--bg-blur)) saturate(1.2);
+			transform-origin: center center;
+			transform: translate3d(
+					calc((50 - var(--bg-focus-x)) * 0.02 * var(--bg-focus-travel)),
+					calc((50 - var(--bg-focus-y)) * 0.02 * var(--bg-focus-travel)),
+					0
+				)
+				scale(var(--bg-scale));
 		}
 
 		/* ---- 顶部品牌栏 ---- */
@@ -547,7 +601,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 </style>
 </head>
 <body${hasBackgroundImage ? ' class="has-bg-image"' : ""}>
-	${hasBackgroundImage ? `<div class="bg-image-layer" aria-hidden="true"><img src="${escapedBackgroundImageUrl}" alt="" loading="eager" decoding="async" /></div>` : ""}
+	${hasBackgroundImage ? `<div class="bg-image-layer" aria-hidden="true"><img src="${escapedBackgroundImageUrl}" alt="" loading="eager" decoding="async" style="${escapedBackgroundVariables}" /></div>` : ""}
 	<main class="entry-shell">
 		<header class="entry-header">
 			<a href="/" class="entry-brand" aria-label="返回 Junge-lou's Blog 首页">
@@ -661,4 +715,30 @@ export function loginPage(options: LoginPageOptions = {}): string {
 	</main>
 </body>
 </html>`;
+}
+/**
+ * 渲染带站点背景参数的登录页。
+ * 登录页和前台共用一份「背景图 + 透明度 / 模糊 / 缩放 / 焦点」，
+ * 所以这里直接从站点外观读；D1 不可用时退回默认参数（不影响登录）。
+ */
+export async function renderLoginPage(env: Env, options: LoginPageOptions = {}): Promise<string> {
+	if (options.backgroundImageUrl !== undefined) {
+		return loginPage(options);
+	}
+
+	try {
+		const appearance = await getSiteAppearance(getDb(env.DB));
+		return loginPage({
+			...options,
+			backgroundImageUrl: buildBackgroundImageUrl(appearance.backgroundImageKey),
+			backgroundOpacity: appearance.backgroundOpacity,
+			backgroundBlur: appearance.backgroundBlur,
+			backgroundScale: appearance.backgroundScale,
+			backgroundPositionX: appearance.backgroundPositionX,
+			backgroundPositionY: appearance.backgroundPositionY,
+		});
+	} catch {
+		// 后端未绑定 D1 或查询失败时退化为纯色兜底
+		return loginPage({ ...options, backgroundImageUrl: null });
+	}
 }

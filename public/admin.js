@@ -623,6 +623,27 @@ function updatePostBackgroundDisplay(name, value) {
 	target.textContent = `${value}%`;
 }
 
+/**
+ * 把背景参数写成 CSS 变量，交给 .bg-focus-preview 的焦点公式渲染。
+ * 与前台一致：焦点是 0–100 的绝对位置，而滑条值是对中心的偏移（−50–50）；
+ * 透明度滑条给的是“透明度”，前台要的是“不透明度”。
+ */
+function applyBackgroundFocusPreview(image, values) {
+	if (!(image instanceof HTMLImageElement) || !values) {
+		return;
+	}
+
+	image.style.setProperty("--bg-focus-x", String(50 + values.positionX));
+	image.style.setProperty("--bg-focus-y", String(50 + values.positionY));
+	image.style.setProperty("--bg-blur", `${values.blur}px`);
+	image.style.setProperty("--bg-scale", String(1 + values.scale / 100));
+	image.style.setProperty("--bg-opacity", String(1 - values.transparency / 100));
+}
+
+function readRangeValue(input, fallback = 0) {
+	return input instanceof HTMLInputElement ? Number(input.value) : fallback;
+}
+
 function updatePostBackgroundControlPreview() {
 	const transparencyInput = document.querySelector(
 		'[data-post-background-control="backgroundTransparency"]',
@@ -651,6 +672,17 @@ function updatePostBackgroundControlPreview() {
 	if (positionYInput instanceof HTMLInputElement) {
 		updatePostBackgroundDisplay("backgroundPositionY", Number(positionYInput.value));
 	}
+
+	applyBackgroundFocusPreview(
+		document.querySelector("[data-post-background-preview-image='true']"),
+		{
+			positionX: readRangeValue(positionXInput),
+			positionY: readRangeValue(positionYInput),
+			blur: readRangeValue(blurInput),
+			scale: readRangeValue(scaleInput),
+			transparency: readRangeValue(transparencyInput),
+		},
+	);
 }
 
 function buildSlugValue(value) {
@@ -1140,7 +1172,7 @@ function syncEditorPostBackgroundPreviewFromKey() {
 	let image = dropzone.querySelector("[data-post-background-preview-image='true']");
 	if (!(image instanceof HTMLImageElement)) {
 		image = document.createElement("img");
-		image.className = "cover-preview-image";
+		image.className = "cover-preview-image bg-focus-preview";
 		image.setAttribute("data-post-background-preview-image", "true");
 		image.alt = "文章背景图预览";
 		dropzone.innerHTML = "";
@@ -1148,6 +1180,7 @@ function syncEditorPostBackgroundPreviewFromKey() {
 	}
 
 	image.src = `/media/${key}`;
+	updatePostBackgroundControlPreview();
 }
 
 function applyEditorDraftValues(values) {
@@ -1942,11 +1975,12 @@ function ensureAppearanceBackgroundPreviewImage() {
 	}
 
 	const image = document.createElement("img");
-	image.className = "cover-preview-image";
+	image.className = "cover-preview-image bg-focus-preview";
 	image.alt = "背景图预览";
 	image.setAttribute("data-appearance-background-preview", "true");
 	appearanceUploadDropzone.innerHTML = "";
 	appearanceUploadDropzone.appendChild(image);
+	updateAppearancePreview();
 	return image;
 }
 
@@ -2035,6 +2069,17 @@ function updateAppearancePreview() {
 	if (articlePanelBlurInput instanceof HTMLInputElement) {
 		updateAppearanceDisplay("articlePanelBlur", Number(articlePanelBlurInput.value));
 	}
+
+	applyBackgroundFocusPreview(
+		document.querySelector('[data-appearance-background-preview="true"]'),
+		{
+			positionX,
+			positionY,
+			blur,
+			scale,
+			transparency: readRangeValue(backgroundTransparencyInput, 50),
+		},
+	);
 }
 
 function submitAppearanceUpload() {

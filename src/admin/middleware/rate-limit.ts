@@ -1,5 +1,5 @@
 import type { Context, Next } from "hono";
-import { loginPage } from "../views/login";
+import { renderLoginPage } from "../views/login";
 import type { AdminAppEnv } from "./auth";
 
 const MAX_ATTEMPTS = 5;
@@ -44,7 +44,7 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 			if (lockExpiry.getTime() > Date.now()) {
 				const remainingSeconds = Math.ceil((lockExpiry.getTime() - Date.now()) / 1000);
 				return c.html(
-					loginPage({
+					await renderLoginPage(c.env, {
 						error: `登录尝试过多，请 ${remainingSeconds} 秒后再试`,
 						oauthEnabled: isOAuthEnabled(c.env),
 						passwordEnabled: isPasswordEnabled(c.env),
@@ -57,7 +57,7 @@ export async function rateLimit(c: Context<AdminAppEnv>, next: Next) {
 		}
 	} catch {
 		return c.html(
-			loginPage({
+			await renderLoginPage(c.env, {
 				error: "登录保护暂时不可用，请稍后再试",
 				oauthEnabled: isOAuthEnabled(c.env),
 				passwordEnabled: isPasswordEnabled(c.env),

@@ -371,7 +371,7 @@ export function postEditorPage(data: EditorData): string {
 								<div class="cover-dropzone" data-post-background-dropzone="true">
 									${
 										backgroundImageUrl
-											? `<img src="${escapeAttribute(backgroundImageUrl)}" alt="文章背景图预览" class="cover-preview-image" data-post-background-preview-image="true" />`
+											? `<img src="${escapeAttribute(backgroundImageUrl)}" alt="文章背景图预览" class="cover-preview-image bg-focus-preview" data-post-background-preview-image="true" />`
 											: `<div class="cover-empty" data-post-background-empty="true">拖拽图片或点击上传</div>`
 									}
 								</div>

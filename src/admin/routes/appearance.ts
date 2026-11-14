@@ -270,14 +270,17 @@ function renderAppearancePage(options: {
 			}
 
 			.appearance-upload-dropzone[data-appearance-background-dropzone="true"] {
-				aspect-ratio: auto;
+				aspect-ratio: 16 / 9;
 				min-height: 180px;
 			}
 
+			/* 背景图预览铺满整个拖拽区，叠上 .bg-focus-preview 的焦点变换 */
 			.appearance-upload-dropzone[data-appearance-background-dropzone="true"] .cover-preview-image[data-appearance-background-preview="true"] {
+				position: absolute;
+				inset: 0;
 				display: block;
 				width: 100%;
-				height: auto;
+				height: 100%;
 			}
 
 			.appearance-upload-dropzone:hover,
@@ -483,7 +486,7 @@ function renderAppearancePage(options: {
 						>
 							${
 								settings.backgroundImageKey
-									? `<img src="/media/${escapeAttribute(settings.backgroundImageKey)}" alt="背景图预览" class="cover-preview-image" data-appearance-background-preview="true" />`
+									? `<img src="/media/${escapeAttribute(settings.backgroundImageKey)}" alt="背景图预览" class="cover-preview-image bg-focus-preview" data-appearance-background-preview="true" />`
 									: `<div class="appearance-upload-copy" data-appearance-background-empty="true">
 											<strong>拖拽图片到这里</strong>
 											<span>或点击选择文件，自动上传并设为当前背景</span>
