@@ -23,7 +23,7 @@ export const MOMO_COMMENT_API_URL = "https://comments.ffaff.fun";
  * 否则人机验证会以 `PROTOCOL_OUTDATED` 之类的原因静默失败。
  */
 export const MOMO_COMMENT_SCRIPT_URL =
-	"https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.8.4/dist/momo-comment.min.js";
+	"https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.8.3/dist/momo-comment.min.js";
 
 /**
  * 后端默认的头像与表情来源域名。
