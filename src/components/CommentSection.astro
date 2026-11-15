@@ -42,7 +42,97 @@ const { slug, title, lang = "zh-cn" } = Astro.props;
 	</noscript>
 </div>
 
-<script is:inline src="/momo-comments.js"></script>
+<script is:inline>
+	/*
+	 * 评论组件引导（内联，**不要**再拆成 public/*.js）
+	 * ───────────────────────────────────────────────
+	 * 之前它是 public/momo-comments.js，独立文件意味着独立缓存：那份文件按
+	 * `_headers` 缓存一天，于是「部署后代码已更新、访客还在跑昨天的引导逻辑」
+	 * —— 表现就是第一次进文章评论区不加载，刷新（拿到新 HTML）后才好。
+	 * 内联进 HTML 后，引导脚本与页面同生共死，不可能再出现版本错配，也少一次请求。
+	 *
+	 * 仍然保留动态注入组件包（而不是直接写 <script src>）：组件包 228KB，
+	 * 只有文章页需要，动态注入可保证它在客户端导航时**只执行一次**。
+	 */
+	(function () {
+		if (window.__momoCommentsBooted) return;
+		window.__momoCommentsBooted = true;
+
+		var SECTION_SELECTOR = "[data-momo-comment-section]";
+		var ROOT_SELECTOR = "[data-momo-comment-root]";
+		var ERROR_TEXT = "评论组件加载失败，请刷新页面重试。";
+		var loader = null;
+
+		var loadComponent = function (src) {
+			if (window.momo) return Promise.resolve(window.momo);
+			if (loader) return loader;
+			loader = new Promise(function (resolve, reject) {
+				var script = document.createElement("script");
+				script.src = src;
+				script.async = true;
+				script.onload = function () {
+					if (window.momo) resolve(window.momo);
+					else reject(new Error("momo is not registered on window"));
+				};
+				script.onerror = function () {
+					reject(new Error("failed to load comment bundle"));
+				};
+				document.head.appendChild(script);
+			}).catch(function (error) {
+				loader = null;
+				throw error;
+			});
+			return loader;
+		};
+
+		var mount = function (section) {
+			var root = section.querySelector(ROOT_SELECTOR);
+			if (!root || !root.id || root.dataset.momoMounted === "1") return;
+			var scriptUrl = section.dataset.scriptUrl;
+			if (!scriptUrl) return;
+
+			loadComponent(scriptUrl)
+				.then(function (momo) {
+					// 组件自己会渲染「正在加载评论…」，清掉容器里可能残留的占位/错误文案
+					root.replaceChildren();
+					momo.init({
+						el: "#" + root.id,
+						apiUrl: section.dataset.apiUrl,
+						slugId: section.dataset.slugId,
+						title: section.dataset.postTitle,
+						lang: section.dataset.lang,
+					});
+					root.dataset.momoMounted = "1";
+				})
+				.catch(function (error) {
+					console.error("[momo-comments]", error);
+					root.textContent = ERROR_TEXT;
+				});
+		};
+
+		var init = function () {
+			document.querySelectorAll(SECTION_SELECTOR).forEach(mount);
+		};
+
+		/*
+		 * 解析期就发起组件包请求（不等 page-load），下载与剩余 HTML/CSS 并行；
+		 * 同源请求还能复用已有连接。page-load 只负责客户端导航后的重新挂载。
+		 */
+		var firstSection = document.querySelector(SECTION_SELECTOR);
+		if (firstSection && firstSection.dataset.scriptUrl) {
+			loadComponent(firstSection.dataset.scriptUrl).catch(function () {
+				/* 失败提示在 mount() 里统一处理 */
+			});
+		}
+
+		document.addEventListener("astro:page-load", init);
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", init);
+		} else {
+			init();
+		}
+	})();
+</script>
 
 <style>
 	/*

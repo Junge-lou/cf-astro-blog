@@ -12,7 +12,7 @@
 		"build": "astro build",
 		"build:analyze": "npm run build && node scripts/analyze-build.mjs",
 		"preview": "npm run sync:posts:local && npm run build && wrangler dev",
-		"deploy": "npm run db:migrate:remote && astro build && node scripts/analyze-build.mjs --json && wrangler deploy",
+		"deploy": "npm run db:migrate:remote && node scripts/bump-content-version.mjs && astro build && node scripts/analyze-build.mjs --json && wrangler deploy",
 		"sync:posts": "tsx scripts/sync-local-posts.mjs --remote",
 		"sync:posts:local": "tsx scripts/sync-local-posts.mjs --local",
 		"export:posts": "node scripts/export-posts.mjs --remote",

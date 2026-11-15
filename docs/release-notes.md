@@ -43,6 +43,14 @@
 
 ## 工程细节
 
+- 评论引导脚本**内联进 `CommentSection.astro`**，删除 `public/momo-comments.js`：
+  它原先按 `_headers` 缓存一天，于是"部署后代码已更新、访客还在跑昨天的引导逻辑"——
+  实测表现就是**第一次进文章评论区不加载、刷新后才好**（旧 HTML 里的引导逻辑仍指向 jsDelivr）。
+  内联后引导脚本与页面同生共死，不可能再版本错配，也少一次请求；组件包仍动态注入，
+  保证客户端导航时只执行一次
+- `deploy` 脚本新增 `scripts/bump-content-version.mjs`：部署前把 KV 里的
+  `public-content-cache-version` 推一格。此前它只在发文时递增，所以"只改代码不发文"的部署
+  会留下最长 5 分钟的边缘缓存空窗（新 Worker 已在跑、边缘仍发旧 HTML）。写入失败不阻断部署
 - `public/vendor/**` 加入 biome 忽略列表：第一次 `biome check --write` 把压缩后的 bundle
   重排了（228,500 → 228,159 B），第三方产物不该被格式化
 - `public/_headers` 用 `/vendor/*`（而不是 `/vendor/momo-comment/*`）：
