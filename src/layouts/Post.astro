@@ -1,4 +1,5 @@
 ---
+import CommentSection from "@/components/CommentSection.astro";
 import FabMenu from "@/components/FabMenu.astro";
 import WebmentionPanel from "@/components/WebmentionPanel.astro";
 import { formatDate } from "@/lib/format";
@@ -204,7 +205,16 @@ const hasToc = tocEntries.length > 0;
 				</div>
 			</div>
 			<section class="article-responses glass-panel" aria-label="回应">
-				<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} compact />
+				{/*
+				 * 评论在上、Webmention 在下：评论是读者最常用的回应方式，而 Webmention
+				 * 需要对方自己也有站点。两个面板属于同一件事，因此共用一个「回应」区块，
+				 * 用一条分隔线区隔，而不是并排两个玻璃面板。
+				 */}
+				<CommentSection slug={slug} title={title} />
+				<div class="article-responses-divider" role="separator" aria-hidden="true"></div>
+				<div class="article-webmentions" id="webmentions">
+					<WebmentionPanel targetUrl={canonicalUrl || Astro.url.href} compact />
+				</div>
 			</section>
 		</div>
 	</article>
@@ -565,6 +575,18 @@ const hasToc = tocEntries.length > 0;
 		margin-inline: auto;
 		width: 100%;
 		max-width: var(--max-width-prose);
+	}
+
+	/* 评论与 Webmention 同处一个「回应」面板，用一条细线区隔两种回应方式 */
+	.article-responses-divider {
+		height: 1px;
+		margin: clamp(1.4rem, 3vw, 2rem) 0 clamp(1.1rem, 2.4vw, 1.6rem);
+		background: var(--color-border);
+	}
+
+	/* 正文里的锚点跳转要越过吸顶导航（与 .article-prose 的 scroll-margin-top 一致） */
+	.article-webmentions {
+		scroll-margin-top: 6.5rem;
 	}
 
 	.article-prose {

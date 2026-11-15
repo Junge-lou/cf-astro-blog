@@ -1,0 +1,80 @@
+---
+/**
+ * 评论区（Momo-Backend）。
+ *
+ * 挂载的是官方前端组件，本站不做任何数据读写：`momo.init()` 之后，列表拉取、
+ * 提交、无感验证全由 bundle 自己完成。这里只负责三件事：
+ * 1. 提供挂载点与 data-* 配置（地址来源见 `@/lib/comment`）；
+ * 2. 把组件的 `--momo-*` 配色变量映射到本站 token；
+ * 3. 无 JS / 加载失败时的可读兜底。
+ *
+ * 样式注意：bundle 的 CSS 是运行时注入的，Astro 的 scoped 属性加不到它生成的
+ * DOM 上。要改子元素结构必须用 `:global()`；只改颜色时优先改 `--momo-*`
+ * 自定义属性（自定义属性会继承进子 DOM，不需要 `:global()`）。
+ */
+import { MOMO_COMMENT_API_URL, MOMO_COMMENT_SCRIPT_URL } from "@/lib/comment";
+
+interface Props {
+	/** 文章唯一标识，与后端 `Comment.post_slug` 对应 */
+	slug: string;
+	/** 通知邮件/后台列表里显示的文章标题 */
+	title: string;
+	lang?: string;
+}
+
+const { slug, title, lang = "zh-cn" } = Astro.props;
+---
+
+<div
+	class="comment-section"
+	data-momo-comment-section
+	data-api-url={MOMO_COMMENT_API_URL}
+	data-script-url={MOMO_COMMENT_SCRIPT_URL}
+	data-slug-id={slug}
+	data-post-title={title}
+	data-lang={lang}
+>
+	{/* 挂载点必须带 id：momo.init({ el }) 内部用 querySelector 定位 */}
+	<div id="momo-comment" class="momo-comment-root" data-momo-comment-root></div>
+	<noscript>
+		<p class="comment-fallback">评论区需要 JavaScript；你也可以通过下方的 Webmention 回应。</p>
+	</noscript>
+</div>
+
+<script is:inline src="/momo-comments.js"></script>
+
+<style>
+	/*
+	 * 深色模式不需要单独一套值：下面全部映射到本站 token，而 token 本身
+	 * 会随 html[data-theme] 翻转。只有在「本站 token 里没有对应语义」时才
+	 * 需要用 [data-theme] 单独覆盖（目前只有验证成功的绿色）。
+	 */
+	.comment-section {
+		--momo-text-color: var(--color-text);
+		--momo-button-border-color: var(--color-border);
+		--momo-button-hover-bg-color: var(--color-accent-soft);
+		--momo-link-color: var(--color-accent);
+		--momo-panel-bg: var(--color-surface-elevated);
+		--momo-verify-success-color: #15803d;
+		--momo-verify-success-border-color: rgba(22, 163, 74, 0.5);
+	}
+
+	/*
+	 * 组件根自带 `border-t`（为独立使用的站点准备的分隔线）。这里上一级是
+	 * 玻璃面板、下一级还有本布局自己的分隔线，留着会多一条悬空的线。
+	 */
+	:global(.momo-comment-root .comment-container) {
+		border-top: 0;
+	}
+
+	.comment-fallback {
+		margin: 0;
+		color: var(--color-text-muted);
+		font-size: 0.95em;
+	}
+
+	:global(html[data-theme="dark"]) .comment-section {
+		--momo-verify-success-color: #4ade80;
+		--momo-verify-success-border-color: rgba(74, 222, 128, 0.45);
+	}
+</style>

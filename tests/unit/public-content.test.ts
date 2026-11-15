@@ -197,12 +197,14 @@ describe("源码回归保护", () => {
 		assert.match(source, /if \(!name \|\| !contact \|\| !siteUrl\)/u);
 	});
 
-	test("公共页面 CSP 放行 Turnstile 域名", async () => {
+	test("公共页面 CSP 放行 Turnstile 与评论组件依赖", async () => {
 		const source = await readFile("src/middleware.ts", "utf8");
 		assert.ok(source.includes("https://challenges.cloudflare.com"));
 		assert.ok(source.includes('!normalizedPath.startsWith("/api/")'));
-		// Pagefind WASM 已移除，CSP 不再放行 wasm-unsafe-eval
-		assert.ok(!source.includes("'wasm-unsafe-eval'"));
+		// `'wasm-unsafe-eval'` 曾因 Pagefind 被移除而一并删掉；现在它由评论区的
+		// HashWX 无感验证重新需要（浏览器里编译内联 WASM），缺了它只有提交会失败。
+		// 回归断言见 tests/unit/csp.test.ts 的「CSP 评论区」。
+		assert.ok(source.includes("'wasm-unsafe-eval'"));
 	});
 
 	test("公共页面中间件会对首页/归档/友链启用边缘缓存", async () => {

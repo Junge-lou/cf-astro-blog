@@ -1,3 +1,48 @@
+# cf-astro-blog v1.11 — 评论区回归：接 Momo-Backend
+
+**2026-11-15**
+
+## 这次接的不是自建方案
+
+`blog_comments` 那套自建评论区已在迁移 `0032` 里整体删除，本站仍**不新增任何评论表**。
+本次挂载的是独立部署的 **Momo-Backend Worker**（Hono + D1 + KV，地址 `comments.ffaff.fun`），
+前台用官方组件 `momo-comment.min.js`：列表、提交、无感验证、审核通知全部在后端那侧完成，
+本站只负责挂载与配色。
+
+这样避免的正是上次被删的原因——审核、反垃圾、读者通知的发信成本都不落在本站。
+
+## 前端
+
+- 新增 `src/components/CommentSection.astro`：官方组件的挂载点。`--momo-*` 配色变量全部映射到
+  本站 token（`--color-text` / `--color-border` / `--color-accent` / `--color-surface-elevated`），
+  因此深色模式自动跟随，不需要为组件再写一套深色值
+- 新增 `public/momo-comments.js`：懒加载引导脚本。站点用 ClientRouter，**客户端导航不会执行新
+  文档里的外链脚本**，必须在 `astro:page-load` 时重新挂载，否则"从归档页点进文章只剩空白、
+  刷新一次又好了"
+- 文章页「回应」面板合并为一个区块：**评论在上、`#webmentions` 在下**，中间一条分隔线；
+  Webmention 面板本身不变
+- 外部地址集中在 `src/lib/comment.ts`：后端地址、锁版本的组件 CDN 地址、表情/头像域名
+
+## CSP
+
+公共页面策略新增四项，全部是**缺了以后看不出坏在哪**的类型（`tests/unit/csp.test.ts` 已加断言）：
+
+- `script-src` 增加 `'wasm-unsafe-eval'`：无感验证在浏览器里编译内联 WASM，缺了它页面一切正常、
+  只有提交评论失败
+- `script-src` 增加 `https://cdn.jsdelivr.net`：组件脚本来源
+- 新增 `worker-src 'self' blob:`：PoW 并行求解的 Worker 由 Vite 内联为 Blob；不放行时组件会
+  退回主线程串行求解，功能可用但明显变慢
+- `connect-src` 增加 `comments.ffaff.fun` 与 `open.motues.top`（默认表情 `owo.json` 与头像）
+
+## 部署后必须完成的两件事
+
+1. `comments.ffaff.fun` 后台「系统设置」里把 `allow_origin` 设为 `https://ffaff.fun`
+   （本地调试再加 `http://localhost:4321`）。Momo-Backend 的 CORS **默认拒绝所有跨域请求**，
+   不配的话评论区能显示、但一条也发不出去。
+2. 后端默认管理员账号密码是 `momo` / `momo`，登录后立即修改。
+
+---
+
 # cf-astro-blog v1.10 — 玻璃回归，票面单独保留纸质
 
 **2026-10-29**

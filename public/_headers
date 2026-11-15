@@ -91,6 +91,9 @@
 /local-time.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+/momo-comments.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 /not-found-terminal.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 

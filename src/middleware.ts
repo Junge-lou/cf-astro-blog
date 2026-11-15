@@ -1,5 +1,6 @@
 import { defineMiddleware } from "astro:middleware";
 import { runInBackground } from "@/lib/background";
+import { MOMO_COMMENT_API_URL, MOMO_COMMENT_CDN_HOSTS } from "@/lib/comment";
 import { getContentCacheVersion } from "@/lib/content-version";
 import { buildContentImgSrc } from "@/lib/csp";
 // 缓存键归一化、TTL 决策等纯逻辑都在这里，便于单元测试与跨文件共用同一规则。
@@ -80,8 +81,16 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 		const scriptSources = [
 			"'self'",
 			"'unsafe-inline'",
+			// 评论区的无感验证会在**浏览器里**用 `new WebAssembly.Module()` 编译内联
+			// WASM（HashWX 工作量证明）。Chrome 97+ / Firefox 103+ 要求 script-src
+			// 明确列出 `'wasm-unsafe-eval'`，它只开放 WebAssembly 编译、不等于
+			// `'unsafe-eval'`。缺了它的表现极具欺骗性：页面、列表、表单全部正常，
+			// 只有点「发送」时评论发不出去，控制台是一行 WASM 编译被拒的 CSP 报错。
+			"'wasm-unsafe-eval'",
 			"https://challenges.cloudflare.com",
 			"https://static.cloudflareinsights.com",
+			// Momo 评论组件（官方 README 推荐的 CDN 引入方式）。
+			"https://cdn.jsdelivr.net",
 		];
 		response.headers.set(
 			"Content-Security-Policy",
@@ -103,7 +112,21 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 				"style-src 'self' 'unsafe-inline'",
 				`img-src ${buildContentImgSrc({ allowAnyHttps: true })}`,
 				"font-src 'self' data: https:",
-				"connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://webmention.io",
+				// 评论组件：接口在独立部署的 Momo-Backend；表情 owo.json 与头像是
+				// 访客浏览器直接拉取的第三方域名（默认 open.motues.top）。
+				`connect-src ${[
+					"'self'",
+					"https://challenges.cloudflare.com",
+					"https://static.cloudflareinsights.com",
+					"https://cloudflareinsights.com",
+					"https://webmention.io",
+					MOMO_COMMENT_API_URL,
+					...MOMO_COMMENT_CDN_HOSTS,
+				].join(" ")}`,
+				// 评论组件的 PoW 求解 Worker 由 Vite 内联成 Blob 构建（`?worker&inline`）。
+				// 只放 blob:，不放行任何外部脚本源；未放行时组件会退回主线程串行求解，
+				// 功能仍可用但解题明显变慢（表现是「验证成功」要等到 1–2 秒）。
+				"worker-src 'self' blob:",
 				"frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://player.bilibili.com https://webmention.io",
 			].join("; "),
 		);

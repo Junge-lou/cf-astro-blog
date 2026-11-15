@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, test } from "node:test";
+import {
+	MOMO_COMMENT_API_URL,
+	MOMO_COMMENT_CDN_HOSTS,
+	MOMO_COMMENT_SCRIPT_URL,
+} from "../../src/lib/comment";
 import { buildContentImgSrc, CONTENT_IMAGE_HOSTS } from "../../src/lib/csp";
 
 /**
@@ -110,5 +115,55 @@ describe("CSP 指令合法性", () => {
 			const source = await readFile(path, "utf8");
 			assert.match(source, /"media-src 'self' https: data:"/u, `${path} 缺少 media-src`);
 		}
+	});
+});
+
+/**
+ * 评论区的 CSP 依赖。
+ *
+ * 这四条断言锁的都是「坏了以后看不出坏在哪」的配置：
+ * - 少了 `'wasm-unsafe-eval'`：评论区显示正常，只有提交时无感验证失败；
+ * - 少了 jsDelivr：整块评论区空白（脚本 404/被拦）；
+ * - 少了 blob: worker：只是解题变慢，肉眼几乎判定不出是否生效；
+ * - 少了接口域名：一直显示「加载中」，且控制台只有一行 CORS/CSP 报错。
+ */
+describe("CSP 评论区", () => {
+	test("脚本源放行 jsDelivr 组件与 WASM 编译", async () => {
+		const source = await readFile("src/middleware.ts", "utf8");
+		assert.match(source, /"'wasm-unsafe-eval'"/u, "缺少 'wasm-unsafe-eval'，HashWX 验证会失败");
+		assert.match(source, /"https:\/\/cdn\.jsdelivr\.net"/u, "缺少 jsDelivr，评论组件加载不到");
+	});
+
+	test("放行 blob: worker，保住并行求解的快速路径", async () => {
+		const source = await readFile("src/middleware.ts", "utf8");
+		assert.match(source, /"worker-src 'self' blob:"/u, "缺少 worker-src blob:，PoW 会退回主线程");
+		assert.ok(!source.includes('"worker-src *"'), "worker-src 不能写成通配，只放行 blob: 即可");
+	});
+
+	test("connect-src 引用 comment.ts 的常量而不是另写一份地址", async () => {
+		const source = await readFile("src/middleware.ts", "utf8");
+		assert.ok(
+			source.includes("MOMO_COMMENT_API_URL"),
+			"connect-src 应引用 @/lib/comment 的 MOMO_COMMENT_API_URL",
+		);
+		assert.ok(
+			source.includes("MOMO_COMMENT_CDN_HOSTS"),
+			"connect-src 应引用 @/lib/comment 的 MOMO_COMMENT_CDN_HOSTS（表情与头像）",
+		);
+		for (const host of MOMO_COMMENT_CDN_HOSTS) {
+			assert.ok(
+				!source.includes(host),
+				`${host} 不应在 middleware 里硬编码 —— 改 @/lib/comment 里的列表`,
+			);
+		}
+	});
+
+	test("评论后端地址固定、组件版本按官方建议锁死", () => {
+		assert.equal(MOMO_COMMENT_API_URL, "https://comments.ffaff.fun");
+		assert.match(
+			MOMO_COMMENT_SCRIPT_URL,
+			/@motues\/momo-comment@\d+\.\d+\.\d+\/dist\/momo-comment\.min\.js$/u,
+			"组件必须锁版本号，否则后端的验证协议升级会静默打断评论提交",
+		);
 	});
 });
