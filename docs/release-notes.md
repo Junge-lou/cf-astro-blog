@@ -7,7 +7,7 @@
 实测到 jsDelivr 的链路：DNS 63ms → TCP 236ms → **TLS 3.62s** → 首字节 4.23s → 228KB 下完 5.27s。
 而组件是在页面渲染之后才被发现的，这段耗时完全无法与首屏重叠。
 
-- 包体落到 `public/vendor/momo-comment/momo-comment.1.8.3.min.js`（228,500 B，br ≈ 68 KB），
+- 包体落到 `public/vendor/momo-comment/momo-comment.1.8.4.min.js`（229,214 B，gzip ≈ 83 KB），
   版本写进文件名 → `public/_headers` 里 `/vendor/*` 声明 `immutable` 一年
 - `src/lib/comment.ts` 的 `MOMO_COMMENT_SCRIPT_URL` 改为同源相对路径，跨域 TLS 直接消失
 - `public/momo-comments.js` 改为**解析期就发起请求**（原先要等 `astro:page-load`），
@@ -18,6 +18,25 @@
 
 > **升级组件时**：同时替换 `public/vendor/momo-comment/` 下的文件与常量，并保持后端协议配套
 > （1.8.x ⇄ 协议 v2 + 表情契约 v3）。`tests/unit/csp.test.ts` 会断言常量指向的文件真实存在。
+
+### 组件升级到 1.8.4（2026-11-15）
+
+npm 上尚未发布 1.8.4，因此直接从本地 `D:\Workspace\Momo-Backend`（tag `v1.8.4`）构建：
+
+```bash
+cd D:\Workspace\Momo-Backend\frontend
+pnpm install --frozen-lockfile   # 会提示 esbuild 的 build script 被忽略，不影响构建
+pnpm build                       # → dist/momo-comment.min.js（229.21 kB / gzip 82.68 kB）
+```
+
+1.8.4 相对 1.8.3 **只有前端改动**，后端协议不变：
+
+- 头像加载失败时回落到内联默认头像（`avatarFallback`）——修的是「自定义源或 Gravatar 不可达时
+  评论区出现破图/空白」；这正是「别人博客上我的头像没出来」现象里看到灰头像的原因
+- 评论头像图统一加 `loading="lazy" decoding="async" referrerpolicy="no-referrer"`
+- 博主徽章的浅色/深色配色调整
+
+因为文件名带版本号，旧文件可以直接删掉；`_headers` 的 `/vendor/*` 已经是 immutable，无需改动。
 
 ## 纯透明模式（面板可以真的全透明）
 

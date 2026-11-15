@@ -23,9 +23,11 @@ export const MOMO_COMMENT_API_URL = "https://comments.ffaff.fun";
  *
  * 版本必须与后端配套（见 Momo-Backend `frontend/README.md`）：
  * 1.8.x ⇄ 协议 v2 无感验证 + 表情配置契约 v3 + 链接安全审查。
+ * 1.8.4 相对 1.8.3 只有前端改动：头像加载失败时回落内联默认头像
+ * （`avatarFallback`）、图片改 lazy/async/no-referrer、博主徽章配色；后端协议不变。
  * 升级时同时替换 `public/vendor/momo-comment/` 里的文件与本常量。
  */
-export const MOMO_COMMENT_SCRIPT_URL = "/vendor/momo-comment/momo-comment.1.8.3.min.js";
+export const MOMO_COMMENT_SCRIPT_URL = "/vendor/momo-comment/momo-comment.1.8.4.min.js";
 
 /**
  * 后端默认的头像与表情来源域名。
