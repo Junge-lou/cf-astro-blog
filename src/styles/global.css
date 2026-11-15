@@ -110,12 +110,13 @@
 	--surface-min-alpha: 0.45;
 	--surface-tint-min-alpha: 0.14;
 	/*
-	 * 文字光晕颜色：取页面底色，深浅主题都能自然融合。
-	 * 第一行是给不支持 color-mix 的浏览器的兜底（浅色底），第二行在支持的
-	 * 浏览器里覆盖前者。
+	 * 文字光晕颜色（纯透明模式下给正文一圈底色雾）。
+	 * 直接写各主题下 --color-bg 的字面量，而不是 color-mix(var(--color-bg))：
+	 * 后者需要为不支持 color-mix 的浏览器叠一条兜底声明，同一个块里的重复
+	 * 自定义属性会被 biome 判为 error（noDuplicateCustomProperties）。
+	 * 深色主题在下面的 [data-theme="dark"] 里覆盖。
 	 */
 	--surface-halo-color: rgba(219, 230, 247, 0.85);
-	--surface-halo-color: color-mix(in srgb, var(--color-bg) 84%, transparent);
 	/*
 	 * 玻璃基色是真正的白（不再是和页面底色相同的 228,238,253）。
 	 * 页面底色 = 饱和的钴白，卡片 = 白色玻璃，层级自然分层。
@@ -250,6 +251,8 @@
 
 [data-theme="dark"] {
 	--color-bg: #061424;
+	/* 纯透明模式的文字光晕：#061424 的 85% 不透明版本 */
+	--surface-halo-color: rgba(6, 20, 36, 0.85);
 	--color-bg-secondary: rgb(var(--glass-surface-rgb) / 0.38);
 	--color-bg-tertiary: rgb(var(--glass-surface-rgb) / 0.24);
 	--color-surface-elevated: rgb(var(--glass-surface-rgb) / 0.55);
