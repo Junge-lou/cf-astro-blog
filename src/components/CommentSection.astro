@@ -27,6 +27,7 @@ const { slug, title, lang = "zh-cn" } = Astro.props;
 
 <div
 	class="comment-section"
+	id="comment-area"
 	data-momo-comment-section
 	data-api-url={MOMO_COMMENT_API_URL}
 	data-script-url={MOMO_COMMENT_SCRIPT_URL}
@@ -51,17 +52,55 @@ const { slug, title, lang = "zh-cn" } = Astro.props;
 	 */
 	.comment-section {
 		--momo-text-color: var(--color-text);
-		--momo-button-border-color: var(--color-border);
+		/* 组件用这个变量画输入框与按钮边框；--color-border 只有 12% 不透明度，
+		 * 在玻璃背景上几乎看不见，提到 26% 才能看出这是可输入的控件 */
+		--momo-button-border-color: rgb(var(--color-accent-rgb) / 0.26);
 		--momo-button-hover-bg-color: var(--color-accent-soft);
 		--momo-link-color: var(--color-accent);
 		--momo-panel-bg: var(--color-surface-elevated);
 		--momo-verify-success-color: #15803d;
 		--momo-verify-success-border-color: rgba(22, 163, 74, 0.5);
+		/* 要越过吸顶导航（与 .article-prose 的 scroll-margin-top 一致） */
+		scroll-margin-top: 6.5rem;
+		/* 评论区直接坐在页面底色上（不再套玻璃面板），用一条细线与正文分开 */
+		padding-top: clamp(1.2rem, 2.4vw, 1.8rem);
+		border-top: 1px solid var(--color-border);
+		/* 组件里的 em 单位（表单标签、字数提示）以正文字号为基准 */
+		font-size: var(--text-md);
 	}
 
 	/*
-	 * 组件根自带 `border-t`（为独立使用的站点准备的分隔线）。这里上一级是
-	 * 玻璃面板、下一级还有本布局自己的分隔线，留着会多一条悬空的线。
+	 * 组件的输入框只有 1px 描边、没有底色，在磨玻璃背景上几乎“消失”。
+	 * 对齐站内其它表单（.wm-input）：半透明底 + 聚焦高亮环。
+	 */
+	:global(.momo-comment-root .comment-container :is(input, textarea)) {
+		background-color: rgba(var(--card-surface-rgb), 0.65);
+		border-color: rgba(var(--card-surface-rgb), 0.55);
+		border-radius: var(--radius-sm);
+	}
+
+	:global(.momo-comment-root .comment-container :is(input, textarea):focus) {
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 3px var(--color-accent-soft);
+	}
+
+	/*
+	 * 组件内部全部是 Tailwind 的固定档位，比本站 16px 正文基准小一号：
+	 * 评论正文与昵称用 text-sm(14px)、日期与按钮也用 text-sm、表单标签用 text-xs(12px)。
+	 * 这两条覆盖把「读的内容」拉回正文字号，辅助文字保持略小于正文。
+	 * 选择器需要 :global()—— 这些 DOM 由 bundle 运行时创建，拿不到 Astro 的 scope 属性。
+	 */
+	:global(.momo-comment-root .text-sm) {
+		font-size: var(--text-md);
+	}
+
+	:global(.momo-comment-root .text-xs) {
+		font-size: 0.82em;
+	}
+
+	/*
+	 * 组件根自带 `border-t`（为独立使用的站点准备的分隔线）。这里外层已经有
+	 * 分隔线，留着会变成上下两条。
 	 */
 	:global(.momo-comment-root .comment-container) {
 		border-top: 0;

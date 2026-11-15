@@ -4,8 +4,8 @@
  *
  * 功能：
  * 1. 回到顶部（带圆形滚动进度环）
- * 2. 目录（仅移动端触发，桌面端有侧栏目录）
- * 3. 前往评论区
+ * 2. 前往评论区（仅在渲染了评论区的页面出现）
+ * 3. 目录（仅移动端触发，桌面端有侧栏目录）
  *
  * 行为：滚动超过 data-scroll-distance(100px) 后显示；点击外部关闭；
  * 平滑滚动并预留导航栏偏移；尊重 prefers-reduced-motion。
@@ -19,9 +19,11 @@ interface TocEntry {
 
 interface Props {
 	tocEntries?: TocEntry[];
+	/** 页面是否有评论区（文章页为 true）；为 true 时渲染「前往评论区」按钮 */
+	showCommentLink?: boolean;
 }
 
-const { tocEntries = [] } = Astro.props;
+const { tocEntries = [], showCommentLink = false } = Astro.props;
 const hasToc = tocEntries.length > 0;
 ---
 
@@ -45,6 +47,23 @@ const hasToc = tocEntries.length > 0;
 				/>
 			</svg>
 		</button>
+
+		{showCommentLink && (
+			<button
+				type="button"
+				class="article-fab-item"
+				data-fab-comment-link
+				title="前往评论区"
+				aria-label="前往评论区"
+			>
+				<svg viewBox="0 0 512 512" class="article-fab-icon" aria-hidden="true">
+					<path
+						fill="currentColor"
+						d="M256 32C114.6 32 0 125.1 0 240c0 49.6 21.4 95 57 130.7C44.5 421.1 2.7 466 2.2 466.5c-2.2 2.3-2.8 5.7-1.5 8.7S4.8 480 8 480c66.3 0 116-31.8 140.6-51.4 32.7 12.3 69 19.4 107.4 19.4 141.4 0 256-93.1 256-208S397.4 32 256 32z"
+					/>
+				</svg>
+			</button>
+		)}
 
 		{hasToc && (
 			<button
@@ -122,8 +141,13 @@ const hasToc = tocEntries.length > 0;
 		const init = () => {
 			const container = document.querySelector("[data-fab-menu]");
 			if (!container) return;
+			// 首屏会同时触发 astro:page-load 与下面的直接调用，
+			// 没有这道闸门就会给同一个按钮绑两遍监听（滚动时重复计算进度环）
+			if (container.dataset.fabReady === "1") return;
+			container.dataset.fabReady = "1";
 			const trigger = container.querySelector("[data-fab-toggle]");
 			const backTop = container.querySelector("[data-fab-back-top]");
+			const commentLink = container.querySelector("[data-fab-comment-link]");
 			const tocTrigger = container.querySelector("[data-fab-toc-trigger]");
 			const tocClose = container.querySelector("[data-fab-toc-close]");
 			const progress = container.querySelector("[data-fab-progress]");
@@ -221,6 +245,12 @@ const hasToc = tocEntries.length > 0;
 			backTop?.addEventListener("click", () => {
 				window.scrollTo({ top: 0, behavior: scrollOpts });
 				closeAll();
+			});
+
+			commentLink?.addEventListener("click", () => {
+				// 组件内部自己也占用了 `#comments`（所以外层容器只能用 `#comment-area`）：
+				// 优先跳到我们自己的容器（挂载失败时依然可跳），否则退回组件根。
+				scrollToId(document.getElementById("comment-area") ? "comment-area" : "comments");
 			});
 
 			// 点击外部关闭

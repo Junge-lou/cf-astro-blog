@@ -19,9 +19,24 @@
 - 新增 `public/momo-comments.js`：懒加载引导脚本。站点用 ClientRouter，**客户端导航不会执行新
   文档里的外链脚本**，必须在 `astro:page-load` 时重新挂载，否则"从归档页点进文章只剩空白、
   刷新一次又好了"
-- 文章页「回应」面板合并为一个区块：**评论在上、`#webmentions` 在下**，中间一条分隔线；
-  Webmention 面板本身不变
+- 文章页版式对齐 Momo：**评论区紧贴正文下方、同列宽（754px）、不套玻璃面板**，
+  Webmention 仍是独立的一个面板版块（`aria-label="Webmentions"`）
 - 外部地址集中在 `src/lib/comment.ts`：后端地址、锁版本的组件 CDN 地址、表情/头像域名
+
+## 评论区字号与控件
+
+组件内部用的是 Tailwind 固定档位（`text-sm` = 14px、`text-xs` = 12px），比本站
+`--text-md`（16px）正文基准小一号，因此用两条 `:global()` 覆盖把它们拉回本站刻度：
+
+- `text-sm`（评论正文、昵称、日期、按钮、输入框）→ `var(--text-md)`
+- `text-xs`（表单标签、字数提示）→ `0.82em`
+
+配色依旧全部映射本站 token；`--momo-button-border-color` 提到 26% 不透明度 ——
+组件默认继承 `--color-border`（12%），在磨玻璃背景上输入框几乎是隐形的。
+输入框另补了与站内 `.wm-input` 一致的半透明底和聚焦高亮环。
+
+浮动菜单加回「前往评论区」：容器锚点是 `#comment-area`，**不能**叫 `#comments` ——
+组件自己已经在根节点上用了 `id="comments"`，重名会让 `getElementById` 命中错误的那个。
 
 ## CSP
 
