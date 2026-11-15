@@ -100,6 +100,16 @@
 /theme.js
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
+# ── 第三方组件（自托管）────────────────────────────────────────────────
+
+# 评论组件包：文件名里带版本号（momo-comment.1.8.3.min.js），
+# 升级即换文件名，因此可以像 /_astro/* 一样永久缓存。
+# 规则写成 /vendor/*（而不是 /vendor/momo-comment/*）：
+# tests/unit/static-headers.test.ts 只把通配规则解析到第一层目录。
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # ── 票面组件图 ──────────────────────────────────────────────────────────
 
 # 文件名不带内容哈希，不用 immutable；一周直连 + 一个月异步回源

@@ -1,3 +1,55 @@
+# cf-astro-blog v1.12 — 评论组件自托管 + 纯透明模式
+
+**2026-11-15**
+
+## 评论组件从 CDN 搬到 `public/vendor/`
+
+实测到 jsDelivr 的链路：DNS 63ms → TCP 236ms → **TLS 3.62s** → 首字节 4.23s → 228KB 下完 5.27s。
+而组件是在页面渲染之后才被发现的，这段耗时完全无法与首屏重叠。
+
+- 包体落到 `public/vendor/momo-comment/momo-comment.1.8.3.min.js`（228,500 B，br ≈ 68 KB），
+  版本写进文件名 → `public/_headers` 里 `/vendor/*` 声明 `immutable` 一年
+- `src/lib/comment.ts` 的 `MOMO_COMMENT_SCRIPT_URL` 改为同源相对路径，跨域 TLS 直接消失
+- `public/momo-comments.js` 改为**解析期就发起请求**（原先要等 `astro:page-load`），
+  下载与剩余 HTML/CSS 并行；`astro:page-load` 只负责客户端导航后的重新挂载
+- CSP 相应撤掉 `script-src https://cdn.jsdelivr.net`（少一个可被前置的外域脚本源）
+
+本地实测：`/vendor/momo-comment/…` 41ms 起 44ms 结束，`/api/comments` 106ms 开始请求（不再等 page-load）。
+
+> **升级组件时**：同时替换 `public/vendor/momo-comment/` 下的文件与常量，并保持后端协议配套
+> （1.8.x ⇄ 协议 v2 + 表情契约 v3）。`tests/unit/csp.test.ts` 会断言常量指向的文件真实存在。
+
+## 纯透明模式（面板可以真的全透明）
+
+根因是 `.glass-panel::after` 里写死的 `clamp(0.45, opacity × 2.6, 0.92)`：下限 0.45 让
+「透明度」滑块在 0–83% 的行程里**完全不生效**（默认 opacity 14 已经落在下限内，算出来的填充色
+与拖到 100% 一模一样）。染色渐变的 `clamp(0.14, …)` 同理。
+
+修法是把「不透明度」和「可读性」解耦：
+
+- 两个下限改由变量控制：`--surface-min-alpha`（0.45）、`--surface-tint-min-alpha`（0.14）。
+  **默认值不变**，现有观感一模一样；`html[data-surface="clear"]` 下二者归 0
+- 新增开关「纯透明模式」（`site_appearance_settings.clear_surface_mode`，迁移 `0034`）。
+  也可由「文章面板/卡片任一 opacity === 0」自动触发
+- 纯透明时，可读性由两件事承担：
+  1. 文字自带一圈「环境色雾」：`text-shadow: 0 0 .5em var(--surface-halo-color)`，
+     颜色取 `--color-bg`（深浅主题自适应，不支持 `color-mix` 时有静态兜底）。
+     光晕是**环绕**而非覆盖，几乎不增加不透明感
+  2. 面板保留 1px 内描边 + 投影来定义边界，而不是靠填充
+- 作用范围：`.prose` / `.article-hero` / `.momo-comment-root`；**卡片标题不加**，
+  代码块/行内代码/表格排除（自带底色，叠光晕会边缘发脏）
+
+实测（本地、模拟 clear + opacity 0）：面板填充 `rgba(255,255,255,0)`、染色全 0、正文带光晕。
+
+## 工程细节
+
+- `public/vendor/**` 加入 biome 忽略列表：第一次 `biome check --write` 把压缩后的 bundle
+  重排了（228,500 → 228,159 B），第三方产物不该被格式化
+- `public/_headers` 用 `/vendor/*`（而不是 `/vendor/momo-comment/*`）：
+  `static-headers` 测试只把通配规则解析到第一层目录
+
+---
+
 # cf-astro-blog v1.11 — 评论区回归：接 Momo-Backend
 
 **2026-11-15**

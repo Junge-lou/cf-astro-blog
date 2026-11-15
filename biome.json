@@ -7,7 +7,14 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["**", "!**/.astro/**", "!**/dist/**", "!**/node_modules/**", "!**/.wrangler/**"]
+		"includes": [
+			"**",
+			"!**/.astro/**",
+			"!**/dist/**",
+			"!**/node_modules/**",
+			"!**/.wrangler/**",
+			"!public/vendor/**"
+		]
 	},
 	"formatter": {
 		"enabled": true,

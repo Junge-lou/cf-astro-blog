@@ -38,6 +38,8 @@ export interface SiteAppearance {
 	postCardBlur: number;
 	articlePanelOpacity: number;
 	articlePanelBlur: number;
+	/** 纯透明模式：面板/卡片允许 alpha 降到 0，可读性交给文字光晕 */
+	clearSurfaceMode: boolean;
 	headerSubtitle: string;
 	navLinks: SiteNavLink[];
 	navLink1Label: string;
@@ -81,10 +83,14 @@ export interface ResolvedAiSettings {
 	};
 }
 
-export type SiteAppearanceInput = Omit<Partial<SiteAppearance>, "mcpEnabled"> & {
+export type SiteAppearanceInput = Omit<
+	Partial<SiteAppearance>,
+	"mcpEnabled" | "clearSurfaceMode"
+> & {
 	navLinksJson?: unknown;
 	heroActionsJson?: unknown;
 	mcpEnabled?: unknown;
+	clearSurfaceMode?: unknown;
 };
 
 export type AiSettingsInput = {
@@ -121,6 +127,11 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 	postCardBlur: 18,
 	articlePanelOpacity: 14,
 	articlePanelBlur: 18,
+	/*
+	 * 纯透明模式默认关闭：开启后 `clamp()` 的 alpha 下限会从 0.45/0.14 放开到 0，
+	 * 同时正文/评论改用文字光晕保证可读性。默认关闭是为了让现有站点的观感不变。
+	 */
+	clearSurfaceMode: false,
 	headerSubtitle: "流畅、克制、持续更新的技术写作",
 	navLinks: [...DEFAULT_NAV_LINKS],
 	navLink1Label: DEFAULT_NAV_LINKS[0].label,
@@ -604,6 +615,10 @@ export function normalizeSiteAppearanceInput(input: SiteAppearanceInput): SiteAp
 			DEFAULT_SITE_APPEARANCE.heroSignalChip3,
 		),
 		mcpEnabled: normalizeBoolean(input.mcpEnabled, DEFAULT_SITE_APPEARANCE.mcpEnabled),
+		clearSurfaceMode: normalizeBoolean(
+			input.clearSurfaceMode,
+			DEFAULT_SITE_APPEARANCE.clearSurfaceMode,
+		),
 	};
 }
 
@@ -667,6 +682,7 @@ async function fetchSiteAppearance(db: Database): Promise<SiteAppearance> {
 			postCardBlur: siteAppearanceSettings.postCardBlur,
 			articlePanelOpacity: siteAppearanceSettings.articlePanelOpacity,
 			articlePanelBlur: siteAppearanceSettings.articlePanelBlur,
+			clearSurfaceMode: siteAppearanceSettings.clearSurfaceMode,
 			headerSubtitle: siteAppearanceSettings.headerSubtitle,
 			navLink1Label: siteAppearanceSettings.navLink1Label,
 			navLink1Href: siteAppearanceSettings.navLink1Href,
@@ -824,6 +840,7 @@ export async function saveSiteAppearance(db: Database, input: SiteAppearanceInpu
 			postCardBlur: normalized.postCardBlur,
 			articlePanelOpacity: normalized.articlePanelOpacity,
 			articlePanelBlur: normalized.articlePanelBlur,
+			clearSurfaceMode: normalized.clearSurfaceMode,
 			headerSubtitle: normalized.headerSubtitle,
 			navLink1Label: normalized.navLink1Label,
 			navLink1Href: normalized.navLink1Href,
@@ -866,6 +883,7 @@ export async function saveSiteAppearance(db: Database, input: SiteAppearanceInpu
 				postCardBlur: normalized.postCardBlur,
 				articlePanelOpacity: normalized.articlePanelOpacity,
 				articlePanelBlur: normalized.articlePanelBlur,
+				clearSurfaceMode: normalized.clearSurfaceMode,
 				headerSubtitle: normalized.headerSubtitle,
 				navLink1Label: normalized.navLink1Label,
 				navLink1Href: normalized.navLink1Href,

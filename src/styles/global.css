@@ -99,6 +99,24 @@
 	 */
 	--glass-edge: rgb(var(--color-accent-rgb) / 0.2);
 	/*
+	 * ── 面板底色的 alpha 下限 ───────────────────────────────────────────
+	 * 这两个变量控制「卡片/面板最少有多不透明」。历史上它们被写死成 0.45 / 0.14，
+	 * 后果是外观设置里的「透明度」滑块在 0–83% 这段行程里**完全空转**：
+	 * 默认 opacity 14 已经落在下限里，拖到 100% 算出来的值一模一样。
+	 *
+	 * 现在改由变量控制，并在 html[data-surface="clear"]（纯透明模式）下放开到 0，
+	 * 可读性交给文字光晕承担。默认值保持原样，老站点的观感不变。
+	 */
+	--surface-min-alpha: 0.45;
+	--surface-tint-min-alpha: 0.14;
+	/*
+	 * 文字光晕颜色：取页面底色，深浅主题都能自然融合。
+	 * 第一行是给不支持 color-mix 的浏览器的兜底（浅色底），第二行在支持的
+	 * 浏览器里覆盖前者。
+	 */
+	--surface-halo-color: rgba(219, 230, 247, 0.85);
+	--surface-halo-color: color-mix(in srgb, var(--color-bg) 84%, transparent);
+	/*
 	 * 玻璃基色是真正的白（不再是和页面底色相同的 228,238,253）。
 	 * 页面底色 = 饱和的钴白，卡片 = 白色玻璃，层级自然分层。
 	 */
@@ -784,14 +802,27 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 	 */
 	--glass-tint-strong: linear-gradient(
 		150deg,
-		rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--glass-panel-opacity, 0.14) * 0.55), 0.3)),
-		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--glass-panel-opacity, 0.14) * 0.15), 0.12))
+		rgb(
+			var(--glass-tint-rgb) /
+			clamp(var(--surface-tint-min-alpha, 0.14), calc(var(--glass-panel-opacity, 0.14) * 0.55), 0.3)
+		),
+		rgb(
+				var(--glass-tint-rgb) /
+				clamp(
+					calc(var(--surface-tint-min-alpha, 0.14) * 0.29),
+					calc(var(--glass-panel-opacity, 0.14) * 0.15),
+					0.12
+				)
+			)
 			58%,
 		transparent
 	);
 	background:
 		var(--glass-tint-strong),
-		rgba(var(--card-surface-rgb), clamp(0.45, calc(var(--glass-panel-opacity, 0.14) * 2.6), 0.92));
+		rgba(
+			var(--card-surface-rgb),
+			clamp(var(--surface-min-alpha, 0.45), calc(var(--glass-panel-opacity, 0.14) * 2.6), 0.92)
+		);
 	backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
 	-webkit-backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
 	/* 玻璃内缘：钴蓝描边压在 inset 高光之上，给透明面板一道冷色边 */
@@ -824,6 +855,32 @@ html[data-theme-switching]:not([data-nav-condensed]) .site-nav::before {
 .article-shell .glass-panel::after {
 	--glass-panel-blur: var(--article-panel-blur, 18px);
 	--glass-panel-opacity: calc(var(--article-panel-opacity, 14) / 100);
+}
+
+/*
+ * 纯透明模式（html[data-surface="clear"]）
+ * ─────────────────────────────────────
+ * 底色 alpha 的下限放开到 0：面板可以真的完全透明。可读性改由两件东西承担：
+ * 1. 文字自带一圈「环境色雾」（text-shadow，颜色取页面底色 → 深浅主题都自然，
+ *    且它环绕不覆盖，几乎不增加不透明感，却能把局部对比度拉回可读区间）；
+ * 2. 面板自身的 1px 内描边 + 投影，替代填充来定义「面板存在」。
+ *
+ * 作用范围只限正文 / 文章标题区 / 评论区；卡片标题不参与（有背景图时对比度本身够）。
+ */
+html[data-surface="clear"] {
+	--surface-min-alpha: 0;
+	--surface-tint-min-alpha: 0;
+}
+
+html[data-surface="clear"] :is(.prose, .article-hero, .momo-comment-root) {
+	text-shadow:
+		0 0 0.5em var(--surface-halo-color),
+		0 0 0.12em var(--surface-halo-color);
+}
+
+/* 代码块/行内代码/表格自带底色，再叠光晕只会边缘发脏 */
+html[data-surface="clear"] :is(.prose, .momo-comment-root) :is(pre, code, kbd, table) {
+	text-shadow: none;
 }
 
 .glass-panel > * {

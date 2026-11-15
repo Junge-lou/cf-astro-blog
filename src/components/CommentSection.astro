@@ -52,9 +52,7 @@ const { slug, title, lang = "zh-cn" } = Astro.props;
 	 */
 	.comment-section {
 		--momo-text-color: var(--color-text);
-		/* 组件用这个变量画输入框与按钮边框；--color-border 只有 12% 不透明度，
-		 * 在玻璃背景上几乎看不见，提到 26% 才能看出这是可输入的控件 */
-		--momo-button-border-color: rgb(var(--color-accent-rgb) / 0.26);
+		--momo-button-border-color: var(--color-border);
 		--momo-button-hover-bg-color: var(--color-accent-soft);
 		--momo-link-color: var(--color-accent);
 		--momo-panel-bg: var(--color-surface-elevated);
@@ -67,21 +65,6 @@ const { slug, title, lang = "zh-cn" } = Astro.props;
 		border-top: 1px solid var(--color-border);
 		/* 组件里的 em 单位（表单标签、字数提示）以正文字号为基准 */
 		font-size: var(--text-md);
-	}
-
-	/*
-	 * 组件的输入框只有 1px 描边、没有底色，在磨玻璃背景上几乎“消失”。
-	 * 对齐站内其它表单（.wm-input）：半透明底 + 聚焦高亮环。
-	 */
-	:global(.momo-comment-root .comment-container :is(input, textarea)) {
-		background-color: rgba(var(--card-surface-rgb), 0.65);
-		border-color: rgba(var(--card-surface-rgb), 0.55);
-		border-radius: var(--radius-sm);
-	}
-
-	:global(.momo-comment-root .comment-container :is(input, textarea):focus) {
-		border-color: var(--color-accent);
-		box-shadow: 0 0 0 3px var(--color-accent-soft);
 	}
 
 	/*

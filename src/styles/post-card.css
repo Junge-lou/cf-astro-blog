@@ -458,8 +458,22 @@
 	 */
 	--glass-tint-strong: linear-gradient(
 		150deg,
-		rgb(var(--glass-tint-rgb) / clamp(0.14, calc(var(--post-card-opacity, 14) / 100 * 0.55), 0.3)),
-		rgb(var(--glass-tint-rgb) / clamp(0.04, calc(var(--post-card-opacity, 14) / 100 * 0.15), 0.12))
+		rgb(
+			var(--glass-tint-rgb) /
+			clamp(
+				var(--surface-tint-min-alpha, 0.14),
+				calc(var(--post-card-opacity, 14) / 100 * 0.55),
+				0.3
+			)
+		),
+		rgb(
+				var(--glass-tint-rgb) /
+				clamp(
+					calc(var(--surface-tint-min-alpha, 0.14) * 0.29),
+					calc(var(--post-card-opacity, 14) / 100 * 0.15),
+					0.12
+				)
+			)
 			58%,
 		transparent
 	);

@@ -188,6 +188,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	postCardBlur: integer("post_card_blur").notNull().default(18),
 	articlePanelOpacity: integer("article_panel_opacity").notNull().default(14),
 	articlePanelBlur: integer("article_panel_blur").notNull().default(18),
+	clearSurfaceMode: integer("clear_surface_mode", { mode: "boolean" }).notNull().default(false),
 	headerSubtitle: text("header_subtitle").notNull().default("流畅、克制、持续更新的技术写作"),
 	navLink1Label: text("nav_link_1_label").notNull().default("首页"),
 	navLink1Href: text("nav_link_1_href").notNull().default("/"),

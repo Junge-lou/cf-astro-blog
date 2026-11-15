@@ -77,6 +77,15 @@ const backgroundImageStyle = backgroundImageUrl
 	? `--bg-focus-x: ${resolvedBackgroundPositionX}; --bg-focus-y: ${resolvedBackgroundPositionY}; --bg-blur: ${resolvedBackgroundBlur}px; --bg-scale: ${resolvedBackgroundScale / 100}; --bg-opacity: ${resolvedBackgroundOpacity / 100};`
 	: "";
 const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --hero-card-blur: ${siteAppearance.heroCardBlur}px; --post-card-opacity: ${siteAppearance.postCardOpacity}; --post-card-blur: ${siteAppearance.postCardBlur}px; --article-panel-opacity: ${siteAppearance.articlePanelOpacity}; --article-panel-blur: ${siteAppearance.articlePanelBlur}px;`;
+/*
+ * 纯透明模式：开关打开，或文章面板/卡片任一被调到 0（全透明是明确意图）时切到 clear。
+ * clear 下 CSS 会把面板底色的 alpha 下限放开到 0，并把可读性交给文字光晕
+ * （见 global.css 的 html[data-surface="clear"]）。默认 frost，现有观感不变。
+ */
+const clearSurface =
+	siteAppearance.clearSurfaceMode ||
+	siteAppearance.articlePanelOpacity === 0 ||
+	siteAppearance.postCardOpacity === 0;
 const resolvedDescription =
 	description ?? resolveSiteDescriptionFromAppearance(siteAppearance, siteConfig.description);
 ---
@@ -85,6 +94,7 @@ const resolvedDescription =
 <html
 	lang={siteConfig.language}
 	data-admin-preview={isAdminPreview ? "true" : undefined}
+	data-surface={clearSurface ? "clear" : undefined}
 >
 	<head>
 		<BaseHead

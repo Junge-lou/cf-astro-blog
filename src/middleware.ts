@@ -89,8 +89,8 @@ function applySecurityHeaders(pathname: string, response: Response, isAdminPrevi
 			"'wasm-unsafe-eval'",
 			"https://challenges.cloudflare.com",
 			"https://static.cloudflareinsights.com",
-			// Momo 评论组件（官方 README 推荐的 CDN 引入方式）。
-			"https://cdn.jsdelivr.net",
+			// 评论组件已自托管在 /vendor/momo-comment/（同源），因此这里不再需要
+			// jsDelivr —— 少一个能被前置的外域脚本源，也少一次跨域 TLS 握手。
 		];
 		response.headers.set(
 			"Content-Security-Policy",

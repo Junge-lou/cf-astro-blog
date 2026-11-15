@@ -15,15 +15,17 @@
 export const MOMO_COMMENT_API_URL = "https://comments.ffaff.fun";
 
 /**
- * 官方前端组件，按官方 README 的建议**锁死版本号**。
+ * 官方前端组件，**自托管**在 `public/vendor/momo-comment/` 下，版本写进文件名。
+ *
+ * 为什么不用 jsDelivr：实测从本机到 jsDelivr 的 TLS 握手就要 3.6s、228KB 原始体下完 5.3s，
+ * 而组件是页面渲染后才被发现的，完全无法与首屏重叠。改成同源后，连接直接复用站点已有的
+ * HTTP/2 连接，且文件名带版本号 → 可以 immutable 缓存一年（`public/_headers`）。
  *
  * 版本必须与后端配套（见 Momo-Backend `frontend/README.md`）：
  * 1.8.x ⇄ 协议 v2 无感验证 + 表情配置契约 v3 + 链接安全审查。
- * 升级这里之前，先确认 `MOMO_COMMENT_API_URL` 的后端已经同步升级，
- * 否则人机验证会以 `PROTOCOL_OUTDATED` 之类的原因静默失败。
+ * 升级时同时替换 `public/vendor/momo-comment/` 里的文件与本常量。
  */
-export const MOMO_COMMENT_SCRIPT_URL =
-	"https://cdn.jsdelivr.net/npm/@motues/momo-comment@1.8.3/dist/momo-comment.min.js";
+export const MOMO_COMMENT_SCRIPT_URL = "/vendor/momo-comment/momo-comment.1.8.3.min.js";
 
 /**
  * 后端默认的头像与表情来源域名。

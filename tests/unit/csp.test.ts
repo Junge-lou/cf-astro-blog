@@ -119,19 +119,23 @@ describe("CSP 指令合法性", () => {
 });
 
 /**
- * 评论区的 CSP 依赖。
+ * 评论区的 CSP 与资源依赖。
  *
- * 这四条断言锁的都是「坏了以后看不出坏在哪」的配置：
+ * 这几条断言锁的都是「坏了以后看不出坏在哪」的配置：
  * - 少了 `'wasm-unsafe-eval'`：评论区显示正常，只有提交时无感验证失败；
- * - 少了 jsDelivr：整块评论区空白（脚本 404/被拦）；
  * - 少了 blob: worker：只是解题变慢，肉眼几乎判定不出是否生效；
- * - 少了接口域名：一直显示「加载中」，且控制台只有一行 CORS/CSP 报错。
+ * - 少了接口域名：一直显示「加载中」，且控制台只有一行 CORS/CSP 报错；
+ * - 组件包必须自托管：一旦偷偷换回 CDN，就会重新引入一次跨域 TLS 握手
+ *   （实测 3.6s），而 CSP 里少了脚本源时整块评论区会直接空白。
  */
 describe("CSP 评论区", () => {
-	test("脚本源放行 jsDelivr 组件与 WASM 编译", async () => {
+	test("脚本源放行 WASM 编译，且组件不再来自外域", async () => {
 		const source = await readFile("src/middleware.ts", "utf8");
 		assert.match(source, /"'wasm-unsafe-eval'"/u, "缺少 'wasm-unsafe-eval'，HashWX 验证会失败");
-		assert.match(source, /"https:\/\/cdn\.jsdelivr\.net"/u, "缺少 jsDelivr，评论组件加载不到");
+		assert.ok(
+			!source.includes("cdn.jsdelivr.net"),
+			"评论组件已自托管在 /vendor/momo-comment/，CSP 不应再放行 jsDelivr",
+		);
 	});
 
 	test("放行 blob: worker，保住并行求解的快速路径", async () => {
@@ -158,12 +162,17 @@ describe("CSP 评论区", () => {
 		}
 	});
 
-	test("评论后端地址固定、组件版本按官方建议锁死", () => {
+	test("评论后端地址固定、组件包自托管且版本写进文件名", async () => {
 		assert.equal(MOMO_COMMENT_API_URL, "https://comments.ffaff.fun");
 		assert.match(
 			MOMO_COMMENT_SCRIPT_URL,
-			/@motues\/momo-comment@\d+\.\d+\.\d+\/dist\/momo-comment\.min\.js$/u,
-			"组件必须锁版本号，否则后端的验证协议升级会静默打断评论提交",
+			/^\/vendor\/momo-comment\/momo-comment\.\d+\.\d+\.\d+\.min\.js$/u,
+			"组件必须自托管并把版本写进文件名（否则无法 immutable 缓存，也难排查协议不匹配）",
+		);
+		// 常量指向的文件必须真的存在：自托管最容易出的错是「改了常量忘了拷贝文件」
+		await assert.doesNotReject(
+			readFile(`public${MOMO_COMMENT_SCRIPT_URL}`),
+			"组件包不在 public/ 下，评论区会一直停在加载态",
 		);
 	});
 });

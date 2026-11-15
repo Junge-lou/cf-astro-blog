@@ -1,0 +1,14 @@
+-- 纯透明模式开关。
+--
+-- 背景：面板/卡片的底色 alpha 一直被 `clamp()` 的下限锁着
+-- （文章面板 0.45、染色 0.14），于是「透明度」滑块拖到 100% 也没有任何变化，
+-- 完全无法做出"纯透明"的版本。而纯透明的真正障碍不是技术，是**可读性**——
+-- 底色归零后正文会直接压在背景图上。
+--
+-- 这个开关把两件事解耦：
+--   clear = 0 时：保持原有玻璃观感（alpha 下限不变）
+--   clear = 1 时：alpha 下限放开到 0，可读性改由「文字自带的底色光晕 +
+--                面板 1px 内描边」承担（见 global.css 的 [data-surface="clear"]）
+--
+-- 默认 0：老站点的渲染结果不变。
+ALTER TABLE `site_appearance_settings` ADD COLUMN `clear_surface_mode` integer NOT NULL DEFAULT 0;

@@ -694,6 +694,25 @@ function renderAppearancePage(options: {
 							<input id="backgroundPositionY" name="backgroundPositionY" type="range" min="-50" max="50" value="${escapeAttribute(String(backgroundPositionYOffset))}" data-appearance-control="backgroundPositionY" />
 						</div>
 					</div>
+					<div class="appearance-content-fieldset">
+						<h3>纯透明模式</h3>
+						<div class="form-group">
+							<label>
+								<input
+									type="checkbox"
+									name="clearSurfaceMode"
+									value="1"
+									${settings.clearSurfaceMode ? "checked" : ""}
+								/>
+								允许面板与卡片完全透明
+							</label>
+							<p class="form-help">
+								开启后底色的不透明度下限会从 45% / 14% 放开到 0，上面两个透明度滑块才能真正拖到「全透明」。
+								代价是正文会直接压在背景图上，因此这个模式会给正文、文章标题区、评论区自动加一圈底色光晕
+								（卡片标题不加）。关闭时渲染结果与以前完全一致。
+							</p>
+						</div>
+					</div>
 				</section>
 				<section class="appearance-panel">
 					<h2>AI 模型接口（OpenAI 兼容）</h2>
@@ -956,6 +975,7 @@ appearance.post("/", async (c) => {
 			getBodyTexts(body, "heroActionHref"),
 		),
 		mcpEnabled: getBodyText(body, "mcpEnabled"),
+		clearSurfaceMode: getBodyText(body, "clearSurfaceMode"),
 	});
 	await saveAiSettings(db, {
 		aiInternalEnabled: getBodyText(body, "aiInternalEnabled"),
